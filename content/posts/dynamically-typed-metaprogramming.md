@@ -1,6 +1,6 @@
 ---
 title: "Dynamically typed languages and meta-programming"
-tags: programming
+tags: ["programming"]
 date: 2021-01-31
 ---
 

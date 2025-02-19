@@ -1,6 +1,6 @@
 ---
 title: "Unit type and empty records"
-tags: elm syntax
+tags: ["elm", "syntax"]
 date: 2021-02-04
 ---
 

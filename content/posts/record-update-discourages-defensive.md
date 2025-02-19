@@ -1,6 +1,6 @@
 ---
 title: "Nested records and defensive programming"
-tags: elm syntax programming
+tags: ["elm", "syntax", "programming"]
 date: 2021-02-05
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Pole prediction update"
-tags: pole-prediction
+tags: ["pole-prediction"]
 date: 2021-03-13
 ---
 

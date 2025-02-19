@@ -1,6 +1,6 @@
 ---
 title: "Significant Whitespace"
-tags: programming syntax
+tags: ["programming", "syntax"]
 date: 2021-02-28
 ---
 

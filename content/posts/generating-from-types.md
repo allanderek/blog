@@ -1,6 +1,6 @@
 ---
 title: "Generating from types"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-02-08
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Promises and Elm"
-tags: Elm
+tags: ["Elm"]
 date: 2021-02-09
 ---
 

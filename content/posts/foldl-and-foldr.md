@@ -1,6 +1,6 @@
 ---
 title: "Foldl and foldr"
-tags: Elm functional  programming
+tags: ["Elm", "functional", "programming"]
 date: 2021-02-11
 ---
 

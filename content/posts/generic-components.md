@@ -1,6 +1,6 @@
 ---
 title: "Generic components: A small downside"
-tags: programming
+tags: ["programming"]
 date: 2021-02-25
 ---
 

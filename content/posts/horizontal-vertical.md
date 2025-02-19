@@ -1,6 +1,6 @@
 ---
 title: "Horizontal and Vertical"
-tags: programming
+tags: ["programming"]
 date: 2021-03-12
 ---
 

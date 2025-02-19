@@ -1,6 +1,6 @@
 ---
 title: "Embedding HTML into an Elm program"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-02-15
 ---
 

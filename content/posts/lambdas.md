@@ -1,6 +1,6 @@
 ---
 title: "Elm and lambda expressions"
-tags: elm syntax
+tags: ["elm", "syntax"]
 date: 2021-01-24
 ---
 

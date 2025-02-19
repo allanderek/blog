@@ -1,6 +1,6 @@
 ---
 title: "Uses and definitions"
-tags: elm programming
+tags: ["elm", "programming"]
 date: 2021-04-03
 ---
 

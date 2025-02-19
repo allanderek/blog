@@ -1,6 +1,6 @@
 ---
 title: "Delete this comment"
-tags: programming
+tags: ["programming"]
 date: 2021-01-11
 ---
 

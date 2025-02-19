@@ -1,6 +1,6 @@
 ---
 title: "Safe dead code removal and compile-time laziness"
-tags: elm 
+tags: ["elm"]
 date: 2021-01-28
 ---
 

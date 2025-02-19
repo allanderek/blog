@@ -1,6 +1,6 @@
 ---
 title: "Tailwind CSS"
-tags: programming
+tags: ["programming"]
 date: 2021-03-06
 ---
 

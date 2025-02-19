@@ -1,6 +1,6 @@
 ---
 title: "Keywords in a language"
-tags: programming
+tags: ["programming"]
 date: 2021-03-22
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Euros groups stages compared to Elo ratings"
-tags: football
+tags: ["football"]
 date: 2024-06-27
 ---
 

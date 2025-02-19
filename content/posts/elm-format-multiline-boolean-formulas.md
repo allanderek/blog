@@ -1,6 +1,6 @@
 ---
 title: "Elm-format and boolean logic formulas"
-tags: programming
+tags: ["programming"]
 date: 2021-03-25
 ---
 

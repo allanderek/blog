@@ -1,6 +1,6 @@
 ---
 title: "Elm missing features #1033"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-03-31
 ---
 

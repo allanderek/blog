@@ -1,6 +1,6 @@
 ---
 title: "Bull shit articles"
-tags: other
+tags: ["other"]
 date: 2021-02-20
 ---
 

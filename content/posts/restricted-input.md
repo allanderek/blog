@@ -1,6 +1,6 @@
 ---
 title: "Restricted text input in Elm"
-tags: Elm programming
+tags: ["Elm", "programming"]
 date: 2021-03-02
 ---
 

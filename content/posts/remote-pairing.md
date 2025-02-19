@@ -1,6 +1,6 @@
 ---
 title: "Remote pairing software"
-tags: programming
+tags: ["programming"]
 date: 2021-03-29
 ---
 

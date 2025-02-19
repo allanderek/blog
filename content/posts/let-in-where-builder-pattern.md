@@ -1,6 +1,6 @@
 ---
 title: "Let-in, where, and the right pizza"
-tags: programming
+tags: ["programming"]
 date: 2021-03-18
 ---
 

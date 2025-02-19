@@ -1,6 +1,6 @@
 ---
 title: "Copy from tmux"
-tags: programming
+tags: ["programming"]
 date: 2021-04-09
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Typed meta-programming"
-tags: Elm maintenance programming
+tags: ["Elm", "maintenance", "programming"]
 date: 2021-02-06
 ---
 

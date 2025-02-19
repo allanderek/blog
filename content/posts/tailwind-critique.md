@@ -1,6 +1,6 @@
 ---
 title: "Response to a Tailwind Critique"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-03-17
 ---
 

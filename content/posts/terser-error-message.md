@@ -1,6 +1,6 @@
 ---
 title: "Terser error messages"
-tags: elm 
+tags: ["elm"]
 date: 2021-01-18
 ---
 

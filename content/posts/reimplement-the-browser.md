@@ -1,6 +1,6 @@
 ---
 title: "Re-implement the browser"
-tags: programming Elm 
+tags: ["programming", "Elm"]
 date: 2021-02-12
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Less is more security (sometimes)"
-tags: security
+tags: ["security"]
 date: 2021-01-08
 ---
 

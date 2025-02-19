@@ -1,6 +1,6 @@
 ---
 title: "Frugal syntax formatter"
-tags: elm syntax
+tags: ["elm", "syntax"]
 date: 2021-01-27
 ---
 

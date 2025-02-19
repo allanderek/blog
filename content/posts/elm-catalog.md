@@ -1,6 +1,6 @@
 ---
 title: "Elm catalog"
-tags: elm 
+tags: ["elm"]
 date: 2021-01-04
 ---
 
@@ -25,7 +25,7 @@ In general ranking absolutely doesn't make sense, since you cannot always say th
 
 ## Discovery
 
-Discovery though is a problem a little distinct from ranking. General purpose libraries suffer from the problem that users do not know that they need it, or less grandiosely, may benefit from it. For example, if you want to work with JWTs, you know that there may be an Elm library that helps with that, so you go to the official Elm package repository and you search something like JWT, maybe you find some libraries, maybe you have a tough time deciding which one to use, but you knew you wanted to at least try using a library. However, packages that are more general purpose it's less obvious that they might exist. A good source of such libraries are named <scope>-extra, such as [List extra](https://package.elm-lang.org/packages/elm-community/list-extra/latest/), [Html extra](https://package.elm-lang.org/packages/elm-community/html-extra/latest/), [String extra](https://package.elm-lang.org/packages/elm-community/string-extra/latest/), and [Json extra](https://package.elm-lang.org/packages/elm-community/json-extra/latest/).
+Discovery though is a problem a little distinct from ranking. General purpose libraries suffer from the problem that users do not know that they need it, or less grandiosely, may benefit from it. For example, if you want to work with JWTs, you know that there may be an Elm library that helps with that, so you go to the official Elm package repository and you search something like JWT, maybe you find some libraries, maybe you have a tough time deciding which one to use, but you knew you wanted to at least try using a library. However, packages that are more general purpose it's less obvious that they might exist. A good source of such libraries are named {scope}-extra, such as [List-extra](https://package.elm-lang.org/packages/elm-community/list-extra/latest/), [Html-extra](https://package.elm-lang.org/packages/elm-community/html-extra/latest/), [String extra](https://package.elm-lang.org/packages/elm-community/string-extra/latest/), and [Json-extra](https://package.elm-lang.org/packages/elm-community/json-extra/latest/).
 
 The point here is that these libraries may well help in your application, but there isn't a particular pain point you come across that immediately alerts you to the fact that there might be a helpful library. So you tend to come across these libraries through happenstance, and you build up an array of useful general purpose libraries that you call upon in most non-trivial applications that you write. However it would be nice if somehow such libraries were a bit more discoverable.
 

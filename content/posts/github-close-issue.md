@@ -1,6 +1,6 @@
 ---
 title: "Github close issue"
-tags: programming
+tags: ["programming"]
 date: 2021-02-23
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Html over the wire"
-tags: programming 
+tags: ["programming"]
 date: 2021-03-04
 ---
 

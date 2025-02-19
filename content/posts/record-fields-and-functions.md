@@ -1,6 +1,6 @@
 ---
 title: "Hungarian notation and Elm maybes."
-tags: elm syntax 
+tags: ["elm", "syntax"]
 date: 2021-01-21
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Laziness"
-tags: Elm programming
+tags: ["Elm", "programming"]
 date: 2021-02-07
 ---
 

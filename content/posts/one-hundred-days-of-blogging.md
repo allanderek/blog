@@ -1,6 +1,6 @@
 ---
 title: "100 days of blogging"
-tags: programming
+tags: ["programming"]
 date: 2021-04-10
 ---
 

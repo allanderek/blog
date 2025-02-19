@@ -1,6 +1,6 @@
 ---
 title: "Another polymorphism blind spot"
-tags: programming  elm
+tags: ["programming", "elm"]
 date: 2021-04-02
 ---
 

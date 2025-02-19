@@ -1,6 +1,6 @@
 ---
 title: "Cognitive Biases and Programming"
-tags: programming
+tags: ["programming"]
 date: 2021-01-19
 ---
 

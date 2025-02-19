@@ -1,6 +1,6 @@
 ---
 title: "Dolt is git for databases"
-tags: programming
+tags: ["programming"]
 date: 2021-03-23
 ---
 

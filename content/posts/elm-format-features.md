@@ -1,6 +1,6 @@
 ---
 title: "Elm-format features"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-03-28
 ---
 

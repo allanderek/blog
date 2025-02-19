@@ -1,6 +1,6 @@
 ---
 title: "Elm open source model"
-tags: elm syntax 
+tags: ["elm", "syntax"]
 date: 2021-01-14
 ---
 

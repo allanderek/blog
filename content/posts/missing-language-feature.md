@@ -1,6 +1,6 @@
 ---
 title: "Missing language feature - Remove from scope"
-tags: elm programming
+tags: ["elm", "programming"]
 date: 2021-02-17
 ---
 

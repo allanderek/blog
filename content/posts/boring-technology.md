@@ -1,6 +1,6 @@
 ---
 title: "Boring technology"
-tags: programming
+tags: ["programming"]
 date: 2021-02-21
 ---
 

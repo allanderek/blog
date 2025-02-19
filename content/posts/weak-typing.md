@@ -1,6 +1,6 @@
 ---
 title: "Weak typing - What is it good for"
-tags: programming
+tags: ["programming"]
 date: 2021-02-14
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Domain Specific Languages and frequency"
-tags: programming
+tags: ["programming"]
 date: 2021-02-26
 ---
 

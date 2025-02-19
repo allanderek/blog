@@ -1,6 +1,6 @@
 ---
 title: "Clients as a pitfall"
-tags: elm programming
+tags: ["elm", "programming"]
 date: 2021-03-11
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Builder pattern record update operator"
-tags: elm syntax 
+tags: ["elm", "syntax"]
 date: 2021-01-02
 ---
 

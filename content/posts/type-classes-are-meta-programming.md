@@ -1,6 +1,6 @@
 ---
 title: "Type classes are meta-programming"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-02-02
 ---
 

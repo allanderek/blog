@@ -1,6 +1,6 @@
 ---
 title: "Overusing Right Pizza"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-04-05
 ---
 

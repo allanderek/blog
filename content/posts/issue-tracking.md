@@ -1,6 +1,6 @@
 ---
 title: "Relative issue prioritising"
-tags: programming maintenance
+tags: ["programming", "maintenance"]
 date: 2021-01-29
 ---
 

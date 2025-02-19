@@ -1,6 +1,6 @@
 ---
 title: "Pole prediction status"
-tags: programming
+tags: ["programming"]
 date: 2021-03-21
 ---
 

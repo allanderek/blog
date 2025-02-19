@@ -1,6 +1,6 @@
 ---
 title: "Could meta-programming be harmful?"
-tags: programming
+tags: ["programming"]
 date: 2021-02-01
 ---
 

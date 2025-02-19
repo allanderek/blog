@@ -1,6 +1,6 @@
 ---
 title: "Missing IDE feature"
-tags: programming
+tags: ["programming"]
 date: 2021-03-05
 ---
 

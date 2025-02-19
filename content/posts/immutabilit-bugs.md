@@ -1,6 +1,6 @@
 ---
 title: "Immutability bugs"
-tags: functional programming immutability bugs
+tags: ["functional", "programming", "immutability", "bugs"]
 date: 2021-01-23
 ---
 

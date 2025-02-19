@@ -1,6 +1,6 @@
 ---
 title: "Comments and word-wrap"
-tags: programming syntax 
+tags: ["programming", "syntax"]
 date: 2021-01-15
 ---
 

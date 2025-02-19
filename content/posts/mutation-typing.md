@@ -1,6 +1,6 @@
 ---
 title: "Mutation typing - a not-yet workable idea"
-tags: programming functional
+tags: ["programming", "functional"]
 date: 2021-02-18
 ---
 

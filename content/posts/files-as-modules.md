@@ -1,6 +1,6 @@
 ---
 title: "Files as  modules"
-tags: compilation language-design
+tags: ["compilation", "language-design"]
 date: 2021-01-09
 ---
 

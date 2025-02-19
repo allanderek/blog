@@ -1,6 +1,6 @@
 ---
 title: "Dry can cost you"
-tags: programming
+tags: ["programming"]
 date: 2021-04-08
 ---
 

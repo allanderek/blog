@@ -1,6 +1,6 @@
 ---
 title: "Templating HTML and String interpolation"
-tags: programming elm
+tags: ["programming", "elm"]
 date: 2021-04-06
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Defensive programming and validations"
-tags: elm programming
+tags: ["elm", "programming"]
 date: 2021-01-06
 ---
 

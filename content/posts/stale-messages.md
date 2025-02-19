@@ -1,6 +1,6 @@
 ---
 title: "Stale Messages in Elm"
-tags: elm programming
+tags: ["elm", "programming"]
 date: 2021-02-16
 ---
 

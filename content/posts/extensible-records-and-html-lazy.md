@@ -1,6 +1,6 @@
 ---
 title: "Html.Lazy and extensible records"
-tags: elm programming
+tags: ["elm", "programming"]
 date: 2021-03-07
 ---
 

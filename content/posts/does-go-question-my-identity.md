@@ -1,6 +1,6 @@
 ---
 title: "Does Go question my identity"
-tags: programming
+tags: ["programming"]
 date: 2021-03-24
 ---
 

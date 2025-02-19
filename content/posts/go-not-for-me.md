@@ -1,6 +1,6 @@
 ---
 title: "Why is Go (lang) popular?"
-tags: programming
+tags: ["programming"]
 date: 2021-02-22
 ---
 

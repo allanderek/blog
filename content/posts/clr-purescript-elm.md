@@ -1,6 +1,6 @@
 ---
 title: "CLR, Purescript, and Elm"
-tags: elm  
+tags: ["elm"]
 date: 2021-01-03
 ---
 

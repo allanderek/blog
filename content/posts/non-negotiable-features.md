@@ -1,6 +1,6 @@
 ---
 title: "Non-negotiable features"
-tags: programming
+tags: ["programming"]
 date: 2021-03-15
 ---
 

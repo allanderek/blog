@@ -1,6 +1,6 @@
 ---
 title: "Issues in Git"
-tags: programming
+tags: ["programming"]
 date: 2021-03-14
 ---
 

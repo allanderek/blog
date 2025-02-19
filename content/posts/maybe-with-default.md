@@ -1,6 +1,6 @@
 ---
 title: "Elm's Maybe.withDefault"
-tags: elm compilation
+tags: ["elm", "compilation"]
 date: 2021-01-25
 ---
 

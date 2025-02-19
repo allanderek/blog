@@ -1,6 +1,6 @@
 ---
 title: "Let-in Let-in"
-tags: elm programming
+tags: ["elm", "programming"]
 date: 2021-03-03
 ---
 
