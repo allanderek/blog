@@ -2,3 +2,7 @@ baseURL = 'https://example.org/'
 languageCode = 'en-us'
 title = "Allanderek's blog"
 theme = 'papermod'
+[pagination]
+  disableAliases = false
+  pagerSize = 100
+  path = 'page'
