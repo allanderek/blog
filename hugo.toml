@@ -4,6 +4,14 @@ title = "Allanderek's blog"
 theme = 'papermod'
 mainSections = ["posts"]
 
+
+[menu]
+  [[menu.main]]
+    name = "RSS Feed"
+    url = "/rss/index.xml"
+    weight = 100  # Higher weight will place it at the end of the menu
+    
+
 [pagination]
   disableAliases = false
   pagerSize = 100
