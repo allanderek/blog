@@ -2,7 +2,26 @@ baseURL = 'https://example.org/'
 languageCode = 'en-us'
 title = "Allanderek's blog"
 theme = 'papermod'
+mainSections = ["posts"]
+
 [pagination]
   disableAliases = false
   pagerSize = 100
   path = 'page'
+
+[mediaTypes]
+  [mediaTypes."application/atom+xml"]
+    suffixes = ["xml"]
+
+[outputFormats]
+  [outputFormats.ATOM]
+    mediaType = "application/atom+xml"
+    isPlainText = false
+    rel = "alternate"
+    isHTML = false
+    noUgly = true
+    permalinkable = false
+    path = "/rss"
+
+[outputs]
+  home = ["HTML", "RSS", "ATOM"]
