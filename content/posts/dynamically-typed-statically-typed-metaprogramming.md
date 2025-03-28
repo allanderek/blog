@@ -1,7 +1,7 @@
 ---
 title: "Dynamically/Statically typed language and meta-programming"
 tags: ["programming"]
-date: 2021-01-31
+date: 2025-03-28
 ---
 
 The following was written for a colleague who suggested I post it more publically, so here we are.
