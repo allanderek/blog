@@ -18,7 +18,7 @@ getDefaultModel game =
 
 How about just renaming this to `resetGame`? The type already tells you that you are returning a `Model` but if you prefer `resetModelForGameStart`. 
 
-The original blog post concedes there are times when a comment is unavoidable. A common one is where a refactor is not possible because of code which is depended upon. For example you might comment on what looks like a strange call of an api function, to say that you are in someway working around a deficiency in the api. Sometimes the commment is indeed a TODO asking for a refactor, but you're clear about that and you're deliberately taking on some technical debt for some rational reason.
+The original blog post concedes there are times when a comment is unavoidable. A common one is where a refactor is not possible because of code which is depended upon. For example you might comment on what looks like a strange call of an api function, to say that you are in someway working around a deficiency in the api. Sometimes the comment is indeed a TODO asking for a refactor, but you're clear about that and you're deliberately taking on some technical debt for some rational reason.
 
-Anyway the take away here is, whenever you see a comment in your code, or at about to write one, consider whether a refactor could make the comment redundant. See comments like dead or ugly code, something that should be purged if at all possible. Many times you will be surprised that a simple re-name or abstraction will make the comment unnecessary.
+Anyway the take away here is, whenever you see a comment in your code, or are about to write one, consider whether a refactor could make the comment redundant. See comments like dead or ugly code, something that should be purged if at all possible. Many times you will be surprised that a simple re-name or abstraction will make the comment unnecessary.
 
