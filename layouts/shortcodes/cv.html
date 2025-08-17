@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html><head>
+	<meta charset="UTF-8">
+	<title>Allan Clark Curriculum Vitae</title>
+	<script src="cv.js"></script>
+        <style>
+        /* Print/PDF styles */
+        @media print {
+            @page {
+                margin: 15mm;
+                size: A4;
+            }
+            
+            body {
+                margin: 0;
+                font-size: 11pt;
+                line-height: 1.4;
+            }
+            
+            /* Avoid page breaks in sections */
+            .section {
+                page-break-inside: avoid;
+            }
+            
+            .sub-heading {
+                page-break-after: avoid;
+            }
+
+
+            /* We're always showing the details/summary as open so do not show
+               the disclourse/marker triangle/arrow
+            */
+            details > summary {
+                list-style: none;
+            }
+            
+            details > summary::-webkit-details-marker {
+                display: none;
+            }
+            
+            details > summary::marker {
+                display: none;
+            }
+        }
+
+        /* Base styles - PDF-safe */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #333333;
+            max-width: 210mm;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            font-size: 12pt;
+        }
+
+        /* Header styles - simplified for PDF */
+        #main-title {
+            background-color: #407FCB;
+            color: #FFFFFF;
+            font-size: 18pt;
+            font-weight: bold;
+            padding: 1.5rem;
+            margin: -2rem -2rem 2rem -2rem;
+            text-align: center;
+        }
+
+        /* Contact information */
+        #address {
+            float: right;
+            width: 45%;
+            font-size: 10pt;
+            color: #666666;
+            margin-bottom: 1rem;
+            text-align: right;
+        }
+
+        #online-profiles {
+            float: right;
+            clear: right;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            margin-bottom: 1rem;
+            width: 45%;
+            font-size: 10pt;
+            color: #666666;
+            text-align: right;
+        }
+
+        #online-profiles a {
+            color: #407FCB;
+            text-decoration: none;
+        }
+
+        /* Headlines section - PDF-safe layout */
+        #headlines {
+            clear: both;
+            margin: 2rem 0;
+        }
+
+        #headlines ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #headlines li {
+            display: inline-block;
+            background-color: #f8f9ff;
+            color: #3145AA;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem 0.5rem 0.25rem 0;
+            border: 1px solid #e0e6ff;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+
+        /* Section headings */
+        .heading {
+            color: #1E4963;
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #AACBE0;
+            position: relative;
+        }
+
+        /* Create accent line with a span instead of ::after */
+        .heading .accent {
+            display: inline-block;
+            width: 50px;
+            height: 2px;
+            background-color: #407FCB;
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+        }
+
+        /* Sub-headings */
+        .sub-heading {
+            background-color: #AACBE0;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0 0.5rem 0;
+            font-weight: bold;
+            color: #1E4963;
+            font-size: 11pt;
+        }
+
+        /* Content sections */
+        .section {
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        /* Clear floats */
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        /* Paragraph spacing */
+        p {
+            margin: 0.5rem 0;
+            line-height: 1.4;
+        }
+
+        /* List styling */
+        ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.25rem;
+        }
+
+        /* Table styling for structured content */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+	<div id="page-container"><div id="main-title"><h1>DR. ALLAN D. CLARK, PHD BSC</h1></div><div id="address">31/1 OSWALD RD,<br>Edinburgh EH9 2HT,<br>United Kingdom</div><ul id="online-profiles"><li><a href="https://github.com/allanderek" class="profile-link">GitHub</a></li><li><a href="http://dblp.uni-trier.de/pers/hd/c/Clark:Allan" class="profile-link">DBLP</a></li></ul><div id="headlines"><ul><li>ACCOMPLISHED SOFTWARE DEVELOPER</li><li>COMPETENT DATA ANALYST</li></ul><ul><li>INNOVATIVE RESEARCHER</li><li>AWARD-WINNING LECTURER</li></ul></div><div id="personal-statement"><div class="heading">PERSONAL STATEMENT / SUMMARY</div><ul><li><details class="summary-details"><summary>Developed a new programming language and an associated compiler with features to aid in the correction of programming errors.</summary><p> During my PhD I developed a new programming language named Nitro.
+            The purpose of Nitro was to bridge the gap between applications
+            programming languages and the system programming languages that are
+            used to provide the runtime services, such as automatic memory
+            management, for these application languages. To do this Nitro allows
+            the user to not only specify types but how those types are represented
+            in memory. Because such memory representations are formally specified
+            the type-checker can then ensure that they are used correctly.
+            As part of my PhD I developed the language, specified formally in
+            structural operational semantics, proved some useful properties that
+            the language has, developed a stable compiler for the Nitro language,
+            and used it to write some software such as a text editor which used
+            the NCurses library directly without any need to marshal the native
+            NCurses data types into a Nitro data type.</p></details></li><li><details class="summary-details"><summary>High-level problem solving research experience, dependent on the development of software for other users with complex requirements.</summary><p>I was involved in the <a href="http://www.dcs.ed.ac.uk/pepa">PEPA research group.</a> PEPA is a language for expressing mathematical models of systems, which is used to
+                investigate properties of many different kinds of systems from server-client systems,
+                distributed systems, epidemiology processes, and the modelling of crowds. Bio-PEPA is
+                a varient of PEPA particularly suitable for systems biology modelling. Users typically
+                create a model of the system under investigation and then ask performance related queries
+                such as: <i>What is the average number of waiting customers?</i> or <i>What is the probability that a request has been served within a given time constraint?</i></p></details></li><li>Developed several individual and team based software projects related
+           to formal analysis of models written in a process algebra which were
+           used by researchers from across the globe.</li><li><details class="summary-details"><summary>Ability to understand and improve existing software projects.</summary><p>I have taken over the development and/or joined the development
+               team on several projects in a variety of programming languages, for example:<ul><li>I took on the development of the Imperial PEPA Compiler written in
+                       Haskell and completely revamped the project such that it was
+                       re-named the International PEPA compiler and published as library,
+                       its source code can be found <a href="https://github.com/allanderek/ipclib">here.</a></li><li>I joined the development teams on both Eclipse plug-ins for
+                       the PEPA and Bio-PEPA languages. These projects are written
+                       Java and their related source code repositories can be found <a href="https://github.com/allanderek/pepa">here</a> and <a href="https://github.com/allanderek/Bio-PEPA">here.</a></li><li>I joined the <a href="http://www.sbsi.ed.ac.uk/">SBSI</a> development team, mostly working on the SBSI-numerics component written in C++.</li></ul></p></details></li><li>An award-winning teacher with a diverse publication record of over 30
+           articles; a proven track record of understanding and communicating
+           complex concepts and ideas.</li><li>My expertise is in building high quality, intuitive, and robust software;
+            and I wish to join a team that builds software for a large and diverse user pool.</li></ul></div><div id="experience"><div class="heading">EXPERIENCE, ACHIEVEMENTS AND SKILLS</div><div class="sub-heading">PROGRAMMING, 15 YEARS+</div><ul><li>Python, extensive, preferred language much of the time, 5 years</li><li>Javascript, Coffeescript, 6 years</li><li>HTML(5)/CSS, 15 years</li><li>Java, extensive, including team development, 10 years</li><li>C, C++, extensive, including team development, 17 years</li><li>Haskell, extensive, mostly solo, 10 years</li><li>ML and Ocaml, mostly solo, 15 years</li><li>Assembly language experience, particularly as part of developing compilers</li><li>Minor amounts in various other languages on small projects such as C# and .NET bytecode, Erlang, Occam, Fortran, Lisp, my own Nitro language. </li></ul><div class="sub-heading">REAL WORLD DATA ANALYSIS, 8 YEARS</div><ul><li>Transport data, in cooperation with Lothian Buses, analysis wait and expected arrival times and estimates; </li><li>Systems Biology, many examples, including the Cholesterol pathway and Circadian clocks, parameter estimation for many models, resulting in academic publications; </li><li>Epidemiology, mostly common SIR (Susceptibles, Infected, and Recovereds) models, resulting in improved understanding of the role of stochasticity in the spread of disease and modelling tools. </li><li>Sport data; see my (archived) blog at <a href="https://allanderek.github.io/football-analysis">allanderek.github.io/football-analysis</a></li></ul><div class="sub-heading">FORMAL ANALYSIS, 13 YEARS</div> Including language semantics, performance/stochastic modelling. <div class="sub-heading">SOFTWARE TESTING, 8 YEARS</div> Including coverage analysis and browser automation for full integration testing of a web service. <div class="sub-heading">SOFTWARE DEVELOPMENT KNOWLEDGE</div> A strong knowledge of software development related concepts. Successfully taught at undergraduate and masters levels, topics related to software engineering, agile development and development tools, people and groups, software measurement, and software maintenance. <div class="sub-heading">VARIED PROGRAMMING LANGUAGE EXPERIENCE</div> PhD research saw the creation of a new programming language, Nitro, and development of a Nitro compiler. Worked in a variety of languages, including both statically and dynamically typed languages, imperative, object-oriented and functional languages, low-level systems and high-level application programming languages. <div class="sub-heading">SELF-DIRECTION</div> Large amount of autonomy in pursuit of promising areas of research as a post-doctoral researcher within a small team. Taught an important 3rd year course, the Software Engineering Large Practical which I completely redesigned. <div class="sub-heading">COMMUNICATION OF COMPLEX CONCEPTS</div> Received a EUSA teaching award certifying excellence in communicating feedback — a University wide recognition of ability as a communicator. Communication of technical and complex concepts refined in the role of a lecturer and tutor to Informatics students. <div class="sub-heading">AFFECTING ORGANISATION ADVANCEMENT</div> As a Feedback Officer for the School of Informatics improved the quality of feedback given to the students from every course in Informatics. The School has since increased scores for feedback in both internal and external student satisfaction surveys. <div class="sub-heading">WRITTEN COMMUNICATION</div> Publications record demonstrates international recognition of quality technical written communication as well as innovative research. </div><div id="education"><div class="heading">EDUCATION</div><ul><li>2002—2007 PHD, THE UNIVERSITY OF EDINBURGH School of Informatics; Thesis Title: “Abstraction-level Functional Programming”. </li><li>1998—2002 1ST CLASS BSC (HONS.), SCHOOL OF INFORMATICS, UNIVERSITY OF EDINBURGH, EDINBURGH.</li><li>1992—1998 Secondary Education, Craigmount High School, Edinburgh.</li></ul></div><div id="employment"><div class="heading">EMPLOYMENT</div><ul><li><details class="summary-details"><summary>2019—2025 Co-founder Pakk Software. </summary><div><p>Pakk Software developed an e-commerce platform specifically for small-to-medium sized businesses.
+                    Our proposition was that the Pakk software would handle all aspects of a business looking to sell physical products online.
+                    To that end our software provided the e-commerce store visited by customers as well as an admin panel for the businness owner and/or employees
+                    to manage the store. Including (but not exhaustively), designing the look of the store, managing stock, promotions, loyalty schemes,
+                    returns, customer service, purchase orders, and accounting. Because everything was integrated a store owner could for example know not just
+                    how much stock of a particular product, but the booked value of that stock as well as the expected profit from selling all of that stock.
+                      </p><p>My main role was a front-end software developer. Which means I was responsible for the front-end user interface of both the
+                        customer facing e-commerce store and the merchant facing admin panel. Both significant, large and complex software projects.
+                        Most of the front-end code was written in the functional programming language Elm. As such I have become an expert not just in Elm,
+                        but specifically large Elm applications, and through the work on the admin panel, generalised software.
+                        </p></div></details></li><li>2017-2019 Joined a startup with equity in the sports and gaming sector, looking to provide daily/weekly fantasy sports games.</li><li>2016-2017 Contracted software developer for an innovative start-up looking to disrupt the pre-employment background-screening and reference-checking services sector.</li><li>2015 Freelance software developer</li><li><details class="summary-details"><summary>2012—2015 LECTURER, SCHOOL OF INFORMATICS, THE UNIVERSITY OF EDINBURGH. </summary><div><p> I have lectured 4<sup>th</sup> year undergraduate and Masters courses, Distributed Systems and Software Architecture, Process, and Management. Both courses had over 120 students however I engaged well with the students enough to win a Teaching Award for the feedback I gave to students. I have also taught two 3<sup>rd</sup> year undergraduate courses the Computer Science Large Practical and the Software Engineering Large Practical. Both are core courses for 3<sup>rd</sup> year students and involve lectures as well as the setting and grading of a substantial individual practical. In addition, I have tutored 1<sup>st</sup> year students learning to program in Haskell and Java. I have also supervised several students through their Masters or 4<sup>th</sup> year undergraduate projects, guiding many to first class awards. </p><p> After my teaching award I was appointed as the feedback officer for the school of Informatics with the remit of improving the school's scores for feedback on student surveys, a remit that was achieved every year for which I was the school's feedback officer. </p><p> I was also tasked with the role of personal tutor for approximately 20 students each year. This role, is mostly a pastoral role guiding students through their studies but does involve exercising judgement in suggesting study directions/courses for students. </p><p> Alongside this I continued research as part of the PEPA group and in particular made contributions towards the QUANTICOL project including data collection, analysis and modelling of the City of Edinburgh's bus services. Developing almost exclusively in Python. </p></div></details></li><li><details class="summary-details"><summary>2010—2012 Post-Doctoral Researcher, School of Informatics/CSBE, the University of Edinburgh. </summary><p> Continued my role as a post-doctoral researcher but was now jointly affiliated with the School of Informatics and the Centre for Systems Biology at Edinburgh (which is now a part of <a href="http://www.synthsys.ed.ac.uk/">SynthSys</a>). This has lead me both to focus more energy on biologically themed models (and their associated solution techniques) as well as become part of a development team for the <a href="http://www.sbsi.ed.ac.uk">SBSI</a> software. I was once again developing in Haskell, Python, and Java, but also maintaining legacy C code. </p></details></li><li><details class="summary-details"><summary>2006—2010 Post-Doctoral Researcher, School of Informatics, the University of Edinburgh. </summary><p> I became a member of the PEPA modelling research group. PEPA is a language for modelling complex systems and reasoning about their performance (or timing) properties. My research involved developing new solution techniques and new methods to specify the model and importantly the queries of those models. As a part of this I wrote sofware to support these modelling innovations as well as collaborate with others to incorporate their new insights into my software. Developing mostly in Haskell, Java and Python. </p></details></li><li>2002—2006 Student Tutor, the University of Edinburgh. Collaborative work between Schools.</li></ul></div><div id="other-interests"><div class="heading">OTHER INTERESTS</div> Competent golfer, football player, and a good enough juggler to maintain a 5-object cascade. A keen interest in psychology and economics. I apply techniques I have learnt from work in quantitative modelling to the art of football prediction, I blog about some of the statistics at the previously mentioned blog: <a href="https://allanderek.github.io/football-analysis/">allanderek.github.io/football-analysis</a></div><div id="publications"><div class="heading">SELECTED PUBLICATIONS</div><ul><li>“On verifying Bio-PEPA models”, Allan Clark, Stephen Gilmore, Maria Luisa Guerriero, Peter Kemper, CMSB 2010: 23-32</li><li>“Verification and Testing of Biological Models”, Allan Clark, Jane Hillston, Stephen Gilmore, Peter Kemper, Winter Simulation Conference 2010: 620-630</li><li>“Passage-End Analysis”, Allan Clark, Adam Duguid, Stephen Gilmore, EPEW 2009: 110-115</li><li>“Scalable Analysis of Scalable Systems”, Allan Clark and Stephen Gilmore and Mirco Tribastone, Proceedings International Conference on Fundamental Approaches to Software Engineering (FASE 2009), York, United Kingdom, March 2009 </li><li>“State-aware performance analysis with eXtended Stochastic Probes”, Allan Clark and Stephen Gilmore, In Nigel Thomas and Carlos Juiz, editors, Proceedings of the 5th European Performance Engineering Workshop </li><li>“Partial evaluation of PEPA models for fluid-flow analysis”, Allan Clark and Adam Duguid and Stephen Gilmore and Mirco Tribastone, In Proceedings of the 5th European Performance Engineering Workshop (EPEW 2008), volume 5261 of LNCS, pages 2-16, Nigel Thomas and Carlos Juiz, editors, Palma de Mallorca,Spain, September 2008. Springer. </li><li>“Service-level agreements for service-oriented computing”, Allan Clark and Stephen Gilmore and Mirco Tribastone, Proceedings of the 19th International Workshop on Algebraic Development Techniques (WADT 2008), Pisa, Italy, June 2008 </li><li>“Evaluating quality of service for service level agreements”, Allan Clark and Stephen Gilmore, In Proceedings of the 11th International Workshop on Formal Methods for Industrial Critical System, 2006, volume 4346, pages 181-194 </li><li>“Quantative Analysis of Web Services Using SRMC”, Allan Clark and Stephen Gilmore and Mirco Tribastone, the 9th International School on Formal Methods for the Design of Computer, Communication, and Software Systems: Web Services, SFM 2009 </li><li>“Stochastic Process Algebras”, Allan Clark and Stephen Gilmore and Jane Hillston and Mirco Tribastone, the 7th International School on Formal Methods for the Design of Computer, Communication, and Software Systems: Performance Evaluation, SFM 2007, volume 4486, pages 132-179 </li><li>“The ipclib PEPA Library”, Allan Clark, Proceedings of the 4th International Conference on the Quantitative Evaluation of SysTems (QEST), 2007, pages 55-56 </li><li>“Location-Aware Quality of Service Measurements for Service-Level Agreements”, Ashok Argent-Katwala and Jeremy Bradley and Allan Clark and Stephen Gilmore, Proceedings of the Third International Conference on Trustworthy Global Computing (TGC’07), volume 4912, pages 222-239 </li><li>“Safety and Response-Time Analysis of an Automotive Accident Assistance Service”, Ashok Argent-Katwala and Allan Clark and Howard Foster and Stephen Gilmore and Philip Mayer and Mirco Tribastone, Proceedings of the 3rd International Symposium on Leveraging Applications of Formal Methods, Verification and Validation (ISoLA 2008) </li><li>“Terminating Passage-Time Calculations on Uniformised Markov Chains”, Allan Clark and Stephen Gilmore, Proceedings of the 24th UK Performance Engineering Workshop (UKPEW), 2008, pages </li><li>“State-Aware Performance Measurement with eXtented Probe Specifications”, Allan Clark and Stephen Gilmore, Proceedings of the 5th European Performance Engineering Workshop (EPEW), 2008. </li><li>“Semantic-Based Development of Service-Oriented Systems.”, Martin Wirsing, Allan Clark, Stephen Gilmore, Matthias M. Hölzl, Alexander Knapp, Nora Koch, Andreas Schroeder, in the proceedings of FORTE 2006: volume 4229, pages 24-45 </li><li>“Modelling the CoCoME with the Java/A Component Model”, Alexander Knapp, Stephan Janisch, Rolf Hennicker, Allan Clark, Stephen Gilmore, Florian Hacklinger, Hubert Baumeister, Martin Wirsing, In The Common Component Modeling Example (CoCoME) 2007: volume 5153, pages 207-237 </li></ul></div></div>
+	<script>
+            var app = Elm.Main.init({ node: document.getElementById("elm-cv-container"), flags : { target : "html" } });
+            if (document.getElementById("elm-cv-container")) {
+                    document.getElementById("elm-cv-container").innerText = 'This is a headless program, meaning there is nothing to show here.\n\nI started the program anyway though, and you can access it as `app` in the developer console.';
+            }
+	</script>
+
+
+
+</body></html>
