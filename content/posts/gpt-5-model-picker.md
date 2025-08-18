@@ -4,7 +4,7 @@ tags: []
 date: 2025-08-14
 ---
 
-GPT-5 was released and the general vibe I'm hearing is that it's a significant upgrade in many areas, but not so much in general intelligence. This has caused many to update priors on an A.I. progress in the bearish direction. In this post I wish to make a simple observation regarding a particularly bearish sign of A.I.-based productivity improvements in the near term, rather than A.I. progress per se.
+GPT-5 was released and the general vibe I'm hearing is that it's a significant upgrade in many areas, but not so much in general intelligence. This has caused many to update priors on A.I. progress in the bearish direction. In this post I wish to make a simple observation regarding a particularly bearish sign of A.I.-based productivity improvements in the near term, rather than A.I. progress per se.
 
 The launch was in many ways botched by OpenAI. Here is [Zvi Mowshowitz describing the problems with the launch](https://thezvi.substack.com/p/gpt-5s-are-alive-outside-reactions):
 
