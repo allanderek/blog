@@ -1,7 +1,7 @@
 ---
 title: "Left-to-right programming and where syntax"
 tags: [elm, programming]
-date: 2025-08-19
+date: 2025-08-19T11:48:17+00:00
 ---
 
 Graic has a nice post up discussing [left-to-right programming](https://graic.net/p/left-to-right-programming), the main tagline is that "Programs should be valid as they are typed".

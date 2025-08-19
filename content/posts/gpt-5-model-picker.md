@@ -1,7 +1,7 @@
 ---
 title: "GPT-5 Model picker"
 tags: []
-date: 2025-08-14
+date: 2025-08-14T11:50:39+00:00
 ---
 
 GPT-5 was released and the general vibe I'm hearing is that it's a significant upgrade in many areas, but not so much in general intelligence. This has caused many to update priors on A.I. progress in the bearish direction. In this post I wish to make a simple observation regarding a particularly bearish sign of A.I.-based productivity improvements in the near term, rather than A.I. progress per se.

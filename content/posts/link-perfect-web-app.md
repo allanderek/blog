@@ -1,7 +1,7 @@
 ---
 title: "Link - Perfect web app"
 tags: [link, web, programming]
-date: 2025-08-14
+date: 2025-08-14T15:49:54+00:00
 ---
 
 A good summation post [perfect web app](https://yoyo-code.com/perfect-web-app/) from Matyáš Racek's blog yoyo-code. I think this neatly sums up how difficult it is to write a good, well working web application.
