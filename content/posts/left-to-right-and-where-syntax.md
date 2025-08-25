@@ -6,7 +6,7 @@ date: 2025-08-19T11:48:17+00:00
 
 Graic has a nice post up discussing [left-to-right programming](https://graic.net/p/left-to-right-programming), the main tagline is that "Programs should be valid as they are typed".
 
-I agree with this idea, the main thing that the posts points out, is that if definitions come *after* use, it is difficult for the IDE to help with auto-completion and/or hints (such as undefined variables). The first example is Python's list comprehensions when typing out the line:
+I agree with this idea, the main thing that the post points out, is that if definitions come *after* use, it is difficult for the IDE to help with auto-completion and/or hints (such as undefined variables). The first example is Python's list comprehensions when typing out the line:
 
 ```python
 words_on_lines = [line.split() for line in text.splitlines()]
