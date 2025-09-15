@@ -1,6 +1,6 @@
 ---
 title: "Link: Where's all the shovelware?"
-tags: [ programming, A.I., llms]
+tags: [ link, programming, A.I., llms]
 date: 2025-09-04T10:34:21+00:00
 ---
 
