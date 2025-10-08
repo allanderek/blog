@@ -41,6 +41,7 @@ update message model =
     ...
     RollDice  ->
         let
+            newModel : Model
             newModel =
                 rollDice model
         in
@@ -63,8 +64,10 @@ update message model =
     ...
     RollDice  ->
         let
+            newModel : Model
             newModel =
                 rollDice model
+            newScore : Int
             newScore =
                 case newModel.dice == 6 of
                     True ->
@@ -89,6 +92,7 @@ In python, removing a name from the scope is actually possible using the `del` k
 >>> x = [1,2,3]
 >>> y = x
 >>> del x
+>>> x
 Traceback ...
 NameError: name 'x' is not defined
 >>> y
