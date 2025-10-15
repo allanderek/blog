@@ -11,6 +11,11 @@
 <link rel="alternate" type="application/rss+xml" title="{{ .Site.Title }} RSS Feed" href="{{ "/rss/index.xml" | absURL }}">
 <link rel="alternate" type="application/atom+xml" title="{{ .Site.Title }} Atom Feed" href="{{ "/rss/index.xml" | absURL }}">
 
+{{- if hugo.IsProduction | or (eq site.Params.env "production")  }}
+<script data-goatcounter="https://poleprediction.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+{{- end }}
+
 {{- /* Title */}}
 <title>{{ if .IsHome }}{{ else }}{{ if .Title }}{{ .Title }} | {{ end }}{{ end }}{{ site.Title }}</title>
 
