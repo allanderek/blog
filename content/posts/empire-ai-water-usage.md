@@ -4,6 +4,8 @@ tags: [ A.I., llms]
 date: 2025-11-03T10:42:35+00:00
 ---
 
+**Update: 2025-11-24** [ Andy Masley has a much more in-depth look](https://andymasley.substack.com/p/empire-of-ai-is-wildly-misleading) at this is issue, including a response from the author, and his response to that response is well worth reading.
+
 I've been following some of the debate on the water usage of LLMs. A lot of people seem concerned that this is a large issue. I'm not sure either way, but I'm coming round to the view that water usage is not a major concern, in comparison to, for example, the energy usage.
 
 On the recommendation of a friend I'm reading "Empire of A.I." by Karen Hao, in the chapter 'Plundered Earth' the author touches on the water issue. I *think* she makes a pretty big error that should have been caught by an editor, but also investigating this error has caused me to update a **little** in favour of the water issue actually being an issue, even if just a small consideration as opposed to being a complete non-issue. So first of all I'll give a couple of links to roughly explain where I think we are in the llm-water-usage issue.
