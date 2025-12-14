@@ -1,4 +1,3 @@
-
 ---
 title: "Link: Useful patterns for building HTML tools"
 tags: [ programming, LLMs, link ]
