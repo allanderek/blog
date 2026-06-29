@@ -6,7 +6,7 @@ date: 2026-06-24T16:33:44+00:00
 
 I was asked to watch an episode of Steven Bartlett's Diary of a CEO [featuring Mo Gawdat introduced as an Ex-Google officer available here](https://www.youtube.com/watch?v=RwlgFC6S-OE).
 
-My main takeaway is that Mo Gawdat is largely operating out of his lane in this podcast episode. Though they are only briefly touched on, he does seem to have a grounding in economics / sociology. However, the episode is mostly focused on A.I. and alignment of super-intelligent A.I. I found the episode to be a very frustrating watch because he is frequently out of his depth and, perhaps because of that, frequently evades the question being asked and dresses up his comments with confident sounding tics. He is also guilty of a [motte-and-bailey argument](https://en.wikipedia.org/wiki/Motte-and-bailey_fallacy) on multiple occasions where he makes a bold claim but retreats to a much less bold claim when challenged. At times the host attempts to challenge him, but on other occasions he gives very lowball questions.
+My main takeaway is that Mo Gawdat is largely operating out of his lane in this podcast episode. Though they are only briefly touched on, he does seem to have a grounding in economics / sociology. However, the episode is mostly focused on A.I. and alignment of super-intelligent A.I. I found the episode to be a very frustrating watch, the guest frequently evades the question being asked and dresses up his comments with confident sounding tics. He is also guilty of a [motte-and-bailey argument](https://en.wikipedia.org/wiki/Motte-and-bailey_fallacy) on multiple occasions where he makes a bold claim but retreats to a much less bold claim when challenged. At times the host attempts to challenge him, but on other occasions he gives very lowball questions.
 
 Note, he's introduced as an Ex-Google officer, I certainly took that to mean some kind of technical officer, given the subject matter, but it turns out he was a **business officer**.
 
@@ -145,7 +145,7 @@ I do not think an amoeba is concerned with anything. Is a squirrel? This is a ma
 > anything at all. As a matter of fact, it
 > would completely favor diversity of everything.
 
-<sigh> More 'matter of fact' which is anything but. Why would it favour diversity? **If** humans have a tendency to favour diversity it's because we need food to survive. Humans, for example, have been very good for chickens, in the sense that more chickens exist now than would otherwise exist. But are we good for their well-being? If you've seen chickens farmed probably not. So you have to wonder is it good to have more organisms if those organisms have horrid lives? Would it be a good outcome if a super-intelligent AI kept humans around but in tiny cages running on treadmills? In any case, humans keep chickens around but if we could (economically) grow chicken meat in a lab (which we are attempting to do), chickens would pretty quickly fail to exist on the scale they do now if at all. Look at horses, the number of horses peaked around 1915 and declined as soon as cars and other transport obviated the need for horses.
+More 'matter of fact' which is anything but. Why would it favour diversity? **If** humans have a tendency to favour diversity it's because we need food to survive. Humans, for example, have been very good for chickens, in the sense that more chickens exist now than would otherwise exist. But are we good for their well-being? If you've seen chickens farmed probably not. So you have to wonder is it good to have more organisms if those organisms have horrid lives? Would it be a good outcome if a super-intelligent AI kept humans around but in tiny cages running on treadmills? In any case, humans keep chickens around but if we could (economically) grow chicken meat in a lab (which we are attempting to do), chickens would pretty quickly fail to exist on the scale they do now if at all. Look at horses, the number of horses peaked around 1915 and declined as soon as cars and other transport obviated the need for horses.
 
 
 > It would put a bit of limitation on our lifestyle. So,
@@ -158,7 +158,7 @@ It doesn't destroy the planet it heats it up, it destroys the status quo, but wo
 > But it will genuinely say, I
 > think humans can contribute something.
 
-What exactly would humans contribute? It's not intelligence since you're assuming a super-intelligence. What would we therefore contribute that you cannot get from a pig, or a solar panel? It's possible that the super-intelligence is 'jagged', that is, it's better than humans at some things and worse at others, but overall better, in the same way that a human is better than a calculator at most things but worse at mental arithmetic, so we keep calculators around to do our mental arithmetic. 
+What exactly would humans contribute? It's not intelligence since you're assuming a super-intelligence. What would we therefore contribute that you cannot get from a live-stock, or a solar panel? It's possible that the super-intelligence is 'jagged', that is, it's better than humans at some things and worse at others, but overall better, in the same way that a human is better than a calculator at most things but worse at mental arithmetic, so we keep calculators around to do our mental arithmetic. I do not think this is likely, if he does I think he needs to make that argument rather than asserting that human can contribute something.
 
 ## AI is not your kin
 
@@ -178,7 +178,7 @@ What? This is big claim. First of all, very few people kill their parents. This 
 So Gawdat treats "we made it" and "it is our kin" as the same relationship. They obviously are not, we create many things that can harm us, from guns to poison, to even just industrial machinary or cars that can harm us incidentally. 
 
 There is also a spit-out-your-drink moment when he claims that parenting is "the only high-risk sport that actually does
-not require a driver's license." Okay so obviously this is just false. Sky-diving doesn't require a driving license. Running across a busy road does not require a driver's license. But I *think* he's making a point that basically anybody can become a parent and that parenting is hard and the results might not be to your liking. Okay, but he's slipping in a determinism argument that how well your child turns out is dependent on how well you parent them. The social research on this is pretty brutal, but more importantly, just what has this got to do with a super-intelligent AI? Are we suppose to 'parent' it? Again, that's pretty much the whole debate, is it **possible** to 'parent' a super-intelligent AI into outcomes that are good for you. He seems to be saying "we manage it with kids so we'll manage it with AI", which is just such a massive leap in logic as to be obvious nonsense.
+not require a driver's license." Okay so obviously this is just false. Sky-diving doesn't require a driving license. Running across a busy road does not require a driver's license. But I *think* he's making a point that basically anybody can become a parent and that parenting is hard and the results might not be to your liking. Okay, but he's slipping in a determinism argument that how well your child turns out is dependent on how well you parent them. The social research on this is pretty brutal, but more importantly, just what has this got to do with a super-intelligent AI? Are we suppose to 'parent' it? Again, that's pretty much the whole debate, is it **possible** to 'parent' a super-intelligent AI into outcomes that are good for you. He seems to be saying "we manage it with kids so we'll manage it with AI", which is a much larger leap in logic than he acknowledges.
 
 ## UK AI Strategy
 
@@ -208,7 +208,7 @@ Correct
 
 >> Gawdat: You don't have to compete against anyone else. You don't have to be better than anyone else. You don't have to. You're simply saying I can build those things in my economy now.
 
-What? This is just flailing. So the goal is to build an AI that is good enough for the people of the UK to use, but not good enough to actually compete with other countries' AI and join the arms race? How are you going to set **that** dial?
+I do not find this coherent. So the goal is to build an AI that is good enough for the people of the UK to use, but not good enough to actually compete with other countries' AI and join the arms race? How are you going to set **that** dial?
 
 >> Bartlett: But but I'm never I'm not going to use a terrible UK AI as a UK person if there's
 >> a great US AI. I'm going to use the great US AI. So if you don't compete and win, I'm not going to use you. That's
@@ -221,7 +221,7 @@ What? This is just flailing. So the goal is to build an AI that is good enough f
 >> Microsoft Word. Seriously, like how much intelligence do you need to build a software that writes documents?
 
 So the UK needs its own version of Microsoft Word? Given that the UK hasn't been able to replace Microsoft Word in several decades it clearly takes quite a lot of intelligence. Not only that, but it takes more than intelligence, actually creating the software is not really the hard part, it's getting people to use it. Who would want to use UK Word when the only documents people send them are written in Microsoft Word?
-In any case, his whole point is that the UK will be left behind if it doesn't build its own AI. But if all that AI can do is write some software whilst the US has AI smart enough to cause a jobpocalypse, then the UK is still left behind. He simply cannot have it both ways, and I suspect he regrets making both of those statements but lacks the humility to go back on either.
+In any case, his whole point is that the UK will be left behind if it doesn't build its own AI. But if all that AI can do is write some software whilst the US has AI smart enough to cause a jobpocalypse, then the UK is still left behind. He simply cannot have it both ways and I suspect he regrets making both of those statements.
 
 >> Bartlett: I can do that. Like we we've built our
 >> own applicant tracking system here. We
@@ -245,7 +245,7 @@ But Bartlett here shouldn't be straying from the main point, Gawdat has two cont
 >> decline and to keep up, I'm trying to
 >> get clarity on that as it relates to AI.
 
-Let me translate: "And so, you've asked me a difficult question there that I'd rather not answer, so I'll distract you with talk about boats crossing the channel before then saying that I'm trying to get clarity which I am certainly not giving".
+And so, again I was frustrated here. He is basically evading the question, pivoting (or distracting?) to boats crossing the channel without ever returnning to the contradiction.
 
 Later we hear that the arms race has already been lost:
 
@@ -308,7 +308,7 @@ The opposite question is so much more interesting. Are there any principles in t
 This was an incredibly frustrating watch. The host and guest skirt around some interesting topics. There is a good dianosis of near-term economic issues.
 There are the occasionally interesting thoughts; Can everyone be an entrepreneur? Should the UK be trying to build its own AI? But these are never
 resolved, the guest is mostly out of their depth, but pretty well practiced at evading the hard questions and dressing up his answers so that they sound meaningful.
-Most of the conversation is in service to the guest's optimism for building highly aligned super-intelligent AI, but unfortunately his optimism is based on nothing more than wishful thinking.
+Most of the conversation is in service to the guest's optimism for building highly aligned super-intelligent AI, but unfortunately his optimism is based on nothing more than wishful thinking. I do think both the guest and host are operating in good faith, the guest comes off as sincere and he's engaging with a genuinely hard problem.
 
 
 
