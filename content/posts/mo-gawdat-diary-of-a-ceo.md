@@ -193,65 +193,65 @@ The contradiction is the guest's two positions:
 
 The host Bartlett repeatedly draws the obvious inference, the UK cannot both go after AI as fast as possible and also restrain AI development.
 
->> Barlett: So the point was then you said this doesn't need to happen.
->> It does not need to happen
->> which is the job loss
->> or the arms race. But we're telling our governments, you're saying that to tell the UK government to like join the arms race.
+> Barlett: So the point was then you said this doesn't need to happen.
+> It does not need to happen
+> which is the job loss
+> or the arms race. But we're telling our governments, you're saying that to tell the UK government to like join the arms race.
 
->> Gawdat: I'm telling the UK government to to create an independence within the the the the UK economy so that they don't have to be at the receiving end of technology,
+> Gawdat: I'm telling the UK government to to create an independence within the the the the UK economy so that they don't have to be at the receiving end of technology,
 
 That's just "join the arms race" with a different name.
 
->> Bartlett: which is join the arms race.
+> Bartlett: which is join the arms race.
 
 Correct
 
->> Gawdat: You don't have to compete against anyone else. You don't have to be better than anyone else. You don't have to. You're simply saying I can build those things in my economy now.
+> Gawdat: You don't have to compete against anyone else. You don't have to be better than anyone else. You don't have to. You're simply saying I can build those things in my economy now.
 
 I do not find this coherent. So the goal is to build an AI that is good enough for the people of the UK to use, but not good enough to actually compete with other countries' AI and join the arms race? How are you going to set **that** dial?
 
->> Bartlett: But but I'm never I'm not going to use a terrible UK AI as a UK person if there's
->> a great US AI. I'm going to use the great US AI. So if you don't compete and win, I'm not going to use you. That's
->> what you know,
->> Gawdat: I'm not saying replace the frontier
->> models. These are very, as we speak,
->> they are these are very uh compute
->> intensive. They're infrastructure in
->> intensive and so on. I'm saying replace
->> Microsoft Word. Seriously, like how much intelligence do you need to build a software that writes documents?
+> Bartlett: But but I'm never I'm not going to use a terrible UK AI as a UK person if there's
+> a great US AI. I'm going to use the great US AI. So if you don't compete and win, I'm not going to use you. That's
+> what you know,
+> Gawdat: I'm not saying replace the frontier
+> models. These are very, as we speak,
+> they are these are very uh compute
+> intensive. They're infrastructure in
+> intensive and so on. I'm saying replace
+> Microsoft Word. Seriously, like how much intelligence do you need to build a software that writes documents?
 
 So the UK needs its own version of Microsoft Word? Given that the UK hasn't been able to replace Microsoft Word in several decades it clearly takes quite a lot of intelligence. Not only that, but it takes more than intelligence, actually creating the software is not really the hard part, it's getting people to use it. Who would want to use UK Word when the only documents people send them are written in Microsoft Word?
 In any case, his whole point is that the UK will be left behind if it doesn't build its own AI. But if all that AI can do is write some software whilst the US has AI smart enough to cause a jobpocalypse, then the UK is still left behind. He simply cannot have it both ways and I suspect he regrets making both of those statements.
 
->> Bartlett: I can do that. Like we we've built our
->> own applicant tracking system here. We
->> build our own software. So just ask
->> yourself how much money is spent in the
->> US in the in the UK government or in the
->> or in the you know the the UA UK
->> corporate space on licenses of software
->> that you and I can vibe code in 4
->> minutes.
+> Bartlett: I can do that. Like we we've built our
+> own applicant tracking system here. We
+> build our own software. So just ask
+> yourself how much money is spent in the
+> US in the in the UK government or in the
+> or in the you know the the UA UK
+> corporate space on licenses of software
+> that you and I can vibe code in 4
+> minutes.
 
 Yes, there is a lot of expensive software that isn't needed anymore because it's now *possible* to build your own custom version.
 But Bartlett here shouldn't be straying from the main point, Gawdat has two contradictory positions, force him to give up one of them.
 
->> Gawdat: I'm thinking from the UK's perspective cuz you know what's interesting with the UK is the economy is struggling from a growth perspective. Correct. And
->> I was watching this documentary the
+> Gawdat: I'm thinking from the UK's perspective cuz you know what's interesting with the UK is the economy is struggling from a growth perspective. Correct. And
+> I was watching this documentary the
 
 ... meanders on for some time ...
 
->> And so when I'm thinking about like what the UK needs to do to not become to not fall into
->> decline and to keep up, I'm trying to
->> get clarity on that as it relates to AI.
+> And so when I'm thinking about like what the UK needs to do to not become to not fall into
+> decline and to keep up, I'm trying to
+> get clarity on that as it relates to AI.
 
 And so, again I was frustrated here. He is basically evading the question, pivoting (or distracting?) to boats crossing the channel without ever returnning to the contradiction.
 
 Later we hear that the arms race has already been lost:
 
->> Because they've invested in solar power, renewable energy, because they don't care about
->> this is, by the way, I say that publicly. I say that the arms race of AI
->> was won a long time ago. 
+> Because they've invested in solar power, renewable energy, because they don't care about
+> this is, by the way, I say that publicly. I say that the arms race of AI
+> was won a long time ago. 
 
 So why join it if it is already lost?
 
@@ -272,14 +272,14 @@ No, a super intelligent AI may want to optimise for all manner of things.
 
 No, that's definitely not by definition, that's another highly questionable claim. 
 
->> Okay, we **by definition** are connecting them. And you know what that
->> means? It means that what we're building is not multiple brains. We're building
->> multiple regions in a brain.
+> Okay, we **by definition** are connecting them. And you know what that
+> means? It means that what we're building is not multiple brains. We're building
+> multiple regions in a brain.
 
 I am **by definition** writing this blog post. Either we are or we are not connecting them, adding **by definition** is just window dressing used to make it sound certain. It's a pretty basic fact that we are connecting AIs together, but this is mostly language semantics. We connected computers together to make the Internet does this now mean that the Internet is one big computer? Maybe, that's mostly a semantic argument about the meanings of certain words. Similarly multiple AIs acting in concert can be described as a single brain if you want, but your definition of the word brain is not a fact of any consequence. 
 
 Here he is using "matter of fact" my emphasis:
->> As a **matter of fact**, you know, the Boston Dynamics dog is **probably** more efficient than a humanoid at doing
+> As a **matter of fact**, you know, the Boston Dynamics dog is **probably** more efficient than a humanoid at doing
 
 If it's **probably** then it's not a matter of fact is it? Maybe you could say that it is a matter of fact that it is more likely than not, but you can just say that it's probably true, you don't need the window dressing. 
 
@@ -290,7 +290,7 @@ Mo Gawdat has written multiple books about happiness. I have no idea whether he 
 
 To open with, the host asks the question:
 
->> why at that time did you start talking about AI before anybody else?
+> why at that time did you start talking about AI before anybody else?
 
 This is more faint praise than a question and it's also simply not true. Plenty of people have been talking about AI for a long time.
 Here is a [CGP Grey video](https://www.youtube.com/watch?v=7Pq-S557XQU) talking about humans becoming obsolete the same way horses did, through AI. That video is 11 years old, so 2015, Mo Gawdat's book came out in 2021. People have been talking about AI since at least the 1950s.
