@@ -1,5 +1,5 @@
 ---
-title: "Review: Mo Gawdat: Diary of a CEO""
+title: "Review: Mo Gawdat: Diary of a CEO"
 tags: [ review ]
 date: 2026-06-24T16:33:44+00:00
 ---
