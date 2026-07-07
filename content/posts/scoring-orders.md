@@ -5,7 +5,7 @@ date: 2026-07-06T15:25:36+00:00
 ---
 
 I haven't ever spoken about the scoring system we use on [pole prediction](https://www.poleprediction.com) to grade Formula One predictions.
-There are two systems and I'm particularly fond of the one we use for the season predictions. But first let me explain the session (qualifying, race, etc.) scoring is a relic of an old game we played before I developed pole prediction. This was first played on reddit.
+There are two systems and I'm particularly fond of the one we use for the season predictions. But first let me explain the session (qualifying, race, etc.) scoring which is a relic of an old game we played before I developed pole prediction. This was first played on reddit.
 
 ## Session Scoring
 
@@ -50,15 +50,13 @@ Now consider a **random** prediction of the same top ten drivers, I have literal
 | Lindblad | Gasly | 2 | 
 | Russell | Collapinto | 0 | 
 
-So this random arrangement scored 12 points. Any random arrangement must score at least 8, because regardless of how bad the predictions are it does have 8 of the top 10 drivers, so they must all score at least 1 point. Partly this illustration goes badly because I picked the pathological case. But the point here is that you can often get 2 or even 4 points for a prediction, even though many of the drivers you predicted to out-perform that driver did not, whilst some you didn't predict to out-perform them did. This feels wrong.
+So this random arrangement scored 12 points. Any random arrangement must score at least 8, because regardless of how bad the predictions are it does have 8 of the top 10 drivers, so they must all score at least 1 point. Partly this illustration goes badly because I picked the pathological case. But the point here is that you can often get 2 or even 4 points for a prediction, even though many of the drivers you predicted to out-perform that driver did not, whilst some you didn't predict to out-perform them did. This feels wrong. To put it more succinctly, **this scoring system is vulnerable to errors cancelling each other out and producing a better score than a prediction that simply had fewer errors**.
 
 So I think we could get a better scoring system by scoring *order* rather than absolute position. So, for the *season* predictions, that's basically what I've done, but I've done it in an interesting way that accounts for closeness. So I'd like to describe the season scoring.
 
 ## Season Scoring
 
-The season predictions occur before the first race, in fact even before the first free practice session of the season. In these, you're not predicting **drivers** but instead **teams**. Now, the key observation here is that whilst you can forget about points magnitude and focus on the *order*, in which case you could use something like a [Spearman's Rank Correlation Coefficient](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient). This works very well where you care about the *order* of elements rather than the absolute size of each element.
-
-However, I *am* concerned with the size of each, in particular, what I'd like to do is punish incorrect predictions that were very wrong, and only slightly punish predictions that were wrong, but not *that* wrong. Consider the following example:
+The season predictions occur before the first race, in fact even before the first free practice session of the season. In these, you're not predicting **drivers** but instead **teams**. If you ignore points magnitude and focus on *order* you can use something like a [Spearman's Rank Correlation Coefficient](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient), which basically just scores each pair by whether they are ordered the same as in the predicted order. The key observation for our scoring system is that ignoring the magnitude ignores very valuable information, we **are** concerned about the size of each. In particular, what I'd like to do is punish incorrect predictions that were very wrong, and only slightly punish predictions that were wrong, but not *that* wrong. Consider the following example:
 
 | Prediction A | Prediction B | Result |
 |--------------|--------------|--------|
@@ -89,7 +87,7 @@ However, if I had add *points* here you can see that one prediction is significa
 | Mercedes-Ferrari | ✓ | ✓ |
 | McLaren-Ferrari | -299 | ✓ |
 
-So in this case, clearly Prediction B is better than Prediction A. Although both got one pair wrong, the incorrect pairing for Prediction B was pretty close. Whilst the incorrect pairing for Prediction A was very wrong. With more than three teams you can easily construct a case where Prediction A has more correct pairs than Prediction B, but Prediction B is still better because the incorrect pairs are closer to the correct order:
+In this hypothetical championship Mercedes win the constructors championship but did so only *just* pipping McLaren by a point. Whilst Ferrari were a long way behind in third. So in this case, clearly Prediction B is better than Prediction A. Although both got one pair wrong, the incorrect pairing for Prediction B was pretty close. Whilst the incorrect pairing for Prediction A was very wrong. With more than three teams you can easily construct a case where Prediction A has more correct pairs than Prediction B, but Prediction B is still better because the incorrect pairs are closer to the correct order:
 
 | Prediction A | Prediction B | Result |
 |--------------|--------------|--------|
@@ -148,7 +146,7 @@ The rules then become, for every predicted pair in the top-ten A > B:
 * B in top ten, A outside (so B genuinely ahead): 0 — your order was wrong
 * both outside: tied in reality, neither beats the other: 0
 
-Now, this has a problem. The tenth driver you select has almost no bearing on your predictions. You are essentially predicting that they lose 9 pairs they are involved in. If that is the case, then in order to maximise your score you would be better to select a driver for tenth that you think has no chance of finishing *higher* than tenth. Worse, this sort of plays out for more than tenth place. Place 8 and 9 as well, also have 7 and 8 pairs they are predicted to lose, perhaps better to ensure that they lose those rather than aim for the points for 8 > 9, 8 > 10, and 9 > 10. There are only three points available there, but if your 8th place pick actually finished 3rd you could lose out on many points.
+Now, this has a problem. The tenth driver you select has almost no bearing on your predictions. You are essentially predicting that they lose 9 pairs they are involved in. If that is the case, then in order to maximise your score you would be better to select a driver for tenth that you think has no chance of finishing *higher* than tenth. Worse, this sort of plays out for more than tenth place. Places 8 and 9 as well, also have 7 and 8 pairs they are predicted to lose, perhaps better to ensure that they lose those rather than aim for the points for 8 > 9, 8 > 10, and 9 > 10. There are only three points available there, but if your 8th place pick actually finished 3rd you could lose out on many points.
 
 Now, this doesn't actually matter if we're just using this on pole prediction as a kind of informational skill indicator, since the actual predictions are still based on the 4, 2, 1 points system, nobody will be incentivised to pick up points in this 'gaming' manner.
 
@@ -157,5 +155,5 @@ We *could* attempt to fix this anyway, we could modify the first rule to be:
 
 This means that you would get a potential extra 9 points for getting your 10th place pick correct. But unfortunately that re-introduces one reason we disliked the 4,2, 1 scoring system, that is that having your 10th place pick be 11th is somewhat punished out of proportion. More generally, the 10th place pick is usually something of a bit of luck, since you usually haven't got the exact nine drivers ahead of them correct. If 1 or 2 of the favourite drivers retire, it seems wrong to massively reward someone who gets 10th correct, because they are essentially two places off.
 
-So for now, I've decided to stick with the original formulation, since the incentives to game the lower positions are not a problem since the official scoring system is still in place.
+So for now, I've decided to stick with the original formulation, since the incentives to game the lower positions are not a problem since the official scoring system is still in place. But for information purposes we're showing the concordant leaderboard for each session, this hopefully gives us an indicator as to whether you've been a bit lucky/unlucky in the score for your predictions.
 
