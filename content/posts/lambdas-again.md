@@ -112,13 +112,13 @@ def outer_func()(location:""):
     return leader + " in the " + location
 ```
 
-A final small point, I'm not sure why `location` is defaulted to `""` since that makes the sentence returned non-grammatical, not to mention that because the original *'function'* had no arguments the whole 'closure' was not necssary, but I guess this is just an example.
+A final small point, I'm not sure why `location` is defaulted to `""` since that makes the sentence returned non-grammatical, not to mention that because the original *'function'* had no arguments the whole 'closure' was not necessary, but I guess this is just an example.
 
 ## How are lambdas different in Python and Elm
 
 Okay so at least according to the five use-cases identified in the original post, I'm still not seeing a great need for lambdas in Python, just as I don't see them as particularly necessary in Elm. But they are a bit different. The distinguishing feature is that in Elm a lambda expression really is just a short hand for a `let` defined function with a name. In Python however, defined functions must use the `return` keyword to actually return something, whereas using a lambda the result of evaluating the expression is automatically the returned result of the function.
 
-I'm not sure whether this suggests they are more or less of an enhancement in Python in than in functional languages. On the one hand they are clearly introducing something new. On the other hand, it introduces a different behaviour that I can see could being a source of bugs, particularly in a dynamically typed language. Consider the first example in this article, the use of lambda expressions to define a named function:
+I'm not sure whether this suggests they are more or less of an enhancement in Python in than in functional languages. On the one hand they are clearly introducing something new. On the other hand, it introduces a different behaviour that I could be a source of bugs, particularly in a dynamically typed language. Consider the first example in this article, the use of lambda expressions to define a named function:
 
 
 ```Python
@@ -143,4 +143,4 @@ def lambda_add_ten (x):
 
 A decent linter probably picks this up, but it is valid Python, and if the returned expression was some side-effecting function call then the linter wouldn't even necessarily pick it up. Anyway, I think this sort of mistake is easier to make if you've just been using lambda expressions elsewhere. Therefore I think that the inclusion of lambdas in the language make this mistake easier and more common.
 
-To sum up, I'm still yet to be convinced that either Elm or Python really needs to include lambda expressions, I just don't see much benefit. But this is not a hill I'm going to die on, for the most part I can simply ignore them, and they certainly don't make code **much** harder to comprehend if someone else uses them. So I don't think they add much benefit, but neither are they too determintal, and for that reason I would strongly expect them to remain parts of both languages and newer languages as well.
+To sum up, I'm still yet to be convinced that either Elm or Python really needs to include lambda expressions, I just don't see much benefit. But this is not a hill I'm going to die on, for the most part I can simply ignore them, and they certainly don't make code **much** harder to comprehend if someone else uses them. So I don't think they add much benefit, but neither are they too detrimental, and for that reason I would strongly expect them to remain parts of both languages and newer languages as well.
