@@ -77,4 +77,16 @@ check "Ladybird outranks Mo Gawdat"    "before ladybird-and-strong-static-typing
 
 check "home styles are bundled"        "grep -rqs 'home-featured' $OUT/assets/css/"
 
+check "RSS feed still generated"       "test -s $OUT/index.xml"
+check "Atom feed still generated"      "test -s $OUT/rss/index.xml"
+check "Atom feed has 20 entries"       "test \$(grep -c '<entry>' $OUT/rss/index.xml) -eq 20"
+# Both feed templates render the home title as "<title> on <site title>" when
+# the two differ, so a 'title' in content/_index.md silently rewrites the feeds.
+check "Atom feed title not rewritten"  "! grep -qE '<title>[^<]+ on Allanderek' $OUT/rss/index.xml"
+check "RSS feed title not rewritten"   "! grep -qE '<title>[^<]+ on Allanderek' $OUT/index.xml"
+check "/posts/ still generated"        "test -f $OUT/posts/index.html"
+check "/posts/ still paginated"        "test -f $OUT/posts/page/2/index.html"
+check "tag pages still generated"      "test -f $OUT/tags/elm/index.html"
+check "CV page still generated"        "test -f $OUT/cv/index.html"
+
 exit $fail

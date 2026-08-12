@@ -1,5 +1,7 @@
 ---
-title: "Allan Clark"
+# Deliberately no 'title' here. Both feed templates render the home page title
+# as "<title> on <site title>" when the two differ, so setting one rewrites the
+# RSS and Atom feed titles. The <h1> below supplies the visible heading.
 ---
 
 # Allan Clark
