@@ -30,4 +30,10 @@ fi
 
 check "no ERROR lines in build output" "! grep -q '^ERROR' $OUT/build.log"
 
+check "archive page exists"            "test -f $OUT/archives/index.html"
+check "archive lists a 2016 post"      "grep -q 'selenium-and-casper' $OUT/archives/index.html"
+check "archive lists a 2026 post"      "grep -q 'link-danluu-pl-token-efficiency' $OUT/archives/index.html"
+# PaperMod renders menu URLs through absLangURL, so the nav href is absolute.
+check "nav links to the archive"       "grep -qE 'href=\"[^\"]*/archives/\"' $OUT/index.html"
+
 exit $fail

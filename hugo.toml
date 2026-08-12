@@ -2,10 +2,18 @@ baseURL = 'https://blog.poleprediction.com'
 languageCode = 'en-us'
 title = "Allanderek's blog"
 theme = 'papermod'
-mainSections = ["posts"]
+
+[params]
+  author = "Allan Clark"
+  description = "The thoughts of a programmer, heavily slanted towards development in Elm, but occasionally more general programming."
+  mainSections = ["posts"]
 
 
 [menu]
+  [[menu.main]]
+    name = "Archive"
+    url = "/archives/"
+    weight = 5
   [[menu.main]]
     name = "RSS Feed"
     url = "/rss/index.xml"
