@@ -46,4 +46,10 @@ check "intro links to Pole Prediction" "grep -q 'href=\"https://www.polepredicti
 check "availability placeholder shown" "grep -q 'AVAILABILITY PLACEHOLDER' $OUT/index.html"
 check "stray _readme post is gone"     "! test -d $OUT/posts/_readme"
 
+check "home has a Recent section"      "grep -q 'id=\"recent\"' $OUT/index.html"
+check "home shows the newest post"     "grep -q 'link-danluu-pl-token-efficiency' $OUT/index.html"
+check "home shows exactly 8 recent"    "test \$(grep -c 'class=\"home-recent-item\"' $OUT/index.html) -eq 8"
+check "home links to all posts"        "grep -qE 'All [0-9]+ posts' $OUT/index.html"
+check "home is not the full post list" "test \$(grep -c 'post-entry' $OUT/index.html) -eq 0"
+
 exit $fail

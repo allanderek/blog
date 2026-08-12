@@ -1,0 +1,28 @@
+{{- define "main" }}
+
+{{- /* Intro prose lives in content/_index.md so it can be edited without
+       touching this template. */}}
+<article class="home-intro">
+  {{ .Content }}
+</article>
+
+{{- /* Recent: newest posts. site.RegularPages is already newest-first. */}}
+{{- $posts := where site.RegularPages "Type" "in" site.Params.mainSections }}
+{{- if $posts }}
+<section class="home-section" id="recent">
+  <h2>Recent</h2>
+  <ul class="home-recent">
+    {{- range first 8 $posts }}
+    <li class="home-recent-item">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+      <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+    </li>
+    {{- end }}
+  </ul>
+  <p class="home-all-posts">
+    <a href="{{ "archives/" | relURL }}">All {{ len $posts }} posts &rarr;</a>
+  </p>
+</section>
+{{- end }}
+
+{{- end }}
