@@ -1,0 +1,70 @@
+/* Home page landing sections. See layouts/home.html. */
+
+.home-intro {
+    margin-bottom: 8px;
+}
+
+.home-intro h1 {
+    margin-bottom: 12px;
+}
+
+.home-section {
+    margin-top: 44px;
+}
+
+.home-section h2 {
+    font-size: 20px;
+    margin-bottom: 18px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.home-featured,
+.home-recent {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.home-featured-item {
+    margin-bottom: 22px;
+}
+
+.home-featured-item > a {
+    font-weight: 600;
+}
+
+.home-blurb {
+    margin: 4px 0 0;
+    color: var(--secondary);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.home-recent-item {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    margin-bottom: 9px;
+}
+
+.home-recent-item time {
+    color: var(--secondary);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.home-all-posts {
+    margin-top: 22px;
+}
+
+/* Stack the date above the title on narrow screens rather than letting
+   long titles wrap into a narrow column beside it. */
+@media (max-width: 500px) {
+    .home-recent-item {
+        flex-direction: column;
+        gap: 1px;
+        margin-bottom: 14px;
+    }
+}

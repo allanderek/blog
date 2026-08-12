@@ -75,4 +75,6 @@ check "Mo Gawdat is featured"          "grep -q 'mo-gawdat-diary-of-a-ceo' $OUT/
 # featuredWeight is actually being applied.
 check "Ladybird outranks Mo Gawdat"    "before ladybird-and-strong-static-typing mo-gawdat-diary-of-a-ceo"
 
+check "home styles are bundled"        "grep -rqs 'home-featured' $OUT/assets/css/"
+
 exit $fail
