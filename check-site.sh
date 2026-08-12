@@ -36,4 +36,14 @@ check "archive lists a 2026 post"      "grep -q 'link-danluu-pl-token-efficiency
 # PaperMod renders menu URLs through absLangURL, so the nav href is absolute.
 check "nav links to the archive"       "grep -qE 'href=\"[^\"]*/archives/\"' $OUT/index.html"
 
+# Match intro prose and explicit hrefs, not page chrome: "Allan Clark" also
+# appears in the author meta tag, and "poleprediction.com" is the site's own
+# baseURL, so both match even with no intro at all.
+check "intro prose present"            "grep -q 'programmer in Edinburgh' $OUT/index.html"
+check "intro links to GitHub"          "grep -q 'href=\"https://github.com/allanderek\"' $OUT/index.html"
+check "intro links to the CV"          "grep -q 'href=\"/cv.pdf\"' $OUT/index.html"
+check "intro links to Pole Prediction" "grep -q 'href=\"https://www.poleprediction.com\"' $OUT/index.html"
+check "availability placeholder shown" "grep -q 'AVAILABILITY PLACEHOLDER' $OUT/index.html"
+check "stray _readme post is gone"     "! test -d $OUT/posts/_readme"
+
 exit $fail
