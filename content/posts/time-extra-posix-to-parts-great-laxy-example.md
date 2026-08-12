@@ -3,6 +3,9 @@ title: Laziness would be good for Time.Extra.posixToParts
 description: A motivation for why laziness is a good programming language feature.
 date: 2022-10-27
 tags: [elm, gren, programming, laziness]
+featured: true
+featuredWeight: 50
+featuredBlurb: "What laziness is actually for — and it isn't efficiency or infinite lists."
 ---
 
 In this post I'm going to show a good example of where laziness would work well. This is of course not an argument

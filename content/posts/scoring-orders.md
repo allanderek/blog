@@ -2,6 +2,9 @@
 title: "Scoring Orders"
 tags: [ games, pole-prediction ]
 date: 2026-07-06T15:25:36+00:00
+featured: true
+featuredWeight: 80
+featuredBlurb: "Our F1 prediction scoring let a randomly-generated guess beat a nearly-correct one. Here's the system I built to fix it."
 ---
 
 I haven't ever spoken about the scoring system we use on [pole prediction](https://www.poleprediction.com) to grade Formula One predictions.

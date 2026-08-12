@@ -2,6 +2,9 @@
 title: "Review: Mo Gawdat: Diary of a CEO"
 tags: [ review ]
 date: 2026-06-24T16:33:44+00:00
+featured: true
+featuredWeight: 100
+featuredBlurb: "A careful, quote-by-quote look at what happens when \"by definition\" and \"as a matter of fact\" are doing all the argumentative work."
 ---
 
 I was asked to watch an episode of Steven Bartlett's Diary of a CEO [featuring Mo Gawdat introduced as an Ex-Google officer available here](https://www.youtube.com/watch?v=RwlgFC6S-OE).

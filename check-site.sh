@@ -17,6 +17,19 @@ check() {
   fi
 }
 
+# Line number of the first match in the home page, empty if absent.
+first_line() { grep -n "$1" "$OUT/index.html" | head -1 | cut -d: -f1; }
+
+# True only when both posts are present AND the first precedes the second.
+# Written as a function so a missing post fails rather than passing vacuously:
+# 'test $(empty) -lt $(empty)' collapses to 'test -lt', which is true.
+before() {
+  local a b
+  a=$(first_line "$1")
+  b=$(first_line "$2")
+  [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ]
+}
+
 echo "Building (production) into $OUT"
 if hugo --destination "$OUT" >"$OUT/build.log" 2>&1; then
   printf '  ok    hugo build exits 0\n'
@@ -51,5 +64,15 @@ check "home shows the newest post"     "grep -q 'link-danluu-pl-token-efficiency
 check "home shows exactly 8 recent"    "test \$(grep -c 'class=\"home-recent-item\"' $OUT/index.html) -eq 8"
 check "home links to all posts"        "grep -qE 'All [0-9]+ posts' $OUT/index.html"
 check "home is not the full post list" "test \$(grep -c 'post-entry' $OUT/index.html) -eq 0"
+
+check "home has a Start here section"  "grep -q 'id=\"start-here\"' $OUT/index.html"
+check "10 featured posts listed"       "test \$(grep -c 'class=\"home-featured-item\"' $OUT/index.html) -eq 10"
+check "10 blurbs listed"               "test \$(grep -c 'class=\"home-blurb\"' $OUT/index.html) -eq 10"
+check "Ladybird is featured"           "grep -q 'ladybird-and-strong-static-typing' $OUT/index.html"
+check "Mo Gawdat is featured"          "grep -q 'mo-gawdat-diary-of-a-ceo' $OUT/index.html"
+# The real ordering test: Mo Gawdat (2026) is newer than Ladybird (2025), so
+# under plain date sorting it would come first. This only passes if
+# featuredWeight is actually being applied.
+check "Ladybird outranks Mo Gawdat"    "before ladybird-and-strong-static-typing mo-gawdat-diary-of-a-ceo"
 
 exit $fail

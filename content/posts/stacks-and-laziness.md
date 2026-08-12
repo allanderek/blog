@@ -2,6 +2,9 @@
 title: "Stacks and Laziness"
 tags: [programming, elm]
 date: 2025-11-12T10:46:02+00:00
+featured: true
+featuredWeight: 60
+featuredBlurb: "The follow-up where laziness loses: space leaks that grow with the number of operations, not the size of your data."
 ---
 
 I sometimes find that developers do not really have a good grasp on the point of laziness in a programming language, believing that it is mostly an optimisation.

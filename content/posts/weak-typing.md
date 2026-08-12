@@ -2,6 +2,9 @@
 title: "Weak typing - What is it good for"
 tags: ["programming"]
 date: 2021-02-14
+featured: true
+featuredWeight: 30
+featuredBlurb: "I think weakly typed languages are useless. So I spent a post trying to build the best case for one."
 ---
 
 

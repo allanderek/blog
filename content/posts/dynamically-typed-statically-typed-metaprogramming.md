@@ -2,6 +2,9 @@
 title: "Dynamically/Statically typed language and meta-programming"
 tags: ["programming"]
 date: 2025-03-28
+featured: true
+featuredWeight: 40
+featuredBlurb: "Why you can write a generic admin panel in Python and not in Elm — explained down at the level of what's actually in memory."
 ---
 
 The following was written for a colleague who suggested I post it more publically, so here we are.

@@ -6,6 +6,32 @@
   {{ .Content }}
 </article>
 
+{{- /* Start here: hand-picked posts, ordered by featuredWeight ascending.
+       A post with no featuredWeight is read as 999 so it sorts after the
+       weighted ones; do not rely on how Hugo orders a missing key. The list
+       is pre-sorted newest-first so that any equal weights fall back to date. */}}
+{{- $featured := where site.RegularPages "Params.featured" true }}
+{{- if $featured }}
+{{- $ranked := slice }}
+{{- range $featured.ByDate.Reverse }}
+  {{- $ranked = $ranked | append (dict "page" . "weight" (.Params.featuredWeight | default 999)) }}
+{{- end }}
+<section class="home-section" id="start-here">
+  <h2>Start here</h2>
+  <ul class="home-featured">
+    {{- range sort $ranked "weight" }}
+    {{- $p := .page }}
+    <li class="home-featured-item">
+      <a href="{{ $p.RelPermalink }}">{{ $p.Title }}</a>
+      {{- with $p.Params.featuredBlurb }}
+      <p class="home-blurb">{{ . }}</p>
+      {{- end }}
+    </li>
+    {{- end }}
+  </ul>
+</section>
+{{- end }}
+
 {{- /* Recent: newest posts. site.RegularPages is already newest-first. */}}
 {{- $posts := where site.RegularPages "Type" "in" site.Params.mainSections }}
 {{- if $posts }}
