@@ -13,7 +13,7 @@ I am **available** for work, contract, consultancy, or potentially for the right
 
 I co-founded and built [Pakk Software](https://pakk.io), an e-commerce platform for small and medium-sized businesses. Most of my recent
 work has been in Elm, on both the front end and the back end but I've worked in various other languages including Haskell, C, Java, Python and even Go.
-I also spent several years as a reseacher in formal (largelly performance) modelling.
+I also spent several years as a researcher in formal (largely performance) modelling.
 
 [GitHub](https://github.com/allanderek) ·
 [Email](mailto:allan.clark@gmail.com) ·

@@ -51,8 +51,8 @@ The **two** reasons being that Rust's stronger type system and Rust's memory man
 Given that that appears not to be the case it's at least bearish for those two priors. In this section I will explain some possible reasons that a C++ project
 appears to be more productive than a Rust project other than the possibility that neither strong types nor checked memory manipulation help significantly.
 
-1. Arnold Kling (lead developer of Ladybird, or someone else on the team) is a rock star programmer.
-   * This is one of those explanations that somewhat moves the question back a bit. If Arnold Kling is a rock star programmer, why does he not recognise the productivity enhancing nature of Rust (or some other strongly statically typed language) and use that? If it is some other programmer on the team, why did that person join a team using C++?
+1. Andreas Kling (lead developer of Ladybird, or someone else on the team) is a rock star programmer.
+   * This is one of those explanations that somewhat moves the question back a bit. If Andreas Kling is a rock star programmer, why does he not recognise the productivity enhancing nature of Rust (or some other strongly statically typed language) and use that? If it is some other programmer on the team, why did that person join a team using C++?
 2. There are more contributors to Ladybird.
     * Similarly, why? It's possible to do some mental gymnastics and suppose that the kind of programmer who gets involved in an audacious project to write a new web browser rendering engine is the kind of programmer that likes to get near the metal or something. I could possibly be convinced by some such explanation but I certainly haven't managed to convince myself.
 3. Ladybird has more focus on web standards tests.
