@@ -5,7 +5,7 @@ date: 2022-10-27
 tags: [elm, gren, programming, laziness]
 featured: true
 featuredWeight: 50
-featuredBlurb: "What laziness is actually for — and it isn't efficiency or infinite lists."
+featuredBlurb: "A good example of what I think laziness is good for, allowing natural structuring code"
 ---
 
 In this post I'm going to show a good example of where laziness would work well. This is of course not an argument

@@ -4,7 +4,7 @@ tags: ["elm", "gren", "programming"]
 date: 2022-06-29
 featured: true
 featuredWeight: 70
-featuredBlurb: "Extensible union types are the wrong framing. The real question is structural versus nominal — and answering it gets you opaque types for records and primitives too."
+featuredBlurb: "Extensible union types are often proposed. I think the important difference is between structural and nominal types, and that this should be uniform across records and custom types."
 ---
 
 There have been a few proposals for extensible custom types in Elm, the idea is that they are somewhat analogous to extensible record types. In this post I wish to give a proposal for how to make custom types 'extensible' that could play well with opaque types. The key point is that we need not focus on extensibility so much as the distinction between structural and nominal types.

@@ -24,7 +24,10 @@
     <li class="home-featured-item">
       <a href="{{ $p.RelPermalink }}">{{ $p.Title }}</a>
       {{- with $p.Params.featuredBlurb }}
-      <p class="home-blurb">{{ . }}</p>
+      {{- /* markdownify so blurbs can use inline markdown such as **emphasis**.
+             Keep blurbs to a single paragraph: a blank line would produce a
+             <p> nested inside this one. */}}
+      <p class="home-blurb">{{ . | markdownify }}</p>
       {{- end }}
     </li>
     {{- end }}

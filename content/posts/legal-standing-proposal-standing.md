@@ -4,7 +4,7 @@ tags: [programming]
 date: 2025-09-23T13:34:58+00:00
 featured: true
 featuredWeight: 90
-featuredBlurb: "Before proposing a feature, show standing: real code that is harmed, not a hypothetical."
+featuredBlurb: "Before proposing a feature, show standing. An under-rated analogy from Dillon Kearns."
 ---
 
 [Dillon Kearns](https://dillonkearns.github.io/) of [elm-pages](https://elm-pages.com/) and [elm-radio](https://elm-radio.com/) fame has a really good analogy for feature requests, whether they be feature requests for an end-user application or API changes to a software library, or even say changes to a programming language.

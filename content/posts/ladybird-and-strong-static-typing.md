@@ -4,7 +4,7 @@ tags: [ programming, types ]
 date: 2025-09-10T13:24:27+00:00
 featured: true
 featuredWeight: 10
-featuredBlurb: "A C++ browser engine is outpacing a Rust one. I believe stronger guarantees make you more productive — so I listed ten ways to explain this away, and talked myself out of all of them."
+featuredBlurb: "A C++ browser engine is outpacing a Rust one, this goes against my priors that stronger guarantees are generally good for programming so I listed other reasons why this might happen, but I wasn't convinced by any of them."
 ---
 
 The success of [Ladybird](https://ladybird.org/) (C++) overtaking [Servo](https://servo.org/) (Rust) challenges some assumptions I have about the programming language productivity, particularly with respect to strong, static typing, and the lack of a satisfying explanation allows me to update my priors a little.

@@ -56,7 +56,8 @@ check "intro prose present"            "grep -q 'programmer in Edinburgh' $OUT/i
 check "intro links to GitHub"          "grep -q 'href=\"https://github.com/allanderek\"' $OUT/index.html"
 check "intro links to the CV"          "grep -q 'href=\"/cv.pdf\"' $OUT/index.html"
 check "intro links to Pole Prediction" "grep -q 'href=\"https://www.poleprediction.com\"' $OUT/index.html"
-check "availability placeholder shown" "grep -q 'AVAILABILITY PLACEHOLDER' $OUT/index.html"
+check "no leftover placeholder text"   "! grep -q 'PLACEHOLDER' $OUT/index.html"
+check "intro states availability"      "grep -qi 'available for' $OUT/index.html"
 check "stray _readme post is gone"     "! test -d $OUT/posts/_readme"
 
 check "home has a Recent section"      "grep -q 'id=\"recent\"' $OUT/index.html"

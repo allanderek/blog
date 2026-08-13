@@ -4,7 +4,7 @@ tags: [programming, elm]
 date: 2025-11-17T10:40:47+00:00
 featured: true
 featuredWeight: 20
-featuredBlurb: "Function length is the wrong proxy for the thing we actually want. And no, I'm not going to give you a rule to replace it."
+featuredBlurb: "Function length is the wrong proxy for the thing we actually want."
 ---
 
 [Cindy Sridharan](https://copyconstruct.medium.com/) writes an [interesting post](https://copyconstruct.medium.com/small-functions-considered-harmful-91035d316c29) which questions the wisdom of keeping functions small.
