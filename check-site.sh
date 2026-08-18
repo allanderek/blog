@@ -90,4 +90,20 @@ check "/posts/ still paginated"        "test -f $OUT/posts/page/2/index.html"
 check "tag pages still generated"      "test -f $OUT/tags/elm/index.html"
 check "CV page still generated"        "test -f $OUT/cv/index.html"
 
+# The consulting page, its nav entry, and the signature block. The signature is
+# rendered from layouts/baseof.html, a whole-file override of the theme's, so
+# these also catch a theme update silently reinstating the original baseof.
+check "consulting page generated"      "test -f $OUT/consulting/index.html"
+check "consulting page mentions Elm"   "grep -q 'Elm' $OUT/consulting/index.html"
+check "nav links to consulting"        "grep -qE 'href=\"[^\"]*/consulting/\" title=\"Consulting\"' $OUT/index.html"
+check "one signature on home"          "test \$(grep -c '<aside class=\"signature' $OUT/index.html) -eq 1"
+check "home signature is inline"       "grep -q '<aside class=\"signature signature-inline\"' $OUT/index.html"
+check "signature precedes Start here"  "before '<aside class=\"signature' 'id=\"start-here\"'"
+check "signature on a post"            "grep -q '<aside class=\"signature\"' \$(ls -d $OUT/posts/*/index.html | head -1)"
+check "signature on the CV page"       "grep -q '<aside class=\"signature\"' $OUT/cv/index.html"
+check "signature on the archive"       "grep -q '<aside class=\"signature\"' $OUT/archives/index.html"
+check "no signature on consulting"     "! grep -q '<aside class=\"signature' $OUT/consulting/index.html"
+check "signature links to consulting"  "grep -A6 '<aside class=\"signature\"' \$(ls -d $OUT/posts/*/index.html | head -1) | grep -q 'href=\"/consulting/\"'"
+check "signature styles are bundled"   "grep -rq '.signature' $OUT/assets/css/"
+
 exit $fail

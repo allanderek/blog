@@ -1,0 +1,25 @@
+{{- /* A sign-off block linking to the consulting page. Styled in
+       assets/css/extended/signature.css.
+
+       Called with a dict, because placement differs by page:
+         ctx     - the page
+         inline  - true when rendered inside <main> by a layout (the home page
+                   puts it just under the intro), false for the default
+                   position between <main> and the footer in baseof.
+
+       Skipped on the consulting page, which it would only link back to, and
+       skipped in the default position on the home page so the inline copy
+       there is not duplicated at the foot of the same page. */ -}}
+{{- $ctx := .ctx }}
+{{- $inline := .inline }}
+{{- if and (ne $ctx.RelPermalink "/consulting/") (or $inline (not $ctx.IsHome)) }}
+<aside class="signature{{ if $inline }} signature-inline{{ end }}" aria-label="About the author">
+    <p class="signature-text">
+        <strong>Allan Clark</strong> &mdash; I write this blog, and I&rsquo;m available for
+        hire: Elm contract development, and code review of existing codebases in most languages.
+    </p>
+    <p class="signature-link">
+        See <a href="/consulting/">consulting.</a>
+    </p>
+</aside>
+{{- end }}

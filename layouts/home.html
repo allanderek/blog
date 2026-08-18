@@ -6,6 +6,11 @@
   {{ .Content }}
 </article>
 
+{{- /* Rendered here rather than in its default position below the footer:
+       on the home page that would be past ten featured posts and eight
+       recent ones. baseof suppresses the default copy for the home page. */}}
+{{- partial "consulting-signature.html" (dict "ctx" . "inline" true) }}
+
 {{- /* Start here: hand-picked posts, ordered by featuredWeight ascending.
        A post with no featuredWeight is read as 999 so it sorts after the
        weighted ones; do not rely on how Hugo orders a missing key. The list

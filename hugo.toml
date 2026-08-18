@@ -8,12 +8,15 @@ theme = 'papermod'
   description = "The thoughts of a programmer, heavily slanted towards development in Elm, but occasionally more general programming."
   mainSections = ["posts"]
 
-
 [menu]
   [[menu.main]]
     name = "Archive"
     url = "/archives/"
     weight = 5
+  [[menu.main]]
+    name = "Consulting"
+    url = "/consulting/"
+    weight = 8
   [[menu.main]]
     name = "RSS Feed"
     url = "/rss/index.xml"
