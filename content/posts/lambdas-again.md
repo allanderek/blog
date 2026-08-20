@@ -4,7 +4,7 @@ tags: ["elm", "syntax"]
 date: 2021-01-30
 ---
 
-Just after I [wrote about lambdas in Elm](/posts/2021-01-24-lambdas) suggesting that they were not particularly useful and if we had a mind to we could remove them from the Elm language (very unlikely to happen since I think it would cause too much anger within the Elm community), I read on the [awesome Python newsletter](https://Python.libhunt.com/newsletter) a post regarding lambdas in Python, specifically [5 uses of lambda expressions](https://medium.com/techtofreedom/5-uses-of-lambda-functions-in-Python-97c7c1a87244). The author doesn't quite have a main point, but it seems to be that lambda expressions are useful and you should use them in your Python code.
+Just after I [wrote about lambdas in Elm](/posts/lambdas) suggesting that they were not particularly useful and if we had a mind to we could remove them from the Elm language (very unlikely to happen since I think it would cause too much anger within the Elm community), I read on the [awesome Python newsletter](https://Python.libhunt.com/newsletter) a post regarding lambdas in Python, specifically [5 uses of lambda expressions](https://medium.com/techtofreedom/5-uses-of-lambda-functions-in-Python-97c7c1a87244). The author doesn't quite have a main point, but it seems to be that lambda expressions are useful and you should use them in your Python code.
 
 To be honest, I didn't find their use-cases terribly convincing. I'll go through them briefly here and explain why I'm a little sceptical, but I'll finish with a major difference between lambdas in Python and lambdas in Elm (or any other functional language). I'll state right now, that I'm not sure whether this distinguishing point is a point in favour of lambdas in Python or not.
 
