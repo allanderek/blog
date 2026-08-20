@@ -118,7 +118,7 @@ A final small point, I'm not sure why `location` is defaulted to `""` since that
 
 Okay so at least according to the five use-cases identified in the original post, I'm still not seeing a great need for lambdas in Python, just as I don't see them as particularly necessary in Elm. But they are a bit different. The distinguishing feature is that in Elm a lambda expression really is just a short hand for a `let` defined function with a name. In Python however, defined functions must use the `return` keyword to actually return something, whereas using a lambda the result of evaluating the expression is automatically the returned result of the function.
 
-I'm not sure whether this suggests they are more or less of an enhancement in Python in than in functional languages. On the one hand they are clearly introducing something new. On the other hand, it introduces a different behaviour that I could be a source of bugs, particularly in a dynamically typed language. Consider the first example in this article, the use of lambda expressions to define a named function:
+I'm not sure whether this suggests they are more or less of an enhancement in Python than in functional languages. On the one hand they are clearly introducing something new. On the other hand, it introduces a different behaviour that could be a source of bugs, particularly in a dynamically typed language. Consider the first example in this article, the use of lambda expressions to define a named function:
 
 
 ```Python
