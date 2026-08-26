@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Builds the site and checks every external link with lychee.
+# Internal links are the job of ./check-links-internal.sh
+# Run: ./check-links-external.sh   (extra arguments are passed to lychee)
+#
+# This one hits the network, so it is slow and occasionally wrong: hosts go
+# down, rate-limit, or block anything that is not a browser. Treat a failure
+# as "go and look", not as a build error. Hosts that are permanently hostile
+# to link checkers belong in .lycheeignore.
+set -uo pipefail
+
+if ! command -v lychee >/dev/null 2>&1; then
+  echo "lychee is not on PATH."
+  echo "It is listed in devenv.nix, so 'devenv shell' (or a direnv reload) should provide it."
+  echo "Otherwise: nix shell nixpkgs#lychee -c ./check-links-external.sh"
+  exit 127
+fi
+
+OUT=$(mktemp -d)
+trap 'rm -rf "$OUT"' EXIT
+
+echo "Building into $OUT"
+if hugo --destination "$OUT" >"$OUT/build.log" 2>&1; then
+  printf '  ok    hugo build exits 0\n'
+else
+  printf '  FAIL  hugo build exits 0\n'
+  grep '^ERROR' "$OUT/build.log" | head -5
+  echo
+  echo "Build failed; cannot check links."
+  exit 1
+fi
+echo
+
+# --scheme http/https limits lychee to external links: root-relative ones have
+# no scheme and are skipped. A browser user agent and accepting 403/429 cut
+# out most of the false positives from bot-blocking and rate limiting; a real
+# dead link almost always answers 404 or fails to connect.
+lychee \
+  --scheme http --scheme https \
+  --exclude-all-private \
+  --accept '200..=299,403,429' \
+  --user-agent 'Mozilla/5.0 (compatible; link-check for blog.poleprediction.com)' \
+  --max-concurrency 8 \
+  --timeout 20 \
+  --max-retries 2 \
+  --retry-wait-time 5 \
+  --cache --max-cache-age 2w \
+  "$@" \
+  "$OUT/**/*.html"

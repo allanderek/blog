@@ -2,6 +2,9 @@
 public
 resources
 
+# Written by ./check-links-external.sh
+.lycheecache
+
 # Generated sqlc files
 
 

@@ -1,0 +1,10 @@
+# Regular expressions for URLs ./check-links-external.sh should not check.
+# lychee reads this file automatically when run from the repository root.
+
+# Our own site: those links are checked properly, against the local build,
+# by ./check-links-internal.sh. Checking them here would only test whatever
+# is currently deployed.
+^https?://blog\.poleprediction\.com
+
+# Hosts that block link checkers rather than answering honestly. Add to this
+# list only after confirming by hand that the link is actually fine.

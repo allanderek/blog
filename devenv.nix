@@ -8,6 +8,7 @@
     pkgs.hugo
     pkgs.fd
     pkgs.sd
+    pkgs.lychee   # used by ./check-links-external.sh
     
   ];
 
