@@ -47,7 +47,7 @@ The following is not valid, because `y` is not in scope in the upper definition 
     x + y
 ```
 
-Could you use this? I've [written before](/posts/2021-02-17-missing-language-feature) about the missing language feature to remove a name from the scope. It would be nice to be able to use this in such a fashion. That missing feature is to allow you to update the model without fear of accidentally using the old (non-updated) model. As in:
+Could you use this? I've [written before](/posts/missing-language-feature/) about the missing language feature to remove a name from the scope. It would be nice to be able to use this in such a fashion. That missing feature is to allow you to update the model without fear of accidentally using the old (non-updated) model. As in:
 
 ```elm
 update message model =

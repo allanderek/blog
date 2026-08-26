@@ -4,7 +4,7 @@ date: 2016-03-16T18:02:32Z
 tags: ["python", "selenium", "testing"]
 ---
 Selenium is a great way to test web applications and it has Python bindings.
-I explained in a [previous post](link://slug/flask-+-coverage-analysis) how to
+I explained in a [previous post](/posts/flask-and-coverage-analysis/) how to
 set this up with coverage analysis.
 
 However, writing tests is non-trivial, in particular it is easy enough to write

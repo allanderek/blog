@@ -35,7 +35,7 @@ import Platform.Sub
 This is already a perfectly usable language. It's a little clunky, particulary with respect to infix operators.
 Everything needs to be qualified, and even module names cannot be aliased. So no more referring to `Json.Encode.Value` as `Encode.Value`.
 
-Let's deal with the first of these, everything must be qualified. First of all, most types and functions I [qualify already](/my-import-scheme).
+Let's deal with the first of these, everything must be qualified. First of all, most types and functions I [qualify already](/posts/my-import-scheme/).
 But suppose you're one of those people who do not like to write `Html.div` everywhere. That's fine, you can alias that yourself:
 
 ```elm

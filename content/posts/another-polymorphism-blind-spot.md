@@ -4,7 +4,7 @@ tags: ["programming", "elm"]
 date: 2021-04-02
 ---
 
-Yesterday I [detailed](/posts/2021-04-01-polymorphism-blind-spot) a simple fragment of code that is untyped in traditional Hindley-Milner type systems (such as that employed by Elm), but which is a perfectly reasonable bit of code. I think of this as a minor irritation and quite easy to live with. I term it a blind-spot of polymorphism, because in general I find that polymorphic Hindley-Milner style type systems map pretty well on to the types of programs that I *wish* to write. Aside from the issue of meta-programming, but that's quite a separate issue.
+Yesterday I [detailed](/posts/polymorphism-blind-spot/) a simple fragment of code that is untyped in traditional Hindley-Milner type systems (such as that employed by Elm), but which is a perfectly reasonable bit of code. I think of this as a minor irritation and quite easy to live with. I term it a blind-spot of polymorphism, because in general I find that polymorphic Hindley-Milner style type systems map pretty well on to the types of programs that I *wish* to write. Aside from the issue of meta-programming, but that's quite a separate issue.
 
 Anyway, today there is another blind-spot and this is more than a minor-irritation, although it doesn't come up all that **often**.
 

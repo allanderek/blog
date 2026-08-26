@@ -8,7 +8,7 @@ Programmers are good at following rules. Rules make for reducing the number of d
 
 This is why when we start using something it's easy to overuse it. Only pretty recently, around a year ago, I started using the *'right pizza'* operator (`|>`) in Elm. Predictably I started overusing it.
 
-When is the right pizza operator useful? I find for two reasons, one is chaining a bunch of operations, for example when used within the [builder-pattern](/posts/2021-01-02-builder-pattern), here is an example:
+When is the right pizza operator useful? I find for two reasons, one is chaining a bunch of operations, for example when used within the [builder-pattern](/posts/builder-pattern/), here is an example:
 
 ```elm
     in

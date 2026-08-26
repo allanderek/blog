@@ -5,8 +5,8 @@ tags: ["python", "coding style"]
 ---
 # Method Cascading
 
-Vasudev Ram has a thoughful [post about method chaining/cascading](http://jugad2.blogspot.co.uk/2016/02/examples-of-method-chaining-in-python.html)
-that I picked up from [planet python](http://planetpython.org/) in which he
+Vasudev Ram has a thoughful [post about method chaining/cascading](https://jugad2.blogspot.co.uk/2016/02/examples-of-method-chaining-in-python.html)
+that I picked up from [planet python](https://planetpython.org/) in which he
 basically argues for the use of method cascading. I'm going to disagree.
 Essentially, I simply don't understand any benefit of using cascading. It's a
 nice post though and includes some references to other method cascading links.

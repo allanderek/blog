@@ -4,7 +4,7 @@ tags: ["elm", "programming"]
 date: 2021-03-11
 ---
 
-Back looking Paul Graham's old posts from 20 years ago, and back to the [language design one](http://www.paulgraham.com/langdes.html). There is a section on pitfalls and the first pitfall is about clients:
+Back looking Paul Graham's old posts from 20 years ago, and back to the [language design one](https://www.paulgraham.com/langdes.html). There is a section on pitfalls and the first pitfall is about clients:
 
 > This is just a guess, but my guess is that the winning model for most applications will be purely server-based. Designing software that works on the assumption that everyone will have your client is like designing a society on the assumption that everyone will just be honest. It would certainly be convenient, but you have to assume it will never happen.
 

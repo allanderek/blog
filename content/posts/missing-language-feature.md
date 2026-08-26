@@ -6,7 +6,7 @@ date: 2021-02-17
 
 Today I'm going to talk about a language feature that I think is missing from **most** languages. I know of at least one in which it exists, I do not know of any *functional* langauges in which it exists. The language feature I'm talking about is the removal of a name from the scope. Let me first talk about a situation that is ripe for bugs, and then introduce the idea of removing a name from the scope so that you do not use it mistakenly.
 
-A common problem is using randomness in a functional language, I've [written about this before](/posts/2021-01-23-immutabilit-bugs) as being a source of bugs. The reason is, that using a pseudo random number generator with a seed, is actually a really nice problem for having some self-contained state, ie. an object. Without that, you have to remember to store the updated seed back on your model, if you fail to do that, then you will at some point use the same iteration of the pseudo-random function. So you might have something like the following in your `update` function in an Elm application:
+A common problem is using randomness in a functional language, I've [written about this before](/posts/immutabilit-bugs/) as being a source of bugs. The reason is, that using a pseudo random number generator with a seed, is actually a really nice problem for having some self-contained state, ie. an object. Without that, you have to remember to store the updated seed back on your model, if you fail to do that, then you will at some point use the same iteration of the pseudo-random function. So you might have something like the following in your `update` function in an Elm application:
 
 ```elm
 rollDice : Model -> Model

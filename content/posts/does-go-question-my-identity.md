@@ -4,7 +4,7 @@ tags: ["programming"]
 date: 2021-03-24
 ---
 
-As part of a discussion of back-end languages on the Elm discourse someone linked to a post (from 2014) regarding [why everyone hates go](https://npf.io/2014/10/why-everyone-hates-go/) by Nate Finch. The author links to a Paul Graham post [regarding identity](http://www.paulgraham.com/identity.html), and he links the two. So Paul's post states that people form identities regarding religion and politics and that's why it is so difficult to have a meaningful debate about either. Considering the alternative view point questions your identity. 
+As part of a discussion of back-end languages on the Elm discourse someone linked to a post (from 2014) regarding [why everyone hates go](https://npf.io/2014/10/why-everyone-hates-go/) by Nate Finch. The author links to a Paul Graham post [regarding identity](https://www.paulgraham.com/identity.html), and he links the two. So Paul's post states that people form identities regarding religion and politics and that's why it is so difficult to have a meaningful debate about either. Considering the alternative view point questions your identity. 
 
 The key point in Paul's post is:
 

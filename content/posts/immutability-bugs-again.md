@@ -4,7 +4,7 @@ tags: ["programming", "elm"]
 date: 2021-04-07
 ---
 
-Previously I've written about [immutability bugs](/posts/2021-01-23-immutabilit-bugs/) which are bugs that are more likely in an immutable language than a mutable one. I think these are relatively rare, but they do exist. A [good example](https://discourse.elm-lang.org/t/best-practice-for-updating-an-incremented-id-in-the-model/7208) has come up on the Elm discourse. 
+Previously I've written about [immutability bugs](/posts/immutabilit-bugs/) which are bugs that are more likely in an immutable language than a mutable one. I think these are relatively rare, but they do exist. A [good example](https://discourse.elm-lang.org/t/best-practice-for-updating-an-incremented-id-in-the-model/7208) has come up on the Elm discourse. 
 
 The person asking the question wants to create new unique identifiers for items in their model. To do this you can simply keep a count of the number of identifiers you have thus far created. So you can do something like the following:
 

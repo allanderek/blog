@@ -11,7 +11,7 @@ Python web application frameworks.
 
 ### Update
 
-I've updated this scheme and described the update [here](link://slug/update-flask+coverage).
+I've updated this scheme and described the update [here](/posts/update-flask-and-coverage/).
 
 ## tl;dr
 
@@ -31,9 +31,9 @@ It's a good idea to test the web applications you author. Most web application
 frameworks provide relatively solid means to do this. However, if you're doing
 browser automated functional tests against a live server I've found that getting
 [coverage](https://pypi.python.org/pypi/coverage) to work to be non-trivial. A quick search will reveal similar
-difficulties such as [this](http://stackoverflow.com/questions/23745370/setting-up-coverage-py-with-flask)
+difficulties such as [this](https://stackoverflow.com/questions/23745370/setting-up-coverage-py-with-flask)
 stack overflow question, which ultimately points to the [coverage documentation
-on sub-processes](http://coverage.readthedocs.org/en/latest/subprocess.html).
+on sub-processes](https://coverage.readthedocs.org/en/latest/subprocess.html).
 
 Part of the reason for this might be that the Flask-Testing extension provides
 live server testing class that starts your server in testing mode as part of
@@ -79,7 +79,7 @@ and reload `htmlcov/app_main_py.html` in your browser.
 ## Server process
 
 **Update:** The code in this section has been updated in the
-[update post](link://slug/update-flask+coverage) and in the
+[update post](/posts/update-flask-and-coverage/) and in the
 [example repository](https://github.com/allanderek/flask-coverage-example).
 
 In the [example repository](https://github.com/allanderek/flask-coverage-example)
@@ -193,7 +193,7 @@ example as I could.
 ### At the end of your tests
 
 **Update:** This section is now not required. See the
-[update post](link://slug/update-flask+coverage).
+[update post](/posts/update-flask-and-coverage/).
 
 Now for this `shutdown` to actually work, your test suite has to call access
 the `shutdown` route. There are many ways to write this and it will hugely

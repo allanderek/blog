@@ -3,7 +3,7 @@ title: List arguments and isinstance
 date: 2017-01-28T11:36:23Z
 tags: ["python", "isinstance", "lists", "containers"]
 ---
-More than a decade and a half ago, [Kragen Javier Sitaker](http://canonical.org/~kragen/) wrote a blog post [isinstance() considered harmful](http://canonical.org/~kragen/isinstance/), a lot of which I believe holds up pretty well today. It's well worth reading it in its entirety but the gist is that rather than testing a value against a specific type, you generally wish to check that a value confirms to a particular interface. Or if you prefer, using `isinstance` is imparting [nominative typing](http://wiki.c2.com/?NominativeAndStructuralTyping) in a language where duck typing is the convention.
+More than a decade and a half ago, [Kragen Javier Sitaker](http://canonical.org/~kragen/) wrote a blog post [isinstance() considered harmful](http://canonical.org/~kragen/isinstance/), a lot of which I believe holds up pretty well today. It's well worth reading it in its entirety but the gist is that rather than testing a value against a specific type, you generally wish to check that a value confirms to a particular interface. Or if you prefer, using `isinstance` is imparting [nominative typing](https://wiki.c2.com/?NominativeAndStructuralTyping) in a language where duck typing is the convention.
 
 I came across what I initially thought was a reasonable use of `isintance` and this post is about my attempts to remove the reliance on `isinstance`.
 

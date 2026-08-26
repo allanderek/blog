@@ -112,7 +112,7 @@ Now it's really impossible for the `LikePost` message to be instantiated without
 
 ## Avoid stale messages
 
-I've [written before](/posts/2021-02-16-stale-messages/) about stale messages. The problem is that you're basically duplicating some of the state of the model in the message, so if you're unfortunate and the model is updated and a second message is invoked before the view is re-rendered, this can lead to bugs. I've found that this can happen when a browser's auto-fill causes a bunch of update messages to be sent essentially simultaneously. In the scenario above, suppose you also want to update the number of likes on the post, something like this:
+I've [written before](/posts/stale-messages/) about stale messages. The problem is that you're basically duplicating some of the state of the model in the message, so if you're unfortunate and the model is updated and a second message is invoked before the view is re-rendered, this can lead to bugs. I've found that this can happen when a browser's auto-fill causes a bunch of update messages to be sent essentially simultaneously. In the scenario above, suppose you also want to update the number of likes on the post, something like this:
 
 ```elm
 update : Msg -> Model -> (Model, Cmd Msg)

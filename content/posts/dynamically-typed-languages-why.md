@@ -133,7 +133,7 @@ this bug. But it is still possible to achieve 100% code coverage (at
 the statement) level, and *not* catch this bug. Still, you have to try
 quite hard to arrange this.
 
-[Mutation testing](http://en.wikipedia.org/wiki/Mutation_testing),
+[Mutation testing](https://en.wikipedia.org/wiki/Mutation_testing),
 which tests your tests, rather than your implementation code, should
 catch this simple example (because it will mutate the condition
 `(a and b)` to be `(a or b)` which won't make any difference if your tests

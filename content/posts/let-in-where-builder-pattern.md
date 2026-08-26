@@ -6,7 +6,7 @@ date: 2021-03-18
 
 When I started programming in Elm I was already pretty fluent in Haskell and quite used to using the `$` operator, which in Elm is written as `<|` and sometimes called the *'left pizza'* operator. Somehow, over time I started to use the `|>` (*right pizza*) operator more and more.
 
-I think this first came about through the use of the [builder pattern](/posts/2021-01-02-builder-pattern) which very naturally maps the building up of a data structure which thus just got me comfortable with post-fix application of a function. 
+I think this first came about through the use of the [builder pattern](/posts/builder-pattern/) which very naturally maps the building up of a data structure which thus just got me comfortable with post-fix application of a function. 
 
 Once you're comfortable with it, I often find the use of the `|>` operator allows you to put the *important* thing first. For example, I might write something like the following:
 

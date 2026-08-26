@@ -6,7 +6,7 @@ date: 2021-03-10
 
 It's always worth examining the things you love for the reasons why. Could something you think is improving your productivity actually be harming it? Perhaps in a way that makes it feel like you're being productive.
 
-Continuing the look at some of Paul Graham's older posts, [this one regarding object-oriented programming languages](http://www.paulgraham.com/noop.html) popped up on my feed. I think it stands up pretty well over the previous two decades. I wouldn't say object-oriented programming has been debunked, but it has certainly lost some of its hype. I thought about Elm when reading the following third point:
+Continuing the look at some of Paul Graham's older posts, [this one regarding object-oriented programming languages](https://www.paulgraham.com/noop.html) popped up on my feed. I think it stands up pretty well over the previous two decades. I wouldn't say object-oriented programming has been debunked, but it has certainly lost some of its hype. I thought about Elm when reading the following third point:
 
 > Object-oriented programming generates a lot of what looks like work. Back in the days of fanfold, there was a type of programmer who would only put five or ten lines of code on a page, preceded by twenty lines of elaborately formatted comments. Object-oriented programming is like crack for these people: it lets you incorporate all this scaffolding right into your source code. Something that a Lisp hacker might handle by pushing a symbol onto a list becomes a whole file of classes and methods. So it is a good tool if you want to convince yourself, or someone else, that you are doing a lot of work.
 

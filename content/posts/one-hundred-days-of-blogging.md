@@ -8,7 +8,7 @@ So I started this blog on the first of January 2021, and have blogged every sing
 
 But it's surprising, once you're pretty much always looking out for things to blog about, topics mostly just "come up" in day-to-day discourse. The hardest days were mostly the weekends, when I wasn't necessarily doing any programming anyway. 
 
-There are only a handful of posts that I'm not very proud of, I think my worse one was a dumb idea about [mutation typing](/posts/2021-02-18-mutation-typing), that came from having nothing to write about and just trying to *write* something. However, there are a few much better posts that came out of the same process.
+There are only a handful of posts that I'm not very proud of, I think my worse one was a dumb idea about [mutation typing](/posts/mutation-typing/), that came from having nothing to write about and just trying to *write* something. However, there are a few much better posts that came out of the same process.
 
 I'm going to *try* to keep blogging, but not every day. I would like to keep posts, short, but I think I will try to make them more measured. So I think what I'll try to do going forward is to *write* everyday, but not necessarily *publish* a post everyday. Some posts will take 2-3 days to write, whilst others I will more readily abandon. So I think I'm aiming for about one post per week. However, I can definitely see that I might just give up entirely, when I don't have a strict goal. We will see.
 

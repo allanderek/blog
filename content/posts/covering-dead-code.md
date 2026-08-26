@@ -4,7 +4,7 @@ date: 2017-01-03T12:04:24Z
 tags: [ "python", "coverage","maintenance","dead code" ]
 ---
 
-Dougal Matthews has written a [blog post](http://www.dougalmatthews.com/2016/Dec/16/finding-dead-code-with-vulture/)
+Dougal Matthews has written a [blog post](https://www.dougalmatthews.com/2016/Dec/16/finding-dead-code-with-vulture/)
 detailing how [Vulture](https://pypi.python.org/pypi/vulture) can be used to find some dead code.
 For me this was an important reminder not to rely on [coverage analysis](https://pypi.python.org/pypi/coverage/)
 to detect dead code and remove it from the your maintenance burden. More generally, whilst I adore
@@ -56,7 +56,7 @@ case you should have some automated tests which should invoke the method/class.
 
 Can generally be done by coverage analysis. There are however some tricky situations
 which were described in the above mentioned
-[blog post](http://www.dougalmatthews.com/2016/Dec/16/finding-dead-code-with-vulture/).
+[blog post](https://www.dougalmatthews.com/2016/Dec/16/finding-dead-code-with-vulture/).
 Essentially you may add a unit-test to test a particular method, which later becomes
 unused by the actual application but is still invoked by the unit test.
 

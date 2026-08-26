@@ -115,7 +115,7 @@ Finally, finding such code in a code-base is well worth refactoring. The odd bit
 
 ## Final irrelevant aside
 
-In a [previous post](link://slug/if-as-syntax-possibility) I made a suggestion about `if-as` syntax. I'm still against this idea, however this is the sort of situation it would (potentially) benefit. Our second syntax possibility could have been:
+In a [previous post](/posts/if-as-syntax-possibility/) I made a suggestion about `if-as` syntax. I'm still against this idea, however this is the sort of situation it would (potentially) benefit. Our second syntax possibility could have been:
 
 ```python
     host_name = self.server.host_name as hn if hn is not None else self.connection.getsockname()[0]

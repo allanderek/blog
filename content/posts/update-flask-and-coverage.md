@@ -5,7 +5,7 @@ tags: ["python", "selenium", "testing", "coverage"]
 ---
 # Update: Flask+Coverage Analysis
 
-In a [previous post](link://slug/flask-+-coverage-analysis)
+In a [previous post](/posts/flask-and-coverage-analysis/)
 I demonstrated how to get `coverage` analysis working for a Flask web application
 in a relatively simple manner. In the section *"At then end of your tests"* I
 stated that you needed your tests to clean-up by telling the server to shutdown.
@@ -51,3 +51,4 @@ Doing so means you can just write your tests without any need to worry about
 shutting down the server.
 The [example repository](https://github.com/allanderek/flask-coverage-example)
 has been appropriately updated.
+

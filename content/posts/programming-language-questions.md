@@ -4,9 +4,9 @@ tags: ["programming", "elm"]
 date: 2021-03-09
 ---
 
-I'm not sure if it is intentional or something to do with the RSS configuration on his site but Paul Graham's RSS feed is going through a redux of posts from 2001. Some of these are interesting to read with the 20 years worth of perspective. Back in 2001 [he thought that Java didn't smell great](http://www.paulgraham.com/javacover.html), a point he made without trying the language. I think for the most part this post has stood up well to time other than the frequent use of Perl as a counter-balance. 
+I'm not sure if it is intentional or something to do with the RSS configuration on his site but Paul Graham's RSS feed is going through a redux of posts from 2001. Some of these are interesting to read with the 20 years worth of perspective. Back in 2001 [he thought that Java didn't smell great](https://www.paulgraham.com/javacover.html), a point he made without trying the language. I think for the most part this post has stood up well to time other than the frequent use of Perl as a counter-balance. 
 
-Today there is a [post regarding programming language ideas](http://www.paulgraham.com/langdes.html), I thought I would go through each of the head-lined points and put Elm into that context. 
+Today there is a [post regarding programming language ideas](https://www.paulgraham.com/langdes.html), I thought I would go through each of the head-lined points and put Elm into that context. 
 
 
 ### Programming Languages Are for People.
@@ -15,11 +15,11 @@ I think Elm does pretty well here, he doesn't specifically talk about error mess
 
 > And when I say languages have to be designed to suit human weaknesses, I don't mean that languages have to be designed for bad programmers. **In fact I think you ought to design for the best programmers**, but even the best programmers have limitations.
 
-Elm is pretty hardcore designed for beginners, beginners to Elm rather than beginner programmers, although implied in that is beginners to functional programming. All of this is not to equate beginners with *'bad'*. Nevertheless, I do feel that at times Elm's design neglects the experts. I have [suggested](/posts/2021-01-18-terser-error-message/) a `--terse` flag to give shorter error messages aimed at veteran Elm programmers, and it's one of a few points in which veteran Elm programmers could be better served.
+Elm is pretty hardcore designed for beginners, beginners to Elm rather than beginner programmers, although implied in that is beginners to functional programming. All of this is not to equate beginners with *'bad'*. Nevertheless, I do feel that at times Elm's design neglects the experts. I have [suggested](/posts/terser-error-message/) a `--terse` flag to give shorter error messages aimed at veteran Elm programmers, and it's one of a few points in which veteran Elm programmers could be better served.
 
 ### Design for Yourself and Your Friends.
 
-I think Elm does pretty well here too. I think I understand the point he is making, I think Go has fallen into the trap that he speaks of. I would, perhaps erroneously, like to think of myself as a decent enough programmer, and I believe Go was explicitly designed to be 'easy'. So perhaps that's why I cannot [grasp why Go is popular](/posts/2021-02-22-go-not-for-me/). Anyway, as far as I can tell Elm does okay here.
+I think Elm does pretty well here too. I think I understand the point he is making, I think Go has fallen into the trap that he speaks of. I would, perhaps erroneously, like to think of myself as a decent enough programmer, and I believe Go was explicitly designed to be 'easy'. So perhaps that's why I cannot [grasp why Go is popular](/posts/go-not-for-me/). Anyway, as far as I can tell Elm does okay here.
 
 ### Give the Programmer as Much Control as Possible.
 
@@ -48,4 +48,4 @@ I contrast this with Go which I believe has focussed on a couple of *'fancy'* fe
 
 ## Conclusion
 
-I think this now twenty year old post stands up to the ravages of time pretty well. I don't agree with everything in it, but they are nonetheless valid points. I also think Elm has done pretty well (presumably accidentally) in adhering to many of these principles. It is clearly a language that agrees with me, as the points in this post that I take issue with are the same points that Elm has not stuck by. There is more at the [original post](http://www.paulgraham.com/langdes.html), including *Open problems* and *Little known secrets* that I may cover in other posts.
+I think this now twenty year old post stands up to the ravages of time pretty well. I don't agree with everything in it, but they are nonetheless valid points. I also think Elm has done pretty well (presumably accidentally) in adhering to many of these principles. It is clearly a language that agrees with me, as the points in this post that I take issue with are the same points that Elm has not stuck by. There is more at the [original post](https://www.paulgraham.com/langdes.html), including *Open problems* and *Little known secrets* that I may cover in other posts.

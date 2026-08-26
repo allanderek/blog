@@ -67,5 +67,5 @@ elements =
     ]
 ```
 
-Similarly to the situation I [described yesterday](/posts/2021-01-12-elm-indent-two-four/) although I've sort of ended up arguing for this style I cannot quite make myself prefer it.
+Similarly to the situation I [described yesterday](/posts/elm-indent-two-four/) although I've sort of ended up arguing for this style I cannot quite make myself prefer it.
 

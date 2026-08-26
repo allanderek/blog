@@ -37,7 +37,7 @@ update message model =
         ...
 ```
 
-There are a couple of solutions to this, for example perhaps you should [factor out the messages](/posts/2021-02-03-splitting-up-update) which update only the comment form, or another solution is to avoid the nested record in the first place. Just have all of the comment form fields on the actual main model. If you need to restrict a given function's input for some reason (usually to reuse elsewhere) then you can use extensible record update. So in this case you have:
+There are a couple of solutions to this, for example perhaps you should [factor out the messages](/posts/splitting-up-update/) which update only the comment form, or another solution is to avoid the nested record in the first place. Just have all of the comment form fields on the actual main model. If you need to restrict a given function's input for some reason (usually to reuse elsewhere) then you can use extensible record update. So in this case you have:
 
 
 ```elm

@@ -4,9 +4,9 @@ date: 2017-02-20T16:27:27Z
 tags: ["python", "flask", "tests", "coverage"]
 ---
 I have written before about Flask and obtaining test coverage results
-[here](link://slug/flask-+-coverage-analysis)
+[here](/posts/flask-and-coverage-analysis/)
 and with an update
-[here](link://slug/update-flask+coverage).
+[here](/posts/update-flask-and-coverage/).
 This is pretty trivial if you're writing unit tests that directly call the application, but if you actually want to write tests which animate a browser, for example with selenium, then it's a little more complicated, because the browser/test code has to run concurrently with the server code.
 
 Previously I would have the Flask server run in a separate process and run 'coverage' over that process. This was slightly unsatisfying, partly because you sometimes want coverage analysis of your actual tests. Test suites, just like application code, can grow in size with many utility functions and imports etc. which may eventually end up not actually being used. So it is good to know that you're not needlessly maintaining some test code which is not actually invoked.
