@@ -104,7 +104,10 @@ source_file() {
   [ -n "$hit" ] && echo "$hit"
 }
 
-n_internal=0 n_external=0 n_broken=0
+# n_internal counts root-relative links; n_checked also counts the malformed
+# kinds (scheme, relative), which are checked here but are not internal links
+# in the sense the "Checked ..." line above reports.
+n_internal=0 n_external=0 n_broken=0 n_checked=0
 declare -a broken_urls broken_reasons broken_pages
 
 while IFS=$'\t' read -r kind url page; do
@@ -112,16 +115,19 @@ while IFS=$'\t' read -r kind url page; do
     external) n_external=$((n_external + 1)) ;;
     internal)
       n_internal=$((n_internal + 1))
+      n_checked=$((n_checked + 1))
       if ! resolve "$url" >/dev/null; then
         broken_urls+=("$url"); broken_reasons+=("no such page in the build"); broken_pages+=("$page")
         n_broken=$((n_broken + 1))
       fi
       ;;
     scheme)
+      n_checked=$((n_checked + 1))
       broken_urls+=("$url"); broken_reasons+=("unknown URL scheme"); broken_pages+=("$page")
       n_broken=$((n_broken + 1))
       ;;
     relative)
+      n_checked=$((n_checked + 1))
       # Resolve against the directory of the page it appears on.
       dir=$(dirname "$page")
       if ! resolve "$dir/$url" >/dev/null; then
@@ -139,9 +145,22 @@ echo
 printf 'Checked %s links (%s unique internal, %s unique external, not checked here)\n' \
   "$total" "$n_internal" "$n_external"
 
+# Counts last, so the verdict does not need scrolling back for. The broken
+# links themselves are already listed immediately above, so they are counted
+# here rather than repeated.
+summary() {
+  local noun=links
+  [ "$n_checked" -eq 1 ] && noun=link
+  echo
+  echo "----------------------------------------------------------------"
+  printf '%s unique %s checked: %s ok, %s broken\n' \
+    "$n_checked" "$noun" "$((n_checked - n_broken))" "$n_broken"
+}
+
 if [ "$n_broken" -eq 0 ]; then
   echo
   echo "No broken internal links."
+  summary
   exit 0
 fi
 
@@ -155,4 +174,5 @@ for i in "${!broken_urls[@]}"; do
   [ -n "$src" ] && printf '    in: %s\n' "$src"
 done
 
+summary
 exit 1

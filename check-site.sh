@@ -5,15 +5,36 @@ set -uo pipefail
 
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
-fail=0
+
+passed=0
+failed=0
+failures=()
+
+# pass/fail <description>: record a result. Used by check(), and directly for
+# the build check, which reports its own output rather than an expression.
+pass() { printf '  ok    %s\n' "$1"; passed=$((passed + 1)); }
+fail() { printf '  FAIL  %s\n' "$1"; failed=$((failed + 1)); failures+=("$1"); }
 
 # check <description> <shell expression>
 check() {
   if eval "$2" >/dev/null 2>&1; then
-    printf '  ok    %s\n' "$1"
+    pass "$1"
   else
-    printf '  FAIL  %s\n' "$1"
-    fail=1
+    fail "$1"
+  fi
+}
+
+# Counts, and the failures repeated, so neither needs scrolling back for.
+summary() {
+  local total=$((passed + failed)) noun=checks
+  [ "$total" -eq 1 ] && noun=check
+  echo
+  echo "----------------------------------------------------------------"
+  printf '%d %s: %d passed, %d failed\n' "$total" "$noun" "$passed" "$failed"
+  if [ "$failed" -gt 0 ]; then
+    echo
+    echo "Failed:"
+    printf '  %s\n' "${failures[@]}"
   fi
 }
 
@@ -32,12 +53,13 @@ before() {
 
 echo "Building (production) into $OUT"
 if hugo --destination "$OUT" >"$OUT/build.log" 2>&1; then
-  printf '  ok    hugo build exits 0\n'
+  pass "hugo build exits 0"
 else
-  printf '  FAIL  hugo build exits 0\n'
+  fail "hugo build exits 0"
   grep '^ERROR' "$OUT/build.log" | head -5
   echo
   echo "Build failed; skipping remaining checks."
+  summary
   exit 1
 fi
 
@@ -54,7 +76,7 @@ check "nav links to the archive"       "grep -qE 'href=\"[^\"]*/archives/\"' $OU
 # baseURL, so both match even with no intro at all.
 check "intro prose present"            "grep -q 'programmer in Edinburgh' $OUT/index.html"
 check "intro links to GitHub"          "grep -q 'href=\"https://github.com/allanderek\"' $OUT/index.html"
-check "intro links to the CV"          "grep -q 'href=\"/cv.pdf\"' $OUT/index.html"
+check "intro links to the CV"          "grep -q 'href=\"/cv/\"' $OUT/index.html"
 check "intro links to Pole Prediction" "grep -q 'href=\"https://www.poleprediction.com\"' $OUT/index.html"
 check "no leftover placeholder text"   "! grep -q 'PLACEHOLDER' $OUT/index.html"
 check "intro states availability"      "grep -qi 'available for' $OUT/index.html"
@@ -103,7 +125,10 @@ check "signature on a post"            "grep -q '<aside class=\"signature\"' \$(
 check "signature on the CV page"       "grep -q '<aside class=\"signature\"' $OUT/cv/index.html"
 check "signature on the archive"       "grep -q '<aside class=\"signature\"' $OUT/archives/index.html"
 check "no signature on consulting"     "! grep -q '<aside class=\"signature' $OUT/consulting/index.html"
-check "signature links to consulting"  "grep -A6 '<aside class=\"signature\"' \$(ls -d $OUT/posts/*/index.html | head -1) | grep -q 'href=\"/consulting/\"'"
+# The window has to clear the avatar and the .signature-body wrapper, which
+# sit between the opening tag and the link.
+check "signature links to consulting"  "grep -A12 '<aside class=\"signature\"' \$(ls -d $OUT/posts/*/index.html | head -1) | grep -q 'href=\"/consulting/\"'"
 check "signature styles are bundled"   "grep -rq '.signature' $OUT/assets/css/"
 
-exit $fail
+summary
+[ "$failed" -eq 0 ]

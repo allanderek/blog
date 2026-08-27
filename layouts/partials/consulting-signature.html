@@ -13,13 +13,23 @@
 {{- $ctx := .ctx }}
 {{- $inline := .inline }}
 {{- if and (ne $ctx.RelPermalink "/consulting/") (or $inline (not $ctx.IsHome)) }}
+{{- /* Displayed at 56px, resized to 112 so it stays sharp on a 2x screen.
+       alt is empty on purpose: the text alongside already names the author,
+       so describing the portrait would announce "Allan Clark" twice. */}}
+{{- $portrait := resources.Get "images/portrait.png" }}
 <aside class="signature{{ if $inline }} signature-inline{{ end }}" aria-label="About the author">
-    <p class="signature-text">
-        <strong>Allan Clark</strong> &mdash; I write this blog, and I&rsquo;m available for
-        hire: Elm contract development, and code review of existing codebases in most languages.
-    </p>
-    <p class="signature-link">
-        See <a href="/consulting/">consulting.</a>
-    </p>
+    {{- with $portrait }}
+    {{- $small := .Resize "112x png" }}
+    <img class="signature-avatar" src="{{ $small.RelPermalink }}" alt="" width="56" height="56">
+    {{- end }}
+    <div class="signature-body">
+        <p class="signature-text">
+            <strong>Allan Clark</strong> &mdash; I write this blog, and I&rsquo;m available for
+            hire: Elm contract development, and code review of existing codebases in most languages.
+        </p>
+        <p class="signature-link">
+            See <a href="/consulting/">consulting.</a>
+        </p>
+    </div>
 </aside>
 {{- end }}

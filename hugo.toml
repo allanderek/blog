@@ -8,6 +8,15 @@ theme = 'papermod'
   description = "The thoughts of a programmer, heavily slanted towards development in Elm, but occasionally more general programming."
   mainSections = ["posts"]
 
+# Favicons live in static/favicons/ rather than loose in the site root.
+# The theme falls back to root-level names (favicon.ico, favicon-16x16.png,
+# ...) when these are unset, which is why they 404'd before.
+[params.assets]
+  favicon = "/favicons/favicon.ico"
+  favicon16x16 = "/favicons/favicon-16x16.png"
+  favicon32x32 = "/favicons/favicon-32x32.png"
+  apple_touch_icon = "/favicons/apple-touch-icon.png"
+
 [menu]
   [[menu.main]]
     name = "Archive"

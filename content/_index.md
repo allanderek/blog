@@ -12,4 +12,8 @@
 I'm a programmer in Edinburgh. I write here mostly about programming languages and their features; types, laziness, syntax
 design, and how little evidence we actually have for the things we believe about them. I think many of my posts do not take a strong position or if they do I end up arguing against it.
 
+I am currently interested in a new position, if you are hiring, please [see my CV](/cv/).
+
+Unrelated to most things here, but if you're interested in sports predictions I run a prediction game for Formula One and Formula E races/seasons.
+We also have occasional over/under questions mostly for football. See [poleprediction](https://www.poleprediction.com).
 
