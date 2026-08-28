@@ -32,7 +32,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: 0.139.0
+      # Keep in step with the hugo in devenv.nix: building production on a much
+      # older Hugo than the one used locally hides breaking changes until a
+      # local upgrade suddenly fails a build that CI was still passing.
+      HUGO_VERSION: 0.165.0
     steps:
       - name: Install Hugo CLI
         run: |
