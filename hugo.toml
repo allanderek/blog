@@ -1,7 +1,6 @@
 baseURL = 'https://blog.poleprediction.com'
 languageCode = 'en-us'
 title = "Allanderek's blog"
-theme = 'papermod'
 
 [params]
   author = "Allan Clark"
