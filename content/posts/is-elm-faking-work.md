@@ -1,6 +1,6 @@
 ---
 title: "Is Elm faking work"
-tags: ["programming", "elm"]
+tags: ["programming", "Elm"]
 date: 2021-03-10
 ---
 

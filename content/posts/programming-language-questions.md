@@ -1,6 +1,6 @@
 ---
 title: "Paul Grahams's Programming Language Questions"
-tags: ["programming", "elm"]
+tags: ["programming", "Elm"]
 date: 2021-03-09
 ---
 

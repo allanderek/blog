@@ -1,6 +1,6 @@
 ---
 title: "Elm records and let declarations"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-01-22
 ---
 

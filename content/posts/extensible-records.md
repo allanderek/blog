@@ -1,6 +1,6 @@
 ---
 title: "Elm extensible record syntax and warnings"
-tags: ["elm", "syntax", "maintenance"]
+tags: ["Elm", "syntax", "maintenance"]
 date: 2021-01-05
 ---
 

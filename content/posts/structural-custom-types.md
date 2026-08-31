@@ -1,6 +1,6 @@
 ---
 title: Structural Custom Types
-tags: ["elm", "gren", "programming"]
+tags: ["Elm", "gren", "programming"]
 date: 2022-06-29
 featured: true
 featuredWeight: 70

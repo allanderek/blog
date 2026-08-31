@@ -1,6 +1,6 @@
 ---
 title: "Unrelated bar usages"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-02-27
 ---
 

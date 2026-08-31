@@ -1,6 +1,6 @@
 ---
 title: "Stacks and Laziness"
-tags: [programming, elm]
+tags: [programming, Elm]
 date: 2025-11-12T10:46:02+00:00
 featured: true
 featuredWeight: 60

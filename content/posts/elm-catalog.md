@@ -1,6 +1,6 @@
 ---
 title: "Elm catalog"
-tags: ["elm"]
+tags: ["Elm"]
 date: 2021-01-04
 ---
 

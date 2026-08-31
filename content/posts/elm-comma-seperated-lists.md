@@ -1,6 +1,6 @@
 ---
 title: "Elm and comma separated lists"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-01-13
 ---
 

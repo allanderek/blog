@@ -1,6 +1,6 @@
 ---
 title: "Small functions and Elm"
-tags: [programming, elm]
+tags: [programming, Elm]
 date: 2025-11-17T10:40:47+00:00
 featured: true
 featuredWeight: 20

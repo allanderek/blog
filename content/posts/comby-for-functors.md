@@ -1,6 +1,6 @@
 ---
 title: "Functors revisted with comby"
-tags: ["elm", "programming"]
+tags: ["Elm", "programming"]
 date: 2025-07-02
 ---
 

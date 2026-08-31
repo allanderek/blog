@@ -1,6 +1,6 @@
 ---
 title: "Left-to-right programming and where syntax"
-tags: [elm, programming]
+tags: [Elm, programming]
 date: 2025-08-19T11:48:17+00:00
 ---
 

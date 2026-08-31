@@ -1,6 +1,6 @@
 ---
 title: "Elm errors with filenames"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-01-16
 ---
 

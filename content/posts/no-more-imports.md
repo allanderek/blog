@@ -2,7 +2,7 @@
 title: No more imports
 description: Do we really need imports?
 date: 2022-10-06
-tags: [elm, gren, programming, program structure]
+tags: [Elm, gren, programming, program structure]
 ---
 
 Imports in most languages always seem like a bit of an add-on, a separate language to the actual language.

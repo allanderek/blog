@@ -1,6 +1,6 @@
 ---
 title: "Let signatures"
-tags: ["elm", "programming"]
+tags: ["Elm", "programming"]
 date: 2021-05-29
 ---
 

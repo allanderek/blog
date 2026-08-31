@@ -1,6 +1,6 @@
 ---
 title: "Elm - Minor imports syntax tweak"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-01-20
 ---
 

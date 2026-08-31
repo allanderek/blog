@@ -1,6 +1,6 @@
 ---
 title: "Needless do notation"
-tags: [programming, elm, haskell]
+tags: [programming, Elm, Haskell]
 date: 2025-09-18T14:25:21+00:00
 ---
 

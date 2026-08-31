@@ -1,6 +1,6 @@
 ---
 title: "Elm input states"
-tags: ["elm", "programming"]
+tags: ["Elm", "programming"]
 date: 2021-03-30
 ---
 

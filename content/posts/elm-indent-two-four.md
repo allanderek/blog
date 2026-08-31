@@ -1,6 +1,6 @@
 ---
 title: "Indent with two or four spaces"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-01-12
 ---
 

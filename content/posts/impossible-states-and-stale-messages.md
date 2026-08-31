@@ -1,6 +1,6 @@
 ---
 title: "Impossible states and stale messages"
-tags: ["programming", "elm"]
+tags: ["programming", "Elm"]
 date: 2021-03-08
 ---
 

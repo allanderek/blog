@@ -1,6 +1,6 @@
 ---
 title: "Lambdas again"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-01-30
 ---
 

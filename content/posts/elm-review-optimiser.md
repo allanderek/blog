@@ -1,6 +1,6 @@
 ---
 title: "Elm-review as an optimiser"
-tags: ["programming", "elm"]
+tags: ["programming", "Elm"]
 date: 2021-03-16
 ---
 

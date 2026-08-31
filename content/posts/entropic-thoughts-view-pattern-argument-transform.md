@@ -1,6 +1,6 @@
 ---
 title: "Entropic Thoughts: ViewPattern Argument Transform"
-tags: [ programming, types, haskell, elm ]
+tags: [ programming, types, Haskell, Elm ]
 date: 2025-10-08T11:16:46+00:00
 ---
 

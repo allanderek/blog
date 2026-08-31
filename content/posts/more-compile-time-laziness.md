@@ -1,6 +1,6 @@
 ---
 title: "More compile time laziness"
-tags: ["elm", "compilation"]
+tags: ["Elm", "compilation"]
 date: 2021-01-26
 ---
 

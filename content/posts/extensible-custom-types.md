@@ -1,6 +1,6 @@
 ---
 title: "Extensible custom types in Elm"
-tags: ["elm", "syntax"]
+tags: ["Elm", "syntax"]
 date: 2021-01-17
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Lambdas (again) and def syntax"
-tags: [ programming, elm, syntax ]
+tags: [ programming, Elm, syntax ]
 date: 2026-08-26T10:15:18+00:00
 ---
 

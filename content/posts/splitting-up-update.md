@@ -1,6 +1,6 @@
 ---
 title: "Splitting Elm messages"
-tags: ["elm", "syntax", "programming"]
+tags: ["Elm", "syntax", "programming"]
 date: 2021-02-03
 ---
 

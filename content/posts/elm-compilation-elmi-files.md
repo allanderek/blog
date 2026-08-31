@@ -1,6 +1,6 @@
 ---
 title: "Elm compilation time with large records"
-tags: [programming, elm, compilation]
+tags: [programming, Elm, compilation]
 date: 2025-11-04T14:28:00+00:00
 ---
 

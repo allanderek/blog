@@ -1,6 +1,6 @@
 ---
 title: "SimulatedHttp, functors and sed"
-tags: ["elm", "programming"]
+tags: ["Elm", "programming"]
 date: 2022-03-11
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Link: Elmi bytes decoders for elmi/elmo files"
-tags: [programming, elm, compilation]
+tags: [programming, Elm, compilation]
 date: 2025-11-12T10:37:42+00:00
 ---
 

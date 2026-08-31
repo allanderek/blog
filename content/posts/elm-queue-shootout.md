@@ -1,6 +1,6 @@
 ---
 title: "Link: Elm Queue Shootout"
-tags: [ programming, types, elm ]
+tags: [ programming, types, Elm ]
 date: 2025-10-05T14:11:30+00:00
 ---
 
