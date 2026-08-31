@@ -1,6 +1,6 @@
 ---
 title: "LLMs and code duplication"
-tags: [ A.I., llms, productivity]
+tags: [ A.I., LLMs, productivity]
 date: 2025-12-16T19:19:01+00:00
 ---
 

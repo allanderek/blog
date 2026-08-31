@@ -1,6 +1,6 @@
 ---
 title: "A.I. Water usage - Empire of A.I."
-tags: [ A.I., llms]
+tags: [ A.I., LLMs]
 date: 2025-11-03T10:42:35+00:00
 ---
 

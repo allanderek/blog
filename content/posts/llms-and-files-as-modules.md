@@ -1,6 +1,6 @@
 ---
 title: "AI agent programming and files as  modules"
-tags: ["compilation", "language-design", "llms", "agents" ]
+tags: ["compilation", "language-design", "LLMs", "agents" ]
 date: 2025-07-03
 ---
 
