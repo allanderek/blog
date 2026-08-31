@@ -51,6 +51,36 @@ before() {
   [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ]
 }
 
+# The newest post, taken from the Atom feed's first entry. The feed template
+# sorts by date, so this tracks new posts on its own and needs no editing here.
+newest_slug() {
+  sed -n '/<entry>/,/<\/entry>/p' "$OUT/rss/index.xml" \
+    | grep -o '<id>[^<]*</id>' | head -1 | sed 's|.*/posts/||; s|/</id>||'
+}
+
+# The post the home page's Recent list leads with.
+first_recent_slug() {
+  sed -n '/id="recent"/,/<\/ul>/p' "$OUT/index.html" \
+    | grep -o 'href="/posts/[^"]*"' | head -1 | sed 's|href="/posts/||; s|/"$||'
+}
+
+# Cross-checks two independently rendered views of the same ordering: a template
+# change that broke the Recent sort but left the feed alone would be caught here.
+# Guarded so an empty feed fails rather than passing vacuously, the same trap
+# before() documents above: 'grep -q ""' matches everything.
+leads_with_newest() {
+  local a b
+  a=$(newest_slug)
+  b=$(first_recent_slug)
+  [ -n "$a" ] && [ "$a" = "$b" ]
+}
+
+archive_lists_newest() {
+  local a
+  a=$(newest_slug)
+  [ -n "$a" ] && grep -q "$a" "$OUT/archives/index.html"
+}
+
 echo "Building (production) into $OUT"
 if hugo --destination "$OUT" >"$OUT/build.log" 2>&1; then
   pass "hugo build exits 0"
@@ -67,7 +97,7 @@ check "no ERROR lines in build output" "! grep -q '^ERROR' $OUT/build.log"
 
 check "archive page exists"            "test -f $OUT/archives/index.html"
 check "archive lists a 2016 post"      "grep -q 'selenium-and-casper' $OUT/archives/index.html"
-check "archive lists a 2026 post"      "grep -q 'link-danluu-pl-token-efficiency' $OUT/archives/index.html"
+check "archive lists the newest post"  "archive_lists_newest"
 # PaperMod renders menu URLs through absLangURL, so the nav href is absolute.
 check "nav links to the archive"       "grep -qE 'href=\"[^\"]*/archives/\"' $OUT/index.html"
 
@@ -83,14 +113,14 @@ check "intro states availability"      "grep -qi 'available for' $OUT/index.html
 check "stray _readme post is gone"     "! test -d $OUT/posts/_readme"
 
 check "home has a Recent section"      "grep -q 'id=\"recent\"' $OUT/index.html"
-check "home shows the newest post"     "grep -q 'link-danluu-pl-token-efficiency' $OUT/index.html"
+check "home leads with the newest post" "leads_with_newest"
 check "home shows exactly 8 recent"    "test \$(grep -c 'class=\"home-recent-item\"' $OUT/index.html) -eq 8"
 check "home links to all posts"        "grep -qE 'All [0-9]+ posts' $OUT/index.html"
 check "home is not the full post list" "test \$(grep -c 'post-entry' $OUT/index.html) -eq 0"
 
 check "home has a Start here section"  "grep -q 'id=\"start-here\"' $OUT/index.html"
-check "10 featured posts listed"       "test \$(grep -c 'class=\"home-featured-item\"' $OUT/index.html) -eq 10"
-check "10 blurbs listed"               "test \$(grep -c 'class=\"home-blurb\"' $OUT/index.html) -eq 10"
+check "11 featured posts listed"       "test \$(grep -c 'class=\"home-featured-item\"' $OUT/index.html) -eq 11"
+check "11 blurbs listed"               "test \$(grep -c 'class=\"home-blurb\"' $OUT/index.html) -eq 11"
 check "Ladybird is featured"           "grep -q 'ladybird-and-strong-static-typing' $OUT/index.html"
 check "Mo Gawdat is featured"          "grep -q 'mo-gawdat-diary-of-a-ceo' $OUT/index.html"
 # The real ordering test: Mo Gawdat (2026) is newer than Ladybird (2025), so
