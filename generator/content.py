@@ -95,3 +95,15 @@ def load_posts(root: Path, now: datetime | None = None) -> list[Post]:
     posts = [p for p in posts if not p.draft and p.date <= now]
     posts.sort(key=lambda p: p.date, reverse=True)
     return posts
+
+def load_index_body(path: Path) -> str:
+    """content/_index.md carries the home page's intro prose, but -- unlike
+    every real post -- it has no `date:` key, so it cannot go through
+    parse_post (which does `meta["date"]` and is meant to raise on exactly
+    that). Strip the front matter the same way parse_post does and hand
+    back the raw markdown body only; pages.py renders it."""
+    text = path.read_text()
+    if not text.startswith("---"):
+        raise ValueError(f"{path}: no front matter")
+    end = text.index("\n---", 3)
+    return text[end + 4:].lstrip("\n")

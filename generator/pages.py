@@ -121,6 +121,19 @@ def _anchor_headings(content: str) -> str:
         content,
     )
 
+_INLINE_MD_P_RE = re.compile(r"\A<p>(.*)</p>\n?\Z", re.S)
+
+def _render_inline_markdown(text: str) -> str:
+    """A featured post's blurb (home.html: `{{ . | markdownify }}`) is
+    written to sit directly inside a `<p class="home-blurb">` the template
+    supplies itself, so -- unlike `markdown.render` -- a single-paragraph
+    result must come back without its own wrapping `<p>...</p>`. Real
+    corpus blurbs are always exactly one paragraph; nothing here handles
+    more than one."""
+    rendered = markdown.render(text)
+    m = _INLINE_MD_P_RE.match(rendered)
+    return m.group(1) if m else rendered
+
 def _description_text(post: Post) -> str:
     """<meta name="description"> and twitter:description: Hugo interpolates
     `.Description` (a plain string) or `.Summary` (a `template.HTML` value)
@@ -128,12 +141,16 @@ def _description_text(post: Post) -> str:
     `_head`, which picks the escaper -- so return the text only."""
     return post.description or markdown.summary(post.body)
 
-def _og_description_text(post: Post) -> str:
+def _og_description_text(description: str | None, body: str) -> str:
     # opengraph.html: `or .Description .Summary | plainify | htmlUnescape
     # | chomp`. htmlUnescape is what makes this form differ from the raw one
     # above: the entities goldmark baked in are decoded back to real
-    # characters here (and `chomp` is a trailing-newline rstrip).
-    source = post.description or markdown.extract_summary(markdown.render_entities(post.body))
+    # characters here (and `chomp` is a trailing-newline rstrip). Takes the
+    # description/body pair directly rather than a Post so the home page
+    # (whose "page" is content/_index.md, not a Post -- see
+    # content.load_index_body) can share it: home has no `.Description`
+    # front-matter field at all, so it always falls through to `.Summary`.
+    source = description or markdown.extract_summary(markdown.render_entities(body))
     return _html_std.unescape(markdown.plainify(source)).rstrip("\r\n")
 
 def _jsonld_description_text(post: Post) -> str:
@@ -143,6 +160,69 @@ def _jsonld_description_text(post: Post) -> str:
     if post.description:
         return markdown.plainify(post.description)
     return markdown.summary_description(post.body)
+
+# The parts of <head> that carry no per-page data at all, or only site-wide
+# data -- identical on every page kind this generator has built so far
+# (posts and, as of this function's second caller, the home page). Split out
+# so `_head` (posts) and `_head_home` can share them instead of the two
+# copies silently drifting apart.
+_META_TOP = """<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">"""
+
+def _feed_and_analytics(site: SiteContext) -> str:
+    return f"""<link rel="alternate" type="application/rss+xml" title="{html.esc(site.title)} RSS Feed" href="{site.base_url}/rss/index.xml">
+<link rel="alternate" type="application/atom+xml" title="{html.esc(site.title)} Atom Feed" href="{site.base_url}/rss/index.xml">
+<script data-goatcounter="https://poleprediction.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>"""
+
+def _favicons_block(site: SiteContext) -> str:
+    return f"""<link rel="icon" href="{site.base_url}/favicons/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="{site.base_url}/favicons/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="{site.base_url}/favicons/favicon-32x32.png">
+<link rel="apple-touch-icon" href="{site.base_url}/favicons/apple-touch-icon.png">
+<link rel="manifest" href="{site.base_url}/favicons/site.webmanifest">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">"""
+
+_NOSCRIPT_BLOCK = """<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>"""
 
 def _head(post: Post, site: SiteContext, permalink: str, description: str,
           og_description: str, jsonld_description: str) -> str:
@@ -160,66 +240,18 @@ def _head(post: Post, site: SiteContext, permalink: str, description: str,
         for t in post.tags[:6]
     )
 
-    return f"""<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
+    return f"""{_META_TOP}
 
-<link rel="alternate" type="application/rss+xml" title="{html.esc(site.title)} RSS Feed" href="{site.base_url}/rss/index.xml">
-<link rel="alternate" type="application/atom+xml" title="{html.esc(site.title)} Atom Feed" href="{site.base_url}/rss/index.xml">
-<script data-goatcounter="https://poleprediction.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+{_feed_and_analytics(site)}
 <title>{title}</title>
 <meta name="keywords" content="{keywords}">
 <meta name="description" content="{desc_attr}">
 <meta name="author" content="{html.esc(site.author)}">
 <link rel="canonical" href="{permalink}">
 <link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
-<link rel="icon" href="{site.base_url}/favicons/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="{site.base_url}/favicons/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="{site.base_url}/favicons/favicon-32x32.png">
-<link rel="apple-touch-icon" href="{site.base_url}/favicons/apple-touch-icon.png">
-<link rel="manifest" href="{site.base_url}/favicons/site.webmanifest">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
+{_favicons_block(site)}
 <link rel="alternate" hreflang="en" href="{permalink}">
-<noscript>
-    <style>
-        #theme-toggle,
-        .top-link {{
-            display: none;
-        }}
-
-    </style>
-    <style>
-        @media (prefers-color-scheme: dark) {{
-            :root {{
-                --theme: rgb(29, 30, 32);
-                --entry: rgb(46, 46, 51);
-                --primary: rgb(218, 218, 219);
-                --secondary: rgb(155, 156, 157);
-                --tertiary: rgb(65, 66, 68);
-                --content: rgb(196, 196, 197);
-                --code-block-bg: rgb(46, 46, 51);
-                --code-bg: rgb(55, 56, 62);
-                --border: rgb(51, 51, 51);
-            }}
-
-            .list {{
-                background: var(--theme);
-            }}
-
-            .list:not(.dark)::-webkit-scrollbar-track {{
-                background: 0 0;
-            }}
-
-            .list:not(.dark)::-webkit-scrollbar-thumb {{
-                border-color: var(--theme);
-            }}
-        }}
-
-    </style>
-</noscript><meta property="og:url" content="{permalink}">
+{_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
   <meta property="og:site_name" content="{html.esc(site.title)}">
   <meta property="og:title" content="{html.esc(post.title)}">
   <meta property="og:description" content="{og_desc_attr}">
@@ -235,6 +267,44 @@ def _head(post: Post, site: SiteContext, permalink: str, description: str,
 
 
 {_schema_json(post, site, permalink, jsonld_description)}"""
+
+def _head_home(site: SiteContext, permalink: str, description_attr: str,
+               og_description_attr: str) -> str:
+    """<head> for the home page (Kind "home"): its own title/description/
+    og/twitter rules (see layouts/home.html and layouts/partials/head.html,
+    read-only references for this task) and an Organization JSON-LD block
+    instead of a post's BreadcrumbList + BlogPosting -- see
+    `_schema_json_home`. `description_attr`/`og_description_attr` arrive
+    pre-escaped: unlike a post, the home page's plain <meta name="description">
+    and its og:description are two genuinely different values (site-wide
+    description vs. a summary of content/_index.md), each escaped once by
+    its caller rather than picked between here."""
+    return f"""\t<meta name="generator" content="{site.hugo_generator}">
+{_META_TOP}
+
+{_feed_and_analytics(site)}
+<title>{html.esc(site.title)}</title>
+
+<meta name="description" content="{description_attr}">
+<meta name="author" content="{html.esc(site.author)}">
+<link rel="canonical" href="{permalink}">
+<link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
+{_favicons_block(site)}
+<link rel="alternate" type="application/rss+xml" href="{site.base_url}/index.xml">
+<link rel="alternate" type="application/atom+xml" href="{site.base_url}/rss/index.xml">
+<link rel="alternate" hreflang="en" href="{permalink}">
+{_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
+  <meta property="og:site_name" content="{html.esc(site.title)}">
+  <meta property="og:title" content="{html.esc(site.title)}">
+  <meta property="og:description" content="{og_description_attr}">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="">
+<meta name="twitter:description" content="{description_attr}">
+
+
+{_schema_json_home(site)}"""
 
 def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_description: str) -> str:
     # Hugo's `.Content` carries goldmark's typographic entities, and both
@@ -302,6 +372,31 @@ def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_descripti
 </script>"""
 
     return breadcrumbs + "\n" + blog_posting
+
+def _schema_json_home(site: SiteContext) -> str:
+    # schema_json.html's `.IsHome` branch: an Organization, not a
+    # BreadcrumbList/BlogPosting pair. Every field here sits in the
+    # no-literal-quotes template position (`"name": {{ site.Title }},`), so
+    # `_js_value` -- not `_js_string_inner` -- is the right escaper for all
+    # of them; see that function's docstring for the distinction.
+    #
+    # site.Params.description is also piped through Hugo's `truncate 180`,
+    # not reproduced here: this site's real description is 116 characters,
+    # well under that limit, so the pipe stage is a no-op for the only value
+    # it is ever applied to.
+    return f"""<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": {_js_value(site.title)},
+  "url": {_js_value(site.base_url + "/")},
+  "description": {_js_value(site.description)},
+  "logo": {_js_value(site.base_url + "/favicons/favicon.ico")},
+  "sameAs": [
+
+  ]
+}}
+</script>"""
 
 def _theme_init_script() -> str:
     return """<script>
@@ -428,8 +523,12 @@ def _footer(site: SiteContext) -> str:
 
 </script>"""
 
-def _signature(site: SiteContext) -> str:
-    return f"""<aside class="signature" aria-label="About the author">
+def _signature(site: SiteContext, inline: bool = False) -> str:
+    # consulting-signature.html: an extra "signature-inline" class when
+    # rendered inside <main> by a layout -- only the home page does that
+    # (see home_page); every post gets the default, non-inline position.
+    css_class = "signature signature-inline" if inline else "signature"
+    return f"""<aside class="{css_class}" aria-label="About the author">
     <img class="signature-avatar" src="{_SIGNATURE_AVATAR}" alt="" width="56" height="56">
     <div class="signature-body">
         <p class="signature-text">
@@ -463,7 +562,7 @@ def _post_tags(post: Post, site: SiteContext) -> str:
 def post_page(post: Post, site: SiteContext) -> str:
     permalink = f"{site.base_url}/posts/{post.slug}/"
     description = _description_text(post)
-    og_description = _og_description_text(post)
+    og_description = _og_description_text(post.description, post.body)
     jsonld_description = _jsonld_description_text(post)
     content_html = _anchor_headings(markdown.render(post.body))
 
@@ -508,6 +607,102 @@ def post_page(post: Post, site: SiteContext) -> str:
 
 <head>
 {_head(post, site, permalink, description, og_description, jsonld_description)}
+</head>
+
+{body}
+
+</html>
+"""
+
+def _featured_item(post: Post) -> str:
+    blurb_line = (
+        f'\n      <p class="home-blurb">{_render_inline_markdown(post.featured_blurb)}</p>'
+        if post.featured_blurb else ""
+    )
+    return f"""    <li class="home-featured-item">
+      <a href="/posts/{post.slug}/">{html.esc(post.title)}</a>{blurb_line}
+    </li>"""
+
+def _recent_item(post: Post) -> str:
+    day = post.date.strftime("%Y-%m-%d")
+    return f"""    <li class="home-recent-item">
+      <time datetime="{day}">{day}</time>
+      <a href="/posts/{post.slug}/">{html.esc(post.title)}</a>
+    </li>"""
+
+def home_page(site: SiteContext) -> str:
+    """The home page (Kind "home"): layouts/home.html, a project override
+    of PaperMod's own home layout, kept here (read-only for this task) as
+    the second source of truth alongside `/tmp/target-home.html` (Hugo's
+    own rendering of this site, captured with
+    `TZ=America/Los_Angeles hugo --destination /tmp/target`)."""
+    permalink = f"{site.base_url}/"
+    intro_html = markdown.render(site.home_intro)
+    # Unlike a post, the home page's <meta name="description">/twitter:description
+    # and its og:description are two genuinely different values -- the raw
+    # site-wide description, and a plainified/htmlUnescaped/chomped summary
+    # of content/_index.md -- so each is escaped once here rather than one
+    # value with two possible escapers (contrast `_head`'s desc_attr).
+    description_attr = html.esc(site.description)
+    og_description_attr = html.esc(_og_description_text(None, site.home_intro))
+
+    # Start here: hand-picked posts, ranked by featuredWeight ascending. A
+    # post with no featuredWeight reads as 999 (content.parse_post's own
+    # default) so it sorts last. site.posts is already newest-first, and
+    # Python's sort is stable, so equal weights keep that date-descending
+    # order -- matching home.html's own two-step sort (rank $featured.ByDate.Reverse
+    # by weight) without needing to re-sort by date here.
+    featured = sorted((p for p in site.posts if p.featured), key=lambda p: p.featured_weight)
+    featured_section = ""
+    if featured:
+        items = "\n".join(_featured_item(p) for p in featured)
+        featured_section = f"""<section class="home-section" id="start-here">
+  <h2>Start here</h2>
+  <ul class="home-featured">
+{items}
+  </ul>
+</section>
+"""
+
+    # Recent: the 8 newest posts. site.posts is already newest-first.
+    recent = site.posts[:8]
+    recent_section = ""
+    if recent:
+        items = "\n".join(_recent_item(p) for p in recent)
+        recent_section = f"""<section class="home-section" id="recent">
+  <h2>Recent</h2>
+  <ul class="home-recent">
+{items}
+  </ul>
+  <p class="home-all-posts">
+    <a href="/archives/">All {len(site.posts)} posts &rarr;</a>
+  </p>
+</section>
+"""
+
+    main = f"""<article class="home-intro">
+  {intro_html}
+</article>
+{_signature(site, inline=True)}
+
+{featured_section}{recent_section}"""
+
+    body = f"""<body class="list" id="top">
+{_theme_init_script()}
+
+{_header(site)}
+<main class="main">
+{main}
+    </main>
+
+{_footer(site)}
+</body>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head>
+{_head_home(site, permalink, description_attr, og_description_attr)}
 </head>
 
 {body}
