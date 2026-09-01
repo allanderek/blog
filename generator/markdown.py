@@ -1,9 +1,14 @@
 """Markdown rendering configured to match Goldmark where it matters.
 
 Matched deliberately: heading IDs, <del> over <s>, lazy images (in Hugo's
-alt/loading/src attribute order), definition lists, and linkify tuning.
-Accepted drift: smart-quote direction, en-dashes, ellipsis spacing — see the
-spec's accepted-drift list.
+alt/loading/src attribute order), definition lists, linkify tuning, and
+goldmark's three-dots-at-a-time ellipsis. Accepted drift: smart-quote
+direction and en-dashes — see the spec's accepted-drift list.
+
+The second half of this module is Hugo's own reading of the rendered HTML
+back out as text: `.Summary`, `.Plain` and `.WordCount`, which feed the
+description meta tags and the JSON-LD block. Those are transcriptions of
+Hugo's and Go's source rather than inferences from output, and they say so.
 
 The strikethrough, image, and fence transforms are markdown-it renderer
 rules, not blind regexes over the rendered HTML string: they only touch nodes
@@ -14,9 +19,8 @@ passes through untouched.
 from __future__ import annotations
 import html as _html_std
 import re
-from html.parser import HTMLParser
 from markdown_it import MarkdownIt
-from markdown_it.common.utils import escapeHtml, unescapeAll
+from markdown_it.common.utils import unescapeAll
 from markdown_it.token import Token as MdToken
 from mdit_py_plugins.deflist import deflist_plugin
 from .slugs import Slugger
@@ -45,6 +49,17 @@ def _make_image_rule(renderer):
         token.attrs = {k: v for k, v in sorted(token.attrs.items()) if v}
         return f"<img{renderer.renderAttrs(token)}>"
     return render_image
+
+# Go's html.EscapeString, which both Chroma and Hugo's unhighlighted fence
+# path use for code text. markdown-it-py's own escapeHtml differs on two
+# characters (`&quot;` for `"`, and no escape at all for `'`); that never
+# shows in the rendered <pre> (compare.py masks code blocks) but it does
+# show in the JSON-LD `description`, which quotes a code block's own text.
+_GO_ESCAPE_HTML = {"&": "&amp;", "'": "&#39;", "<": "&lt;", ">": "&gt;", '"': "&#34;"}
+_GO_ESCAPE_HTML_RE = re.compile("[&'<>\"]")
+
+def _go_escape_html(s: str) -> str:
+    return _GO_ESCAPE_HTML_RE.sub(lambda m: _GO_ESCAPE_HTML[m.group(0)], s)
 
 def _make_fence_rule(renderer):
     """Build the `fence` render rule bound to this MarkdownIt's renderer.
@@ -79,7 +94,7 @@ def _make_fence_rule(renderer):
         # unrecognised fence, e.g. a bare ``` block): confirmed against the
         # "builder-pattern" post, "</code></pre><p>Now you can provide"
         # also has zero whitespace between them.
-        escaped = escapeHtml(token.content)
+        escaped = _go_escape_html(token.content)
         if info:
             tmp_token = MdToken(type="", tag="", nesting=0, attrs=token.attrs.copy())
             tmp_token.attrJoin("class", options.langPrefix + lang_name)
@@ -101,7 +116,97 @@ def _widen_email_fuzzy_boundary(md: MarkdownIt) -> None:
     assert marker in pattern, "linkify-it internals changed; boundary patch no longer applies"
     md.linkify.re["email_fuzzy"] = pattern.replace(marker, marker + "|'|‘|’", 1)
 
-def _make_parser() -> MarkdownIt:
+# --- The typographer, in goldmark's own output form ----------------------
+#
+# Goldmark's typographer does not emit the substituted characters; it emits
+# their HTML ENTITIES ("&rsquo;", "&mdash;", ...), which then survive
+# verbatim into `.Summary` and so into <meta name="description"> and the
+# JSON-LD "description" -- neither of which decodes them. markdown-it-py
+# emits the characters themselves. compare.py's accepted-drift list folds
+# the two everywhere they appear as themselves, but NOT inside a JSON
+# string, where Go has already rewritten the entity's own "&" as
+# "\u0026".
+#
+# The two cannot be reconciled after the fact by rewriting characters back
+# to entities in the rendered HTML: a smart quote or em-dash TYPED AS ITSELF
+# in the markdown source is not a typographer substitution at all, and Hugo
+# leaves those as characters (real cases: `elm-queue-shootout`, quoting a
+# blockquote with a curly apostrophe; `link-sw-html-tools-patterns`, a
+# literal em-dash). Only the parser knows which is which, so the entity form
+# is produced by a SECOND parser, identical to the first except that its
+# typographer substitutes entities. It feeds the description fields only --
+# the rendered page, its heading ids and its alt text all still come from
+# `render()` below, unchanged.
+#
+# markdown-it-py's smartquotes rule rewrites a quote in place by byte
+# offset and mis-tracks the offsets of later quotes in the same token when
+# the replacement is longer than one character (real corpus damage:
+# "Specifically" coming out as "Spec'fically"). So the typographer here
+# substitutes single-character SENTINELS, and those become entities in one
+# pass over the finished HTML -- which also catches the copies that reach
+# an alt attribute rather than a text node.
+_S_LDQUO, _S_RDQUO, _S_LSQUO, _S_RSQUO = "\u2e00", "\u2e01", "\u2e02", "\u2e03"
+_S_APOS, _S_HELLIP, _S_NDASH, _S_MDASH = "\u2e04", "\u2e05", "\u2e06", "\u2e07"
+# All eight are Unicode category Po, like the characters they stand in for,
+# so markdown-it's own "is this quote next to punctuation?" tests behave
+# the same as they would on the real thing.
+_SENTINEL_ENTITY = {
+    _S_LDQUO: "&ldquo;", _S_RDQUO: "&rdquo;", _S_LSQUO: "&lsquo;",
+    _S_RSQUO: "&rsquo;", _S_APOS: "&rsquo;", _S_HELLIP: "&hellip;",
+    _S_NDASH: "&ndash;", _S_MDASH: "&mdash;",
+}
+_SENTINEL_RE = re.compile("[" + "".join(_SENTINEL_ENTITY) + "]")
+_CHAR_FOR_ENTITY = {
+    "&ldquo;": "\u201c", "&rdquo;": "\u201d", "&lsquo;": "\u2018",
+    "&rsquo;": "\u2019", "&hellip;": "\u2026", "&ndash;": "\u2013",
+    "&mdash;": "\u2014",
+}
+_ENTITY_TO_CHAR_RE = re.compile("|".join(_CHAR_FOR_ENTITY))
+
+_GOLDMARK_ELLIPSIS_RE = re.compile(r"\.\.\.")
+
+def _make_replacements(hellip: str, ndash: str, mdash: str):
+    """markdown-it-py's own `replacements` core rule with two changes: the
+    ellipsis takes exactly three dots (goldmark's rule; markdown-it-py folds
+    any run of two or more into one, so "...." came out a character short of
+    Hugo's "&hellip;."), and the three substitutions are parameterised so the
+    entity parser can emit sentinels for them. Everything else -- which
+    regexes, in which order, and the autolink guard -- is left as upstream
+    has it."""
+    from markdown_it.rules_core import replacements as _r
+
+    def replace_rare(tokens) -> None:
+        inside_autolink = 0
+        for token in tokens:
+            if (token.type == "text" and not inside_autolink
+                    and _r.RARE_RE.search(token.content)):
+                c = _r.PLUS_MINUS_RE.sub("\u00b1", token.content)
+                c = _GOLDMARK_ELLIPSIS_RE.sub(hellip, c)
+                c = re.sub("([?!])" + re.escape(hellip), r"\1..", c)
+                c = _r.QUESTION_EXCLAMATION_RE.sub(r"\1\1\1", c)
+                c = _r.COMMA_RE.sub(",", c)
+                c = _r.EM_DASH_RE.sub(r"\1" + mdash, c)
+                c = _r.EN_DASH_RE.sub(r"\1" + ndash, c)
+                c = _r.EN_DASH_INDENT_RE.sub(r"\1" + ndash, c)
+                token.content = c
+            if token.type == "link_open" and token.info == "auto":
+                inside_autolink -= 1
+            if token.type == "link_close" and token.info == "auto":
+                inside_autolink += 1
+
+    def rule(state) -> None:
+        if not state.md.options.typographer:
+            return
+        for token in state.tokens:
+            if token.type != "inline" or token.children is None:
+                continue
+            if _r.SCOPED_ABBR_RE.search(token.content):
+                _r.replace_scoped(token.children)
+            if _r.RARE_RE.search(token.content):
+                replace_rare(token.children)
+    return rule
+
+def _make_parser(entities: bool = False) -> MarkdownIt:
     md = MarkdownIt("gfm-like", {"typographer": True, "html": True})
     md.use(deflist_plugin)
     md.enable(["replacements", "smartquotes", "linkify"])
@@ -109,279 +214,354 @@ def _make_parser() -> MarkdownIt:
     # Disabling linkify wholesale also kills real "https://..." autolinks, so
     # instead turn off fuzzy (schemeless) matching and keep the rest.
     md.linkify.set({"fuzzy_link": False})
+    md.core.ruler.at("replacements",
+                     _make_replacements("\u2026", "\u2013", "\u2014"))
     _widen_email_fuzzy_boundary(md)
     md.renderer.rules["s_open"] = _render_strikethrough_open
     md.renderer.rules["s_close"] = _render_strikethrough_close
     md.renderer.rules["image"] = _make_image_rule(md.renderer)
     md.renderer.rules["fence"] = _make_fence_rule(md.renderer)
+    if entities:
+        md.options["quotes"] = [_S_LDQUO, _S_RDQUO, _S_LSQUO, _S_RSQUO]
+        md.core.ruler.at("replacements",
+                         _make_replacements(_S_HELLIP, _S_NDASH, _S_MDASH))
     return md
 
 _MD = _make_parser()
+_MD_ENTITIES = _make_parser(entities=True)
 _HEADING = re.compile(r"<h([1-6])>(.*?)</h\1>", re.S)
 
-def render(text: str) -> str:
-    html = _MD.render(text)
+# Goldmark's "'twas / 'em / 'net" rule: a single quote that opens, sitting
+# after a space or punctuation and followed by t, e, n or l, is treated as
+# an apostrophe rather than an opening quote (extension/typographer.go).
+# markdown-it-py has no such case and pairs the quote instead, so
+# "'test first'" comes out &lsquo;...&rsquo; where Hugo has
+# &rsquo;...&rsquo;. Safe to apply to the rendered string: in THIS parser
+# "&lsquo;" can only ever be the typographer's own output -- a quote typed
+# as a character stays a character. Tags in between are skipped because
+# goldmark decides this on the SOURCE character following the quote, which
+# an autolink or an emphasis marker puts a tag in front of.
+_OPENING_SQUO_APOSTROPHE_RE = re.compile(r"&lsquo;(?=(?:<[^>]*>)*[tenl])")
+
+def _apply_heading_ids(html: str, entity_form: bool = False) -> str:
     slugger = Slugger()
 
     def add_id(m: re.Match) -> str:
         level, inner = m.group(1), m.group(2)
-        return f'<h{level} id="{slugger.slug(inner)}">{inner}</h{level}>'
+        # Goldmark assigns heading ids while parsing BLOCKS, before the
+        # typographer touches anything, so a substitution contributes
+        # nothing to the id either way ("Elm doesn't have functors" ->
+        # "elm-doesnt-have-functors"). Feeding the slugger the character
+        # form keeps both parsers agreeing on that.
+        text = _ENTITY_TO_CHAR_RE.sub(lambda e: _CHAR_FOR_ENTITY[e.group(0)], inner) \
+            if entity_form else inner
+        return f'<h{level} id="{slugger.slug(text)}">{inner}</h{level}>'
 
     return _HEADING.sub(add_id, html)
 
-# --- Auto-summary (Hugo's `.Summary`, used for og:/twitter:/JSON-LD
-# description when a post has no `description` front matter) --------------
+def render(text: str) -> str:
+    return _apply_heading_ids(_MD.render(text))
+
+def _smartquotes_module():
+    # `markdown_it.rules_core.smartquotes` as an attribute is the rule
+    # FUNCTION, re-exported over its own module; reach the module itself.
+    import importlib
+    return importlib.import_module("markdown_it.rules_core.smartquotes")
+
+def render_entities(text: str) -> str:
+    """`render()`'s output with the typographer's substitutions in
+    goldmark's entity form. Used only to build the description fields."""
+    _sq = _smartquotes_module()
+    # The one substitution smartquotes does not take from `options.quotes`:
+    # a module-level constant for the apostrophe it inserts mid-word
+    # ("don't") and for an unmatched closing quote. Swapped only for the
+    # duration of this render, which is synchronous.
+    saved, _sq.APOSTROPHE = _sq.APOSTROPHE, _S_APOS
+    try:
+        html = _MD_ENTITIES.render(text)
+    finally:
+        _sq.APOSTROPHE = saved
+    html = _SENTINEL_RE.sub(lambda m: _SENTINEL_ENTITY[m.group(0)], html)
+    return _apply_heading_ids(_OPENING_SQUO_APOSTROPHE_RE.sub("&rsquo;", html),
+                              entity_form=True)
+
+
+# --- Hugo's `.Summary`, `.Plain` and `.WordCount` --------------------------
 #
-# Reverse-engineered from real output, not from Hugo's source: build a
-# candidate description for a post with no explicit `description:`, render
-# both with Hugo and this generator, and diff. Evidence from three posts
-# with different shapes (a single long paragraph; paragraph+heading+
-# paragraph; paragraph+fenced-code+paragraph) shows Hugo accumulates whole
-# top-level blocks -- paragraphs, headings, fences, list items -- in document
-# order, in *plain* text (marks like `**`/`*`/`` ` `` stripped, link/image
-# targets dropped, smartquotes/typographer already applied since this reuses
-# the shared parser's tokens), joined by "\n", and stops as soon as the
-# cumulative word count reaches `length` -- never splitting a block, even
-# when that block alone blows past the limit (a 124-word first paragraph is
-# still quoted in full for a 70-word summary). Fenced code keeps its
-# original source line breaks verbatim: unlike `plain()` below, this never
-# goes through the chroma-highlighted HTML, so no line-joining collapse
-# applies.
-def _iter_top_blocks(tokens: list) -> list:
-    i = 0
-    while i < len(tokens):
-        t = tokens[i]
-        if t.type.endswith("_open"):
-            depth, j = 1, i + 1
-            while depth:
-                if tokens[j].type.endswith("_open"):
-                    depth += 1
-                elif tokens[j].type.endswith("_close"):
-                    depth -= 1
-                j += 1
-            yield tokens[i:j]
-            i = j
-        else:
-            yield tokens[i:i + 1]
+# These three are transcriptions of Hugo v0.165.0's own Go source, not
+# guesses reverse-engineered from output: three earlier attempts at
+# inferring the truncation rule from rendered pages each fitted the posts
+# they were derived from and broke others, because the real rule counts
+# *HTML tokens*, not prose words, and no amount of staring at prose can
+# show that. The two functions transcribed are
+# `resources/page/page_markup.go:ExtractSummaryFromHTML` and
+# `tpl/template.go:StripHTML`; the escaping/stripping helper is Go's own
+# `html/template.stripTags`. Every claim below was re-checked against a
+# throwaway Hugo site that prints `.Summary`/`.Plain`/`.WordCount` as JSON
+# for all 176 real posts: all three match exactly, 176/176.
+
+# Go's unicode.IsSpace.
+_GO_SPACE = frozenset(
+    "\t\n\v\f\r \x85\xa0     　"
+    + "".join(chr(c) for c in range(0x2000, 0x200B))
+)
+
+def _go_is_space(ch: str) -> bool:
+    return ch in _GO_SPACE
+
+def _go_trim_space(s: str) -> str:
+    return s.strip("".join(_GO_SPACE))
+
+# --- Go's html/template.stripTags -----------------------------------------
+#
+# What a `template.HTML` value gets run through when it lands in a quoted
+# attribute (`<meta name="description" content="{{ .Summary }}">`): the
+# tags go, the text between them survives byte for byte -- entities
+# included, since nothing decodes them, and newlines included, which is
+# why the raw description form keeps a code block's own line breaks.
+# Go's own tag-name rule: ASCII letters/digits, with single "-" or ":"
+# separators. A "<" that is not followed by one is ordinary text
+# ("I <3 Ponies!"), which is what keeps a code sample's own angle brackets
+# from all disappearing.
+_TAG_NAME_RE = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[-:][A-Za-z0-9]+)*")
+# The elements whose content Go's escaper does not treat as markup. Their
+# text still reaches the output for `textarea`/`title` (context stateRCDATA,
+# which stripTags emits) but not for `script`/`style` (stateJS/stateCSS,
+# which it drops). Nothing in this corpus renders one -- but `plain()` feeds
+# entity-DECODED content in here, where a documented "&lt;textarea&gt;" turns
+# into a real one.
+_RCDATA_ELEMENTS = frozenset({"textarea", "title"})
+_OPAQUE_ELEMENTS = frozenset({"script", "style"})
+_SPECIAL_ELEMENTS = _RCDATA_ELEMENTS | _OPAQUE_ELEMENTS
+
+_GO_TAG_SPACE = " \t\n\f\r"
+_ATTR_NAME_END = " \t\n\f\r=>"
+# Go's eatAttrName treats these three as a hard parse error, not as the end
+# of the attribute: the escaper goes to stateError, consumes the rest of the
+# input and emits none of it. That is why a whole article can vanish from
+# `articleBody` -- an Apache config in a code block renders as
+# `<span ...>&lt;Directory</span> <span ...>/var/www/...`, and once the
+# decoded "<Directory" is read as a tag, the "<" of the following "</span>"
+# lands where an attribute name should be.
+_ATTR_NAME_ERROR = "'\"<"
+
+def _parse_tag(s: str, k: int):
+    """Parse the tag starting at s[k] == '<', following Go's own transition
+    functions closely enough to reproduce where they give up. Returns
+    (index just past the tag, lowercase name, is-a-closing-tag, ok), or None
+    if this '<' does not start a tag at all ("I <3 Ponies!"). ok=False means
+    the escaper entered an error or unterminated-value state, from which
+    nothing further is ever emitted."""
+    n = len(s)
+    closing = s.startswith("</", k)
+    m = _TAG_NAME_RE.match(s, k + (2 if closing else 1))
+    if m is None:
+        return None
+    i, name = m.end(), m.group(0).lower()
+    while True:
+        while i < n and s[i] in _GO_TAG_SPACE:
             i += 1
+        if i >= n:
+            return n, name, closing, True
+        if s[i] == ">":
+            return i + 1, name, closing, True
+        while i < n and s[i] not in _ATTR_NAME_END:      # eatAttrName
+            if s[i] in _ATTR_NAME_ERROR:
+                return n, name, closing, False
+            i += 1
+        while i < n and s[i] in _GO_TAG_SPACE:           # tAfterName
+            i += 1
+        if i >= n:
+            return n, name, closing, True
+        if s[i] != "=":
+            continue                                     # valueless attribute
+        i += 1
+        while i < n and s[i] in _GO_TAG_SPACE:           # tBeforeValue
+            i += 1
+        if i >= n:
+            return n, name, closing, True
+        if s[i] in "\"'":
+            end = s.find(s[i], i + 1)
+            if end == -1:
+                return n, name, closing, False
+            i = end + 1                                  # the quote is consumed
+        else:
+            ends = [p for p in (s.find(c, i) for c in " \t\n\f\r>") if p != -1]
+            if not ends:
+                return n, name, closing, False
+            i = min(ends)                                # the terminator is not
 
-def _inline_plain(children) -> str:
-    parts = []
-    for tok in children or []:
-        if tok.type in ("text", "code_inline"):
-            parts.append(tok.content)
-        elif tok.type in ("softbreak", "hardbreak"):
-            # A literal "\n", not a space: Hugo's own <meta name="description">
-            # keeps the source's own mid-paragraph line wrap verbatim ("...for a
-            # \nreasonable default...", matching the .md file's own line break).
-            parts.append("\n")
-        elif tok.type == "image":
-            parts.append(tok.attrGet("alt") or _inline_plain(tok.children) or "")
-        # strong/em/s/link open-close and other marker tokens contribute no
-        # text of their own -- only their children do.
-    return "".join(parts)
-
-# Two representations of a summary are needed, and they disagree at
-# exactly the boundaries `plain()` above already knows how to draw. The
-# "raw" form (`summary()`, used for <meta name="description"> and
-# twitter:description) keeps every line break verbatim, headings included.
-# The "plainified" form (`summary_description()`, used for og:description
-# and the JSON-LD description) collapses a heading's own boundaries and any
-# incidental whitespace (soft wraps, a code block's internal line breaks)
-# to a single space, while real paragraph/list/blockquote boundaries still
-# read as "\n" -- confirmed against Hugo's own output for the same post
-# three ways: <meta name="description"> keeps "pattern\nTo be clear" and
-# "for a\nreasonable default" verbatim, but og:description and the JSON-LD
-# description both give "pattern To be clear" and "for a reasonable
-# default". So `_block_html` wraps paragraph/heading/list/blockquote text
-# in real (if minimal) tags -- letting `plain()` itself, unmodified, derive
-# the second form from the first.
-def _block_html(block: list) -> str:
-    t0 = block[0]
-    if t0.type == "paragraph_open":
-        # A *tight* list's paragraph (no blank line between items) has its
-        # paragraph_open/close marked `hidden` by markdown-it -- it's not a
-        # real paragraph, just how a list item's content happens to be
-        # tokenized. Wrapping it in <p> anyway synthesises a paragraph
-        # boundary `plain()` has no business treating as one: it made
-        # `summary_description()` insert a spurious extra "\n" for any
-        # summary ending inside a (near-universally tight) list, which
-        # Hugo's own output does not have.
-        if t0.hidden:
-            return _inline_plain(block[1].children)
-        return f"<p>{_inline_plain(block[1].children)}</p>"
-    if t0.type == "heading_open":
-        return f"<h2>{_inline_plain(block[1].children)}</h2>"
-    if t0.type in ("fence", "code_block"):
-        return t0.content.rstrip("\n")
-    if t0.type in ("bullet_list_open", "ordered_list_open", "dl_open"):
-        # Each child here is a whole list_item/dt/dd block; flatten its own
-        # inner blocks (usually one loose/tight paragraph) the same way.
-        items = []
-        for item in _iter_top_blocks(block[1:-1]):
-            inner = "\n".join(_block_html(b) for b in _iter_top_blocks(item[1:-1]))
-            if inner:
-                items.append(f"<li>{inner}</li>")
-        return "\n".join(items)
-    if t0.type == "blockquote_open":
-        inner = "\n".join(_block_html(b) for b in _iter_top_blocks(block[1:-1]))
-        return f"<blockquote>{inner}</blockquote>"
-    return ""
-
-_SUMMARY_TAGS_RE = re.compile(r"</?(?:p|h2|li|blockquote)>")
-
-_SUMMARY_STOPPABLE_TYPES = frozenset({"paragraph_open", "blockquote_open"})
-
-def _summary_html(body: str, length: int) -> str:
-    """Walks top-level blocks in order, including each one in full (never
-    splitting a block, even one that alone blows past the limit) while
-    the running word count has not yet reached `length` -- plus one more
-    block, unconditionally, if the block that crossed the threshold was
-    NOT a paragraph or a blockquote.
-
-    A paragraph or a blockquote is always a valid place to stop: confirmed
-    against four shapes (threshold crossed in a lone first paragraph;
-    crossed in a paragraph following a fence+paragraph pair; crossed in a
-    paragraph following just a heading; crossed inside a blockquote)
-    where Hugo's real summary stops exactly there, nothing more. A
-    heading or a fence is NOT a valid place to stop: confirmed against
-    three more posts (crossed inside a heading; crossed inside a small
-    fence; crossed inside a large fence) where Hugo's real summary runs
-    on through exactly one more block -- necessarily a paragraph, since
-    headings and fences don't appear consecutively in this corpus --
-    before stopping.
-
-    This does NOT fully reconcile the evidence: one post crosses the
-    threshold in a paragraph that itself immediately follows a fence, same
-    shape as one of the "stop immediately" cases above, yet Hugo's real
-    summary runs on through a further whole fence+paragraph pair anyway.
-    No per-block rule tried explains both that post and the matching
-    "stop immediately" one at the same time -- see task-6-report.md's
-    "word-count boundary" section for the specific posts, word counts, and
-    the rules tried and rejected. This implements the rule above, which is
-    confirmed correct for seven of the eight posts gathered as evidence
-    and undershoots (stops one fence+paragraph pair too early) for the
-    eighth.
-    """
-    tokens = _MD.parse(body)
-    parts: list[str] = []
-    count = 0
-    run_on = None      # None until crossed; then True/False, consumed once
-    for block in _iter_top_blocks(tokens):
-        if run_on is False:
-            break
-        block_html = _block_html(block)
-        block_text = _SUMMARY_TAGS_RE.sub("", block_html)
-        if not block_text:
+def strip_tags(s: str) -> str:
+    out: list[str] = []
+    i = 0
+    n = len(s)
+    special = ""
+    while i < n:
+        if special:
+            k = s.lower().find("</" + special, i)
+            emits = special in _RCDATA_ELEMENTS
+            if k == -1:
+                if emits:
+                    out.append(s[i:])
+                break
+            if emits:
+                out.append(s[i:k])
+            parsed = _parse_tag(s, k)
+            special = ""
+            if parsed is None:
+                i = k + 1
+                continue
+            i, _, _, ok = parsed
+            if not ok:
+                break
             continue
-        parts.append(block_html)
-        count += len(block_text.split())
-        if run_on is None and count >= length:
-            run_on = block[0].type not in _SUMMARY_STOPPABLE_TYPES
-        elif run_on is True:
-            run_on = False
-    return "\n".join(parts)
+        k = s.find("<", i)
+        if k == -1:
+            out.append(s[i:])
+            break
+        if s.startswith("<!--", k):
+            out.append(s[i:k])
+            e = s.find("-->", k + 4)
+            i = n if e == -1 else e + 3
+            continue
+        parsed = _parse_tag(s, k)
+        if parsed is None:
+            out.append(s[i:k + 1])
+            i = k + 1
+            continue
+        out.append(s[i:k])
+        i, name, closing, ok = parsed
+        if not ok:
+            break
+        if not closing and name in _SPECIAL_ELEMENTS:
+            special = name
+    return "".join(out)
 
-def summary(body: str, length: int = 70) -> str:
-    return _SUMMARY_TAGS_RE.sub("", _summary_html(body, length))
+# --- Hugo's tpl.StripHTML (the `plainify` template function) --------------
+_HUGO_NL = "___hugonl_"
+# Order matters: strings.NewReplacer takes the first pattern in argument
+# order that matches at a given position.
+_STRIP_PRE = (("\n", " "), ("</p>", _HUGO_NL), ("<br>", _HUGO_NL), ("<br />", _HUGO_NL))
 
-def summary_description(body: str, length: int = 70) -> str:
-    return plain(_summary_html(body, length))
+def _strip_pre_replace(s: str) -> str:
+    out: list[str] = []
+    i = 0
+    n = len(s)
+    while i < n:
+        for pat, rep in _STRIP_PRE:
+            if s.startswith(pat, i):
+                out.append(rep)
+                i += len(pat)
+                break
+        else:
+            out.append(s[i])
+            i += 1
+    return "".join(out)
 
-# --- Plain text of rendered content (Hugo's `.Plain`/`.WordCount`, used for
-# the JSON-LD articleBody and wordCount) ------------------------------------
-#
-# Hugo's schema template does `.Content | safeJS | htmlUnescape | plainify`:
-# entities are decoded FIRST, tags stripped SECOND. That order is not
-# reversible -- a body that literally reads "<all source files>" (typed as
-# `<all source files>` inside a fenced code block, so its rendered HTML has
-# it as `&lt;all source files&gt;`) gets entity-decoded back into something
-# that *looks* like a tag before stripping, and Hugo's tag stripper duly
-# deletes it, silently. Confirmed against the "dsls" post: that exact phrase
-# vanishes from Hugo's own articleBody. Reproduced here as decode-then-parse
-# for the same reason.
-#
-# Only a closing `</p>` inserts a newline -- confirmed by the
-# paragraph/paragraph boundary ("...run everything.\nMy problem...", from a
-# plain "</p>\n<p>"). Every other "block-ish" tag was tried and rejected by
-# real evidence: headings join the next paragraph with a single SPACE, not
-# "\n" ("...pattern To be clear...", "...Convenience The builder..."), and
-# so do list items ("...in-depth instructions. Such articles are...", the
-# boundary between two `<li>`s) -- while both still take a "\n" from a real
-# `</p>` immediately before them. That space isn't a boundary rule of its
-# own either -- it's the plain "\n" already sitting as literal text between
-# e.g. "</h2>" and "<p>" in the rendered HTML, picked up by ordinary
-# whitespace-collapsing the same as any other text node.
-#
-# The chroma wrapper (`<div class="highlight"><pre>...`) is NOT a boundary
-# of its own either: at the end of a code block, "</div>" is glued directly
-# onto the next "<p>" in Hugo's real HTML (see markdown.py's fence rule),
-# yet articleBody still shows a single space there ("...utils.o As you can
-# see..."). Same mechanism: chroma's own per-line `<span>` keeps the source
-# line's trailing "\n" as literal text, and that collapses to a space too.
-_CLOSE_BLOCK_TAGS = frozenset({"p"})
-_VOID_BLOCK_TAGS = frozenset({"br", "hr"})
-
-class _PlainTextExtractor(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self._parts: list[str] = []
-        self.had_block = False   # did any real block tag actually fire?
-        self._li_depth = 0
-
-    def _mark_block(self) -> None:
-        # A *loose* list (blank line between items) renders its item's
-        # content as a real, non-hidden <p> -- unlike a tight list, whose
-        # <p> the renderer suppresses entirely (see markdown.py's
-        # _block_html docstring for that half of the story). That real <p>
-        # closing right before </li> is NOT a boundary though: confirmed
-        # against a post whose body ends inside a loose list's last item --
-        # Hugo's articleBody has no trailing "\n" there, matching every
-        # other "<p> inside <li>" case where a *following* sibling item
-        # would otherwise wrongly read as a fresh top-level paragraph.
-        if self._li_depth:
-            return
-        self._parts.append("\n")
-        self.had_block = True
-
-    def handle_starttag(self, tag, attrs) -> None:
-        if tag == "li":
-            self._li_depth += 1
-        if tag in _VOID_BLOCK_TAGS:
-            self._mark_block()
-
-    def handle_startendtag(self, tag, attrs) -> None:
-        if tag in _VOID_BLOCK_TAGS:
-            self._mark_block()
-
-    def handle_endtag(self, tag) -> None:
-        if tag in _CLOSE_BLOCK_TAGS:
-            self._mark_block()
-        if tag == "li" and self._li_depth:
-            self._li_depth -= 1
-
-    def handle_data(self, data) -> None:
-        self._parts.append(re.sub(r"\s+", " ", data))
-
-    def text(self) -> str:
-        joined = "".join(self._parts)
-        joined = re.sub(r"[ \t]*\n[ \t]*", "\n", joined)
-        joined = re.sub(r"\n{2,}", "\n", joined)
-        joined = re.sub(r" {2,}", " ", joined)
-        return joined.strip("\n")
+def plainify(s: str) -> str:
+    """Hugo's `plainify`/`.Plain`: a literal newline becomes a space, a
+    closing `</p>` (or a `<br>`) becomes a newline, tags are stripped, and
+    finally every run of whitespace collapses to its own FIRST character.
+    That last step is what makes a paragraph break read as "\\n" while a
+    code block's own indentation reads as a single space."""
+    if "<" not in s and ">" not in s:
+        return s
+    pre = _strip_pre_replace(s)
+    out = strip_tags(pre)
+    if pre != s:
+        out = out.replace(_HUGO_NL, "\n")
+    kept: list[str] = []
+    was_space = False
+    for ch in out:
+        is_space = _go_is_space(ch)
+        if not (is_space and was_space):
+            kept.append(ch)
+        was_space = is_space
+    return "".join(kept) if kept else out
 
 def plain(rendered_html: str) -> str:
-    parser = _PlainTextExtractor()
-    parser.feed(_html_std.unescape(rendered_html))
-    text = parser.text()
-    # A trailing "\n" only belongs here when at least one real block tag
-    # fired: true for anything with actual paragraphs (articleBody always
-    # ends this way), but a tag-free plain string -- an explicit
-    # `description:` front-matter value run through the same `plainify`
-    # pipeline -- gets none, confirmed against Hugo's own JSON-LD output.
-    if text and parser.had_block:
-        return text + "\n"
-    return text
+    """The JSON-LD `articleBody` pipeline, `.Content | safeJS | htmlUnescape
+    | plainify`: entities are decoded BEFORE tags are stripped. That order
+    is not reversible and Hugo loses text by it -- a fenced code block
+    containing a literal `<all source files>` renders as
+    `&lt;all source files&gt;`, decodes back into something Go's tag
+    stripper reads as a tag, and vanishes. Reproduced deliberately, since
+    `strip_tags` above is Go's own stripper and drops it the same way.
+
+    Which text the quirk swallows depends on where the syntax highlighter
+    put its `<span>` boundaries -- `&lt;html&gt;` split across two spans
+    survives, the same phrase inside one span does not -- so highlight.py
+    has to place them where Chroma does. See its `_drop_default_colour`."""
+    return plainify(_html_std.unescape(rendered_html))
 
 def word_count(rendered_html: str) -> int:
-    return len(plain(rendered_html).split())
+    """Hugo's `.WordCount`: fields of `.Plain`. NOT the `articleBody`
+    pipeline -- no `htmlUnescape` here, so the words Hugo's own articleBody
+    loses to the quirk above are still counted."""
+    return len(plainify(rendered_html).split())
+
+# --- Hugo's ExtractSummaryFromHTML ----------------------------------------
+#
+# Verbatim transcription of resources/page/page_markup.go. The summary is a
+# PREFIX OF THE RENDERED HTML ending at a `</p>`, chosen by walking
+# paragraph by paragraph and counting whitespace-separated tokens of the
+# raw HTML -- tokens that look like a tag (`<a`, `</em>`) or an attribute
+# (`href="..."`) count as zero. That is why a paragraph of exactly 70 prose
+# words ends the summary when it is plain text but does NOT when it holds a
+# link: the link contributes `<a` (0) and `href="..."` (0) in place of the
+# words it swallowed. Note also that the inner loop's last-token case is
+# `s[wi:i]`, which drops the paragraph's final character -- kept, because
+# it decides real cases (a final one-character token counts 0, not 1).
+_HTML_TAG_TOKEN_RE = re.compile(r"^</?[A-Za-z]+>?$")
+_HTML_ATTR_TOKEN_RE = re.compile(r"^[A-Za-z]+=[\"']")
+
+def _is_probably_html_token(word: str) -> bool:
+    return (word == ">" or _HTML_TAG_TOKEN_RE.match(word) is not None
+            or _HTML_ATTR_TOKEN_RE.match(word) is not None)
+
+def _count_word(word: str) -> int:
+    word = _go_trim_space(word)
+    if not word or _is_probably_html_token(word):
+        return 0
+    return 1
+
+def extract_summary(content_html: str, num_words: int = 70) -> str:
+    if num_words <= 0:
+        return content_html
+    count = 0
+    j = 0
+    high = len(content_html)
+    while j < high:
+        s = content_html[j:]
+        closing = s.find("</p>")
+        if closing == -1:
+            break
+        s = s[:closing]
+        wi = 0
+        last = len(s) - 1
+        for i, r in enumerate(s):
+            if _go_is_space(r) or i == last:
+                count += _count_word(s[wi:i])
+                wi = i
+                if count >= num_words:
+                    break
+        if count >= num_words:
+            return _go_trim_space(content_html[:j + closing + 4])
+        # Hugo advances by len("</p") only, so the next paragraph's chunk
+        # starts on the '>' -- which countWord then scores as zero.
+        j += closing + 3
+    return _go_trim_space(content_html)
+
+# Hugo's default `summaryLength`; hugo.toml does not override it.
+SUMMARY_LENGTH = 70
+
+def summary(body: str, length: int = SUMMARY_LENGTH) -> str:
+    """The raw `.Summary` form, as `<meta name="description">` and
+    `twitter:description` get it: Go's attribute escaper runs `stripTags`
+    over the `template.HTML` value, keeping entities and newlines."""
+    return strip_tags(extract_summary(render_entities(body), length))
+
+def summary_description(body: str, length: int = SUMMARY_LENGTH) -> str:
+    """The `plainify`d `.Summary` form, as `og:description` and the JSON-LD
+    `description` get it."""
+    return plainify(extract_summary(render_entities(body), length))

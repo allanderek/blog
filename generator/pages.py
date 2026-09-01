@@ -8,6 +8,7 @@ no post in this corpus actually sets (cover images, ShowToc, canonicalURL,
 ...) are left out rather than guessed at.
 """
 from __future__ import annotations
+import html as _html_std
 import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -50,28 +51,7 @@ def _go_string_zone(post: Post) -> str:
     intermittently resolves the same unnamed offset to "GMT" every winter."""
     return "UTC" if post.date_zone_named else "+0000"
 
-# Entity forms goldmark's typographer bakes directly into rendered HTML
-# text (confirmed against Hugo's own output: body paragraphs read
-# "don&rsquo;t", not a raw U+2019). markdown-it-py's typographer instead
-# substitutes the real unicode characters -- fine everywhere compare.py's
-# accepted-drift list folds both forms together, but inside a JSON string
-# Hugo's own escaper turns the entity's "&" into "&" and leaves the
-# rest as literal text, a hybrid compare.py's allow-list does not
-# recognise. Converting back to entity form before JSON-encoding a
-# description reproduces that same hybrid instead of inventing a diff.
-#
-_TO_ENTITY = {
-    "’": "&rsquo;", "‘": "&lsquo;",
-    "“": "&ldquo;", "”": "&rdquo;",
-    "…": "&hellip;", "–": "&ndash;", "—": "&mdash;",
-}
-
 _ANCHOR_RE = re.compile(r'(<h[1-6] id="([^"]+)".+)(</h[1-6]>)')
-
-def _entity_text(s: str) -> str:
-    for ch, ent in _TO_ENTITY.items():
-        s = s.replace(ch, ent)
-    return s
 
 def _minimal_html_escape(s: str) -> str:
     """Goldmark's own text-node escaping, NOT Go html/template's wider
@@ -142,45 +122,36 @@ def _anchor_headings(content: str) -> str:
     )
 
 def _description_text(post: Post) -> str:
-    # The "raw" form for <meta name="description"> and twitter:description:
-    # every line break kept verbatim, headings included -- see markdown.py's
-    # `summary()`/`summary_description()` docstring-comment for why there
-    # have to be two forms at all.
+    """<meta name="description"> and twitter:description: Hugo interpolates
+    `.Description` (a plain string) or `.Summary` (a `template.HTML` value)
+    straight into a quoted attribute. Go escapes the two differently -- see
+    `_head`, which picks the escaper -- so return the text only."""
     return post.description or markdown.summary(post.body)
 
 def _og_description_text(post: Post) -> str:
-    # The "plainified" form for og:description: headings and incidental
-    # whitespace collapse to a single space; real block boundaries don't.
-    # `chomp` in Hugo's own template is just this rstrip.
-    if post.description:
-        return markdown.plain(post.description).rstrip("\n")
-    return markdown.summary_description(post.body).rstrip("\n")
+    # opengraph.html: `or .Description .Summary | plainify | htmlUnescape
+    # | chomp`. htmlUnescape is what makes this form differ from the raw one
+    # above: the entities goldmark baked in are decoded back to real
+    # characters here (and `chomp` is a trailing-newline rstrip).
+    source = post.description or markdown.extract_summary(markdown.render_entities(post.body))
+    return _html_std.unescape(markdown.plainify(source)).rstrip("\r\n")
 
 def _jsonld_description_text(post: Post) -> str:
-    # Same "plainified" form as og:description, but WITHOUT chomp -- Hugo's
-    # schema template keeps whatever trailing "\n" `plainify` produces.
-    # `_minimal_html_escape` (& < >) is applied here, once, up front --
-    # NOT again later in `_schema_json`, which would double-escape the "&"
-    # the quote-escaping below introduces.
+    # schema_json.html: `.Description | plainify` or `.Summary | plainify`
+    # -- the same pipeline as og:description but with NO htmlUnescape and no
+    # chomp, so this one keeps both the entities and any trailing newline.
     if post.description:
-        return _minimal_html_escape(markdown.plain(post.description))
-    # A straight quote surviving an auto-summary can only have come from a
-    # fenced code block (prose ones are already curly, from the shared
-    # parser's typographer) -- confirmed escaped as an entity in real
-    # JSON-LD output (Python `'shutdown'` inside a fenced block reads as
-    # `&#39;shutdown&#39;`). Escaped only here, not inside
-    # `summary_description()` itself: `_og_description_text` below uses
-    # that same function but wants the quote left raw, relying on
-    # `html.esc()` to escape it correctly for the attribute context
-    # instead -- pre-escaping there would double-escape the "&" this adds.
-    text = _minimal_html_escape(markdown.summary_description(post.body))
-    return text.replace('"', "&#34;").replace("'", "&#39;")
+        return markdown.plainify(post.description)
+    return markdown.summary_description(post.body)
 
 def _head(post: Post, site: SiteContext, permalink: str, description: str,
           og_description: str, jsonld_description: str) -> str:
     title = f"{html.esc(post.title)} | {html.esc(site.title)}" if post.title else html.esc(site.title)
     keywords = ", ".join(html.esc(t) for t in post.tags)
-    desc_attr = html.esc(description)
+    # `.Description` is a plain string (Go escapes "&" too); `.Summary` is
+    # `template.HTML`, which Go escapes with its normalising table instead,
+    # leaving goldmark's own entities intact.
+    desc_attr = html.esc(description) if post.description else html.esc_norm(description)
     og_desc_attr = html.esc(og_description)
     published = post.date.strftime(_ISO_OFFSET)
 
@@ -266,18 +237,14 @@ def _head(post: Post, site: SiteContext, permalink: str, description: str,
 {_schema_json(post, site, permalink, jsonld_description)}"""
 
 def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_description: str) -> str:
-    content_html = markdown.render(post.body)
+    # Hugo's `.Content` carries goldmark's typographic entities, and both
+    # `articleBody` (which decodes them) and `.WordCount` are computed
+    # from it.
+    content_html = markdown.render_entities(post.body)
     plain = markdown.plain(content_html)
-    word_count = len(plain.split())
+    word_count = markdown.word_count(content_html)
     published_z = post.date.strftime(_ISO_Z)
     keywords = ", ".join(_js_value(t) for t in post.tags)
-    # "description" is the one JSON-LD field built from `.Summary`/
-    # `.Description`, which -- unlike `.Content` (articleBody's source) --
-    # never gets `htmlUnescape`'d, so it carries its own baked-in HTML
-    # entities (stage 1, already applied by `_jsonld_description_text`)
-    # before the JS-string escaper (stage 2) touches it. Only the
-    # typographic entities (smart quotes/dashes/ellipsis) are added here.
-    description_entity_text = _entity_text(jsonld_description)
 
     breadcrumbs = f"""<script type="application/ld+json">
 {{
@@ -306,7 +273,7 @@ def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_descripti
   "@type": "BlogPosting",
   "headline": {_js_value(post.title)},
   "name": "{_js_string_inner(post.title)}",
-  "description": {_js_value(description_entity_text)},
+  "description": {_js_value(jsonld_description)},
   "keywords": [
     {keywords}
   ],

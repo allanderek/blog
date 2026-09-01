@@ -1,35 +1,74 @@
 from pathlib import Path
 from generator.content import parse_post
-from generator.markdown import render, summary
+from generator.markdown import (extract_summary, plainify, render,
+                                render_entities, summary, word_count)
 
 def test_headings_get_ids():
     assert 'id="green-party"' in render("## Green Party")
 
-# Pins the auto-summary truncation boundary (Hugo's default SummaryLength,
-# 70 words) against two real posts with different shapes, each verified
-# against Hugo's own real output (captured with
-# `TZ=America/Los_Angeles direnv exec . hugo --destination ...`, matching
-# the site's real deploy environment -- see task-6-report.md's "word-count
-# boundary" section for the full investigation, including the one shape
-# this rule still gets wrong).
-def test_summary_stops_after_a_paragraph_crossing_the_limit():
-    # Threshold is crossed inside a blockquote (a paragraph, then more
-    # nested content) -- a blockquote is a valid place to stop, just like
-    # a paragraph: Hugo's real summary ends exactly at the blockquote,
-    # 91 words, nothing further.
-    post = parse_post(Path("content/posts/clients-as-a-pitfall.md"))
+# Pins Hugo's auto-summary rule (resources/page/page_markup.go's
+# ExtractSummaryFromHTML, at the default SummaryLength of 70) against four
+# real posts of deliberately different shapes. Every expectation below was
+# read off Hugo's own `.Summary` for that post, captured with
+# `TZ=America/Los_Angeles direnv exec . hugo ...` -- the site's real deploy
+# environment. The rule is NOT "70 words of prose": it walks the rendered
+# HTML paragraph by paragraph, counting whitespace-separated tokens of the
+# MARKUP and scoring anything that looks like a tag ("<a", "</em>") or an
+# attribute (`href="..."`) as zero, then ends the summary at the first
+# `</p>` where the running count reaches 70.
+def test_summary_ends_at_the_paragraph_that_reaches_the_limit():
+    # Seventy words of plain prose in the first paragraph, no markup in it
+    # at all: the count reaches exactly 70 there and the summary is that
+    # paragraph, even though a second one follows.
+    post = parse_post(Path("content/posts/elm-minor-imports-syntax-tweak.md"))
     text = summary(post.body)
-    assert len(text.split()) == 91
-    assert text.endswith("you have to assume it will never happen.")
+    assert len(text.split()) == 70
+    assert text.endswith("I still think my minor syntax tweak should be adopted.")
 
-def test_summary_runs_on_past_a_heading_crossing_the_limit():
-    # Threshold is crossed inside a heading -- NOT a valid place to stop:
-    # Hugo's real summary runs on through the entire next paragraph
-    # (97 words) before stopping.
-    post = parse_post(Path("content/posts/dynamically-typed-statically-typed-metaprogramming.md"))
+def test_a_links_markup_is_not_counted_as_words():
+    # Structurally the same post as above -- a first paragraph of exactly 70
+    # prose words -- but seven of those words sit inside a link. `<a` and
+    # `href="..."` both count zero and they swallowed the word next to them,
+    # so the paragraph is worth 63 and Hugo runs on into the second one.
+    post = parse_post(Path("content/posts/link-python-constant-weirdness.md"))
     text = summary(post.body)
-    assert len(text.split()) == 97
-    assert text.endswith("If you’re sure you know, you can skip this.")
+    assert len(text.split()) == 107
+    assert text.endswith("which is not a keyword but is dedicated syntax).")
+
+def test_summary_counts_a_code_blocks_own_markup_and_text():
+    # The limit is reached inside a syntax-highlighted block, whose text and
+    # per-line span markup both count. Ending there is not possible -- only a
+    # `</p>` ends a summary -- so it runs on to the paragraph after it.
+    post = parse_post(Path("content/posts/minor-refactorings.md"))
+    text = summary(post.body)
+    assert len(text.split()) == 89
+    assert "host_name = self.connection.getsockname()[0]" in text
+    assert text.endswith("Or even, if you prefer:")
+
+def test_summary_can_end_inside_a_blockquote():
+    # The `</p>` that ends the summary is the one nested inside a
+    # blockquote, so Hugo's summary is not even well-formed HTML: it leaves
+    # the <blockquote> open. Reproduced rather than tidied up.
+    post = parse_post(Path("content/posts/needless-do-notation.md"))
+    body = post.body
+    html = extract_summary(render_entities(body))
+    assert html.count("<blockquote>") - html.count("</blockquote>") == 1
+    assert summary(body).endswith("1 on average!!!. In other cases,")
+
+# `.Plain` and `.WordCount` come from Hugo's tpl.StripHTML, which is not a
+# tag stripper with whitespace cleanup bolted on: a "\n" in the source
+# becomes a space, only a closing `</p>` (or a `<br>`) becomes a newline,
+# and every run of whitespace then collapses to its own FIRST character.
+def test_plainify_makes_paragraph_ends_newlines_and_everything_else_spaces():
+    assert plainify("<p>one\ntwo</p>\n<p>three</p>\n") == "one two\nthree\n"
+
+def test_plainify_leaves_a_tagless_string_completely_alone():
+    assert plainify("a  b\n\nc") == "a  b\n\nc"
+
+def test_word_count_matches_hugos_for_a_real_post():
+    # Hugo's own .WordCount for this post is 1242.
+    post = parse_post(Path("content/posts/dsls.md"))
+    assert word_count(render_entities(post.body)) == 1242
 
 def test_strikethrough_uses_del_not_s():
     # Goldmark emits <del>; markdown-it-py's default is <s>

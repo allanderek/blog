@@ -42,3 +42,15 @@ def attrs(**kw: object) -> str:
 
 def tag(name: str, inner: str = "", **kw: object) -> str:
     return f"<{name}{attrs(**kw)}>{inner}</{name}>"
+
+
+# Go's html/template uses a second, "normalising" table for a value that is
+# already `template.HTML` (Hugo's `.Summary`, `.Content`, ...) landing in an
+# attribute: identical to the one above except that "&" is left alone, so
+# entities the value already carries ("&rsquo;") are not double-encoded.
+_ESCAPE_TABLE_NORM = {k: v for k, v in _ESCAPE_TABLE.items() if k != "&"}
+_ESCAPE_RE_NORM = re.compile("|".join(re.escape(c) for c in _ESCAPE_TABLE_NORM))
+
+
+def esc_norm(s: object) -> str:
+    return _ESCAPE_RE_NORM.sub(lambda m: _ESCAPE_TABLE_NORM[m.group(0)], str(s))
