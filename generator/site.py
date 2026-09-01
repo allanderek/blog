@@ -4,9 +4,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .content import Post, load_posts, load_index_body
-from .pages import home_page, post_page
+from .pages import alias_stub, home_page, list_page, post_page
 
 CONTENT_ROOT = Path(__file__).resolve().parent.parent / "content"
+
+# hugo.toml [pagination] pagerSize -- also the trigger for the 176-post
+# /posts/ listing to need a second page and a `/posts/page/2/`.
+PAGER_SIZE = 100
 
 @dataclass
 class SiteContext:
@@ -49,6 +53,27 @@ def _default_site(posts: list[Post], home_intro: str = "") -> SiteContext:
         home_intro=home_intro,
     )
 
+def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteContext) -> None:
+    """Writes every page of a paginated section listing (`base_path`, e.g.
+    "/posts/"): the bare page (the newest `PAGER_SIZE` posts, newest-first
+    since `posts` already is), a `page/N/` page for each page after that,
+    and the `page/1/` alias stub Hugo's `disableAliases = false` emits for
+    every paginated listing (see `pages.alias_stub`) -- nothing in
+    check-site.sh asserts that stub exists, so it is easy to silently
+    drop; `compare.py` is what catches it."""
+    total_pages = max(1, -(-len(posts) // PAGER_SIZE))  # ceil division
+    section_dir = out / base_path.strip("/")
+    section_dir.mkdir(parents=True, exist_ok=True)
+    for page_num in range(1, total_pages + 1):
+        page_posts = posts[(page_num - 1) * PAGER_SIZE: page_num * PAGER_SIZE]
+        page_html = list_page(page_posts, page_num, total_pages, base_path, site)
+        page_dir = section_dir if page_num == 1 else section_dir / "page" / str(page_num)
+        page_dir.mkdir(parents=True, exist_ok=True)
+        (page_dir / "index.html").write_text(page_html)
+    stub_dir = section_dir / "page" / "1"
+    stub_dir.mkdir(parents=True, exist_ok=True)
+    (stub_dir / "index.html").write_text(alias_stub(base_path, site))
+
 def build(out: Path) -> None:
     posts = load_posts(CONTENT_ROOT / "posts")
     home_intro = load_index_body(CONTENT_ROOT / "_index.md")
@@ -59,3 +84,4 @@ def build(out: Path) -> None:
         (page_dir / "index.html").write_text(post_page(post, site))
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(home_page(site))
+    _write_section(out, "/posts/", posts, site)

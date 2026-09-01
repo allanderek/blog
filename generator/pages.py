@@ -306,6 +306,77 @@ def _head_home(site: SiteContext, permalink: str, description_attr: str,
 
 {_schema_json_home(site)}"""
 
+def _head_section(site: SiteContext, permalink: str, title: str, base_path: str) -> str:
+    """<head> for a section's list page (Kind "section", e.g. /posts/):
+    head.html's non-`.IsHome` branch (title suffixed with " | {site.Title}",
+    an empty <meta name="keywords"> since a section carries no front-matter
+    tags of its own, and the ".Summary | default (printf \"%s - %s\"
+    .Title site.Title)" description fallback -- .Summary is always empty
+    here, since no content/<section>/_index.md exists to give a section
+    real body content) and opengraph.html/twitter_cards.html/schema_json.html's
+    shared `.IsSection` behaviour: the site-wide description for
+    og/twitter (a section has no `.Summary` to fall back to there either),
+    `og:type` "website" like the home page, and a BreadcrumbList with no
+    BlogPosting -- see `_schema_json_section`. Confirmed identical across
+    every page of a paginated section (`/tmp/t8-hugo/posts/index.html` vs.
+    `.../posts/page/2/index.html`): Hugo's paginator keeps the same
+    underlying section Page for every page it renders, so nothing here
+    varies with `page_num`/`total_pages`, only the caller's post list and
+    pagination nav do."""
+    desc_attr = html.esc(f"{title} - {site.title}")
+    og_desc_attr = html.esc(site.description)
+    return f"""{_META_TOP}
+
+{_feed_and_analytics(site)}
+<title>{html.esc(title)} | {html.esc(site.title)}</title>
+<meta name="keywords" content="">
+<meta name="description" content="{desc_attr}">
+<meta name="author" content="{html.esc(site.author)}">
+<link rel="canonical" href="{permalink}">
+<link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
+{_favicons_block(site)}
+<link rel="alternate" type="application/rss+xml" href="{site.base_url}{base_path}index.xml">
+<link rel="alternate" hreflang="en" href="{permalink}">
+{_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
+  <meta property="og:site_name" content="{html.esc(site.title)}">
+  <meta property="og:title" content="{html.esc(title)}">
+  <meta property="og:description" content="{og_desc_attr}">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{html.esc(title)}">
+<meta name="twitter:description" content="{og_desc_attr}">
+
+
+{_schema_json_section(title, permalink)}"""
+
+def _breadcrumb_list(items: list[tuple[str, str]]) -> str:
+    """schema_json.html's `BreadcrumbList` block -- the composable piece
+    shared by `_schema_json` (a post: two entries, "Posts" then the post
+    itself) and `_schema_json_section` (a section list page like /posts/:
+    one self-referencing entry; taxonomy pages in a later task add a
+    third shape built from the same helper -- "Tags" then the term).
+    `items` is (name, url) pairs in position order; `name` must already be
+    a JSON-ready value (`_js_value(...)` -- see that function's docstring
+    for why the BlogPosting's own "name" field needs `_js_string_inner`
+    instead, a distinction no breadcrumb name needs since none is ever
+    written inside pre-existing literal quotes)."""
+    entries = ",\n".join(f"""    {{
+      "@type": "ListItem",
+      "position":  {position} ,
+      "name": {name},
+      "item": "{url}"
+    }}""" for position, (name, url) in enumerate(items, start=1))
+    return f"""<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+{entries}
+  ]
+}}
+</script>"""
+
 def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_description: str) -> str:
     # Hugo's `.Content` carries goldmark's typographic entities, and both
     # `articleBody` (which decodes them) and `.WordCount` are computed
@@ -316,26 +387,10 @@ def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_descripti
     published_z = post.date.strftime(_ISO_Z)
     keywords = ", ".join(_js_value(t) for t in post.tags)
 
-    breadcrumbs = f"""<script type="application/ld+json">
-{{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {{
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "{site.base_url}/posts/"
-    }},
-    {{
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": {_js_value(post.title)},
-      "item": "{permalink}"
-    }}
-  ]
-}}
-</script>"""
+    breadcrumbs = _breadcrumb_list([
+        (_js_value("Posts"), f"{site.base_url}/posts/"),
+        (_js_value(post.title), permalink),
+    ])
 
     blog_posting = f"""<script type="application/ld+json">
 {{
@@ -397,6 +452,14 @@ def _schema_json_home(site: SiteContext) -> str:
   ]
 }}
 </script>"""
+
+def _schema_json_section(name: str, permalink: str) -> str:
+    """schema_json.html's `.IsSection` branch (`.IsSection` without
+    `.IsPage`): just the `_breadcrumb_list`, no BlogPosting. `/posts/` is
+    the only section this generator builds yet, and its own `$bc_list` (a
+    direct child of Home) is always a single self-referencing entry --
+    confirmed against `/tmp/t8-hugo/posts/index.html`'s own JSON-LD."""
+    return _breadcrumb_list([(_js_value(name), permalink)])
 
 def _theme_init_script() -> str:
     return """<script>
@@ -541,14 +604,22 @@ def _signature(site: SiteContext, inline: bool = False) -> str:
     </div>
 </aside>"""
 
-def _post_meta(post: Post, site: SiteContext) -> str:
+def _post_meta_core(post: Post, site: SiteContext) -> str:
+    """post_meta.html's own `<span title=...>...</span>&nbsp;·&nbsp;author`
+    -- shared by a post's `<div class="post-meta">` (`_post_meta`, below)
+    and a list page's `<footer class="entry-footer">` (`_list_entry`),
+    which uses the identical partial but without the trailing blank-line
+    partial calls only the post layout leaves room for."""
     go_string = post.date.strftime(_GO_STRING) + " " + _go_string_zone(post)
     human = post.date.strftime(_HUMAN.format(day=post.date.day))
+    return (f"<span title='{go_string}'>{human}</span>"
+            f"&nbsp;·&nbsp;{html.esc(site.author)}")
+
+def _post_meta(post: Post, site: SiteContext) -> str:
     # Trailing "\n\n" mirrors post_meta.html's own trailing partial calls
     # (translation_list/edit_post/post_canonical), which all render empty
     # for this corpus but still leave whitespace before "</div>".
-    return (f"<span title='{go_string}'>{human}</span>"
-            f"&nbsp;·&nbsp;{html.esc(site.author)}\n\n")
+    return _post_meta_core(post, site) + "\n\n"
 
 def _post_tags(post: Post, site: SiteContext) -> str:
     items = "\n".join(
@@ -707,5 +778,133 @@ def home_page(site: SiteContext) -> str:
 
 {body}
 
+</html>
+"""
+
+def _list_entry(post: Post, site: SiteContext) -> str:
+    """list.html's `<article class="post-entry">` for one post in a
+    listing: title, `.Summary` (list.html always reads `.Summary`
+    directly -- unlike the meta `<meta name="description">` above, it
+    never falls back to a front-matter `description:`), the same
+    post-meta line a post page's own header uses (`_post_meta_core`), and
+    the entry-level permalink."""
+    summary_text, truncated = markdown.entry_summary(post.body)
+    summary_html = html.esc(summary_text) + ("..." if truncated else "")
+    title = html.esc(post.title)
+    permalink = f"{site.base_url}/posts/{post.slug}/"
+    return f"""<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">{title}
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>{summary_html}</p>
+  </div>
+  <footer class="entry-footer">{_post_meta_core(post, site)}</footer>
+  <a class="entry-link" aria-label="post link to {title}" href="{permalink}"></a>
+</article>"""
+
+_PAGINATION_PREV = """    <a class="prev" href="{url}">
+      «&nbsp;Prev&nbsp;
+    </a>"""
+
+_PAGINATION_NEXT = """    <a class="next" href="{url}">Next&nbsp;&nbsp;»
+    </a>"""
+
+def _pagination_footer(prev_url: str | None, next_url: str | None) -> str:
+    """list.html's `<footer class="page-footer">` pagination nav, only
+    emitted at all when `$paginator.TotalPages > 1` -- callers pass both
+    URLs as None for a single-page listing, which this returns as ""."""
+    if prev_url is None and next_url is None:
+        return ""
+    links = []
+    if prev_url is not None:
+        links.append(_PAGINATION_PREV.format(url=prev_url))
+    if next_url is not None:
+        links.append(_PAGINATION_NEXT.format(url=next_url))
+    nav = "\n".join(links)
+    return f"""<footer class="page-footer">
+  <nav class="pagination">
+{nav}
+  </nav>
+</footer>"""
+
+def _list_title(base_path: str) -> str:
+    """The list page's own auto Title (list.html's <h1>, and the source
+    for "<title>Title | site.Title</title>"/the description fallback/
+    og:title/twitter:title in `_head_section`) -- for a section with no
+    content/<section>/_index.md, Hugo's default section Title is simply
+    the capitalised section name. `/posts/` is the only section this
+    generator builds yet."""
+    return base_path.strip("/").rsplit("/", 1)[-1].capitalize()
+
+def list_page(posts: list[Post], page_num: int, total_pages: int, base_path: str,
+              site: SiteContext) -> str:
+    """.../_default/list.html for one page of a paginated section listing
+    (Kind "section", e.g. /posts/ and /posts/page/2/). `base_path` is the
+    section's own bare, absolute-from-root path ("/posts/"); `posts` is
+    already the slice this particular page renders (`pagerSize`-many,
+    newest-first); `page_num`/`total_pages` drive only the prev/next
+    pagination nav -- see `_head_section`'s docstring for why nothing else
+    in <head> varies by page number."""
+    permalink = f"{site.base_url}{base_path}"
+    title = _list_title(base_path)
+
+    entries = "\n\n".join(_list_entry(post, site) for post in posts)
+    prev_url = (permalink if page_num == 2
+                else f"{site.base_url}{base_path}page/{page_num - 1}/" if page_num > 2
+                else None)
+    next_url = (f"{site.base_url}{base_path}page/{page_num + 1}/"
+                if page_num < total_pages else None)
+    pagination = _pagination_footer(prev_url, next_url) if total_pages > 1 else ""
+
+    main = f"""<header class="page-header">
+  <h1>
+    {title}
+  </h1>
+</header>
+
+{entries}""" + (f"\n{pagination}" if pagination else "")
+
+    body = f"""<body class="list" id="top">
+{_theme_init_script()}
+
+{_header(site)}
+<main class="main"> 
+{main}
+    </main>
+{_signature(site)}
+
+{_footer(site)}
+</body>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head>
+{_head_section(site, permalink, title, base_path)}
+</head>
+
+{body}
+
+</html>
+"""
+
+def alias_stub(target_url: str, site: SiteContext) -> str:
+    """A `disableAliases = false` pagination alias: Hugo's own built-in
+    alias template, emitted for every paginated listing's implicit
+    "/page/1/" URL, redirecting it to the listing's own bare URL.
+    `target_url` is that bare, absolute-from-root path (e.g. "/posts/");
+    the stub's <title>/canonical/refresh all repeat the absolute URL it
+    redirects to -- captured verbatim from `/tmp/t8-hugo/posts/page/1/index.html`."""
+    absolute = f"{site.base_url}{target_url}"
+    return f"""<!DOCTYPE html>
+<html lang="en-us">
+\t<head>
+\t\t<title>{absolute}</title>
+\t\t<link rel="canonical" href="{absolute}">
+\t\t<meta charset="utf-8">
+\t\t<meta http-equiv="refresh" content="0; url={absolute}">
+\t</head>
 </html>
 """

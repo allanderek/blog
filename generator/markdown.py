@@ -516,9 +516,17 @@ def _count_word(word: str) -> int:
         return 0
     return 1
 
-def extract_summary(content_html: str, num_words: int = 70) -> str:
+def _extract_summary(content_html: str, num_words: int) -> tuple[str, bool]:
+    """The algorithm behind `extract_summary`, plus the one thing every
+    caller so far has thrown away: whether it actually cut anything short
+    (Hugo's `.Truncated`, which list.html's post-entry summaries use to
+    decide whether to append a literal "..."). The word-count walk can hit
+    `num_words` while processing the document's OWN LAST paragraph -- an
+    early `return` out of the loop that nonetheless keeps every paragraph,
+    same as falling all the way through -- so truncated is not "returned
+    mid-walk" but "something real is left over after the cut point"."""
     if num_words <= 0:
-        return content_html
+        return content_html, False
     count = 0
     j = 0
     high = len(content_html)
@@ -537,11 +545,16 @@ def extract_summary(content_html: str, num_words: int = 70) -> str:
                 if count >= num_words:
                     break
         if count >= num_words:
-            return _go_trim_space(content_html[:j + closing + 4])
+            cut = j + closing + 4
+            truncated = _go_trim_space(content_html[cut:]) != ""
+            return _go_trim_space(content_html[:cut]), truncated
         # Hugo advances by len("</p") only, so the next paragraph's chunk
         # starts on the '>' -- which countWord then scores as zero.
         j += closing + 3
-    return _go_trim_space(content_html)
+    return _go_trim_space(content_html), False
+
+def extract_summary(content_html: str, num_words: int = 70) -> str:
+    return _extract_summary(content_html, num_words)[0]
 
 # Hugo's default `summaryLength`; hugo.toml does not override it.
 SUMMARY_LENGTH = 70
@@ -556,3 +569,14 @@ def summary_description(body: str, length: int = SUMMARY_LENGTH) -> str:
     """The `plainify`d `.Summary` form, as `og:description` and the JSON-LD
     `description` get it."""
     return plainify(extract_summary(render_entities(body), length))
+
+def entry_summary(body: str, length: int = SUMMARY_LENGTH) -> tuple[str, bool]:
+    """list.html's own post-entry summary: `.Summary | plainify |
+    htmlUnescape`, plus whether `.Truncated` -- unlike the meta/JSON-LD
+    forms above, list.html always reads `.Summary` regardless of any
+    front-matter `description:`, and appends a literal "..." itself when
+    Truncated (left to the caller, same as the `og:description`/JSON-LD
+    "..." -- there is none of those -- so this returns only the text and
+    the flag)."""
+    html_summary, truncated = _extract_summary(render_entities(body), length)
+    return _html_std.unescape(plainify(html_summary)), truncated
