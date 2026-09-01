@@ -236,13 +236,21 @@ def _summary_html(body: str, length: int) -> str:
     a block, even one that alone blows past the limit.
 
     Where the cut lands when a fenced code block sits near the boundary is
-    NOT reliably reproduced here: two posts with a code block straddling
-    the ~70-word mark disagree with each other in a way a single per-block
-    word-count rule (code counting in full, or not at all, tried both)
-    could not reconcile -- see task-6-report.md's "word-count boundary"
-    section for the two conflicting data points. Left as ordinary
-    full-word-count accumulation, which is exactly right whenever the
-    boundary doesn't fall inside or right after a fence.
+    NOT reliably reproduced here. Confirmed right for a threshold crossed
+    inside a plain paragraph with no code nearby, and for one crossed
+    inside a large fence followed by exactly one more paragraph. But two
+    *other* posts whose threshold is also crossed just past a fence run
+    Hugo's real output on through a further whole fence+paragraph pair
+    before stopping -- and a rule built to explain those two broke a
+    previously-working case (crossing inside a large paragraph that
+    itself follows a fence, where Hugo stops immediately, no run-on at
+    all). Every per-block rule tried (fence counting in full, counting as
+    zero, run-on counts keyed to which kind of block crossed the
+    threshold or what preceded it) fixes some of these posts while
+    breaking others already known to be correct -- see task-6-report.md's
+    "word-count boundary" section for the specific posts and numbers.
+    Left as plain full-word-count accumulation, which is exactly right
+    whenever the boundary doesn't fall inside or right after a fence.
     """
     tokens = _MD.parse(body)
     parts: list[str] = []
@@ -302,12 +310,26 @@ class _PlainTextExtractor(HTMLParser):
         super().__init__(convert_charrefs=True)
         self._parts: list[str] = []
         self.had_block = False   # did any real block tag actually fire?
+        self._li_depth = 0
 
     def _mark_block(self) -> None:
+        # A *loose* list (blank line between items) renders its item's
+        # content as a real, non-hidden <p> -- unlike a tight list, whose
+        # <p> the renderer suppresses entirely (see markdown.py's
+        # _block_html docstring for that half of the story). That real <p>
+        # closing right before </li> is NOT a boundary though: confirmed
+        # against a post whose body ends inside a loose list's last item --
+        # Hugo's articleBody has no trailing "\n" there, matching every
+        # other "<p> inside <li>" case where a *following* sibling item
+        # would otherwise wrongly read as a fresh top-level paragraph.
+        if self._li_depth:
+            return
         self._parts.append("\n")
         self.had_block = True
 
     def handle_starttag(self, tag, attrs) -> None:
+        if tag == "li":
+            self._li_depth += 1
         if tag in _VOID_BLOCK_TAGS:
             self._mark_block()
 
@@ -318,6 +340,8 @@ class _PlainTextExtractor(HTMLParser):
     def handle_endtag(self, tag) -> None:
         if tag in _CLOSE_BLOCK_TAGS:
             self._mark_block()
+        if tag == "li" and self._li_depth:
+            self._li_depth -= 1
 
     def handle_data(self, data) -> None:
         self._parts.append(re.sub(r"\s+", " ", data))
