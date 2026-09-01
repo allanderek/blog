@@ -199,6 +199,16 @@ def _inline_plain(children) -> str:
 def _block_html(block: list) -> str:
     t0 = block[0]
     if t0.type == "paragraph_open":
+        # A *tight* list's paragraph (no blank line between items) has its
+        # paragraph_open/close marked `hidden` by markdown-it -- it's not a
+        # real paragraph, just how a list item's content happens to be
+        # tokenized. Wrapping it in <p> anyway synthesises a paragraph
+        # boundary `plain()` has no business treating as one: it made
+        # `summary_description()` insert a spurious extra "\n" for any
+        # summary ending inside a (near-universally tight) list, which
+        # Hugo's own output does not have.
+        if t0.hidden:
+            return _inline_plain(block[1].children)
         return f"<p>{_inline_plain(block[1].children)}</p>"
     if t0.type == "heading_open":
         return f"<h2>{_inline_plain(block[1].children)}</h2>"
@@ -221,6 +231,19 @@ def _block_html(block: list) -> str:
 _SUMMARY_TAGS_RE = re.compile(r"</?(?:p|h2|li|blockquote)>")
 
 def _summary_html(body: str, length: int) -> str:
+    """Walks top-level blocks in order, including each one in full while
+    the running word count has not yet reached `length` -- never splitting
+    a block, even one that alone blows past the limit.
+
+    Where the cut lands when a fenced code block sits near the boundary is
+    NOT reliably reproduced here: two posts with a code block straddling
+    the ~70-word mark disagree with each other in a way a single per-block
+    word-count rule (code counting in full, or not at all, tried both)
+    could not reconcile -- see task-6-report.md's "word-count boundary"
+    section for the two conflicting data points. Left as ordinary
+    full-word-count accumulation, which is exactly right whenever the
+    boundary doesn't fall inside or right after a fence.
+    """
     tokens = _MD.parse(body)
     parts: list[str] = []
     count = 0

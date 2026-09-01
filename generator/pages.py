@@ -33,8 +33,22 @@ _MENU = [
 
 _ISO_OFFSET = "%Y-%m-%dT%H:%M:%S+00:00"   # article:published_time / modified_time
 _ISO_Z = "%Y-%m-%dT%H:%M:%SZ"             # JSON-LD datePublished / dateModified
-_GO_STRING = "%Y-%m-%d %H:%M:%S +0000 UTC"  # time.Time's default String() form
+_GO_STRING = "%Y-%m-%d %H:%M:%S +0000"    # time.Time's default String() form, zone appended separately
 _HUMAN = "%B {day}, %Y"                     # PaperMod's default "January 2, 2006"
+
+def _go_string_zone(post: Post) -> str:
+    """The zone text Go's time.Time.String() appends after the numeric
+    offset. A bare front-matter date or a "Z" suffix parses to Go's named
+    "UTC" `time.Location`, which String()s as "+0000 UTC". An explicit
+    numeric offset ("+00:00") instead produces an unnamed fixed-offset
+    Location, whose String() has no name to print and just repeats the
+    offset instead: "+0000 +0000". Confirmed against Hugo's own output
+    built with this site's real deploy environment
+    (`TZ=America/Los_Angeles`, from .github/workflows/hugo.yaml) -- LA is
+    never at UTC+0 in any season, so this is deterministic, unlike
+    building under this sandbox's own local zone (Europe/London), which
+    intermittently resolves the same unnamed offset to "GMT" every winter."""
+    return "UTC" if post.date_zone_named else "+0000"
 
 # Entity forms goldmark's typographer bakes directly into rendered HTML
 # text (confirmed against Hugo's own output: body paragraphs read
@@ -443,7 +457,7 @@ def _signature(site: SiteContext) -> str:
 </aside>"""
 
 def _post_meta(post: Post, site: SiteContext) -> str:
-    go_string = post.date.strftime(_GO_STRING)
+    go_string = post.date.strftime(_GO_STRING) + " " + _go_string_zone(post)
     human = post.date.strftime(_HUMAN.format(day=post.date.day))
     # Trailing "\n\n" mirrors post_meta.html's own trailing partial calls
     # (translation_list/edit_post/post_canonical), which all render empty
@@ -453,7 +467,7 @@ def _post_meta(post: Post, site: SiteContext) -> str:
 
 def _post_tags(post: Post, site: SiteContext) -> str:
     items = "\n".join(
-        f'      <li><a href="{site.base_url}/tags/{_tag_slug(t)}/">{html.esc(_tag_title(t))}</a></li>'
+        f'      <li><a href="{site.base_url}/tags/{html.esc(_tag_slug(t))}/">{html.esc(_tag_title(t))}</a></li>'
         for t in post.tags
     )
     return f"""    <ul class="post-tags">
