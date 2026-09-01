@@ -50,3 +50,33 @@ def test_real_corpus_loads(tmp_path):
     assert len(posts) == 176
     assert all(p.title for p in posts)
     assert posts == sorted(posts, key=lambda p: p.date, reverse=True)
+
+def test_description_is_parsed(tmp_path):
+    (tmp_path / "p.md").write_text(
+        '---\ntitle: "T"\ndate: 2020-01-01\ndescription: "A short summary"\n---\nx\n')
+    post = parse_post(tmp_path / "p.md")
+    assert post.description == "A short summary"
+
+def test_featured_blurb_is_parsed(tmp_path):
+    (tmp_path / "p.md").write_text(
+        '---\ntitle: "T"\ndate: 2020-01-01\nfeaturedBlurb: "Read this one"\n---\nx\n')
+    post = parse_post(tmp_path / "p.md")
+    assert post.featured_blurb == "Read this one"
+
+def test_tag_with_quoted_comma_is_not_split(tmp_path):
+    (tmp_path / "p.md").write_text(
+        '---\ntitle: "T"\ndate: 2020-01-01\ntags: ["a, b", "c"]\n---\nx\n')
+    post = parse_post(tmp_path / "p.md")
+    assert post.tags == ["a, b", "c"]
+
+def test_real_corpus_quoted_tag_style(tmp_path):
+    (tmp_path / "p.md").write_text(
+        '---\ntitle: "T"\ndate: 2020-01-01\ntags: ["compilation", "language-design"]\n---\nx\n')
+    post = parse_post(tmp_path / "p.md")
+    assert post.tags == ["compilation", "language-design"]
+
+def test_corpus_tag_totals_stable():
+    posts = load_posts(Path("content/posts"))
+    all_tags = [t for p in posts for t in p.tags]
+    assert len(all_tags) == 357
+    assert all("," not in t for t in all_tags)

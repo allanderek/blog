@@ -1,5 +1,7 @@
 """Discover and parse posts. Front matter is a known, small YAML subset."""
 from __future__ import annotations
+import csv
+import io
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -27,11 +29,18 @@ def _parse_date(raw: str) -> datetime:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
 
+def _parse_list(raw: str) -> list[str]:
+    """Split a flat, flow-style YAML list, respecting quoted commas."""
+    inner = raw.strip()[1:-1]
+    if not inner.strip():
+        return []
+    row = next(csv.reader(io.StringIO(inner), skipinitialspace=True))
+    return [item.strip().strip("'") for item in row if item.strip()]
+
 def _parse_scalar(raw: str):
     raw = raw.strip()
     if raw.startswith("[") and raw.endswith("]"):
-        items = [i.strip().strip('"').strip("'") for i in raw[1:-1].split(",")]
-        return [i for i in items if i]
+        return _parse_list(raw)
     if raw.lower() in ("true", "false"):
         return raw.lower() == "true"
     if re.fullmatch(r"-?\d+", raw):
