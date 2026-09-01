@@ -14,12 +14,22 @@ _KEEP = re.compile(r"[^\w\s-]", re.UNICODE)
 
 class Slugger:
     def __init__(self) -> None:
-        self._seen: dict[str, int] = {}
+        self._counts: dict[str, int] = {}
+        self._emitted: set[str] = set()
 
     def slug(self, text: str) -> str:
-        s = _TAG.sub("", text).strip().lower()
-        s = _KEEP.sub("", s)          # delete punctuation; \w keeps underscore
-        s = s.replace(" ", "-")       # one hyphen per space, no collapsing
-        n = self._seen.get(s, 0)
-        self._seen[s] = n + 1
-        return s if n == 0 else f"{s}-{n}"
+        base = _TAG.sub("", text).strip().lower()
+        base = _KEEP.sub("", base).replace(" ", "-")
+        if not base:
+            base = "heading"          # Hugo's fallback for an empty slug
+        n = self._counts.get(base, 0)
+        self._counts[base] = n + 1
+        candidate = base if n == 0 else f"{base}-{n}"
+        # A literal heading can collide with a generated numbered form, so keep
+        # suffixing until the id is genuinely free.
+        suffix_n = 0
+        while candidate in self._emitted:
+            suffix_n += 1
+            candidate = f"{candidate}-{suffix_n}"
+        self._emitted.add(candidate)
+        return candidate

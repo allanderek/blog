@@ -30,3 +30,18 @@ def test_dedupe_is_per_document():
 
 def test_strips_inline_html():
     assert Slugger().slug("A <em>word</em> here") == "a-word-here"
+
+def test_literal_numbered_heading_does_not_collide():
+    s = Slugger()
+    assert [s.slug(t) for t in ["Detection", "Detection", "Detection 1", "Detection"]] == \
+        ["detection", "detection-1", "detection-1-1", "detection-2"]
+
+def test_empty_slug_falls_back_to_heading():
+    s = Slugger()
+    assert s.slug("???") == "heading"
+    assert s.slug("!!!") == "heading-1"
+
+def test_no_duplicate_ids_ever():
+    s = Slugger()
+    ids = [s.slug(t) for t in ["A", "A", "A 1", "A", "A 1", "A-1"]]
+    assert len(ids) == len(set(ids)), f"duplicate ids: {ids}"
