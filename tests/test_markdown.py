@@ -1,7 +1,35 @@
-from generator.markdown import render
+from pathlib import Path
+from generator.content import parse_post
+from generator.markdown import render, summary
 
 def test_headings_get_ids():
     assert 'id="green-party"' in render("## Green Party")
+
+# Pins the auto-summary truncation boundary (Hugo's default SummaryLength,
+# 70 words) against two real posts with different shapes, each verified
+# against Hugo's own real output (captured with
+# `TZ=America/Los_Angeles direnv exec . hugo --destination ...`, matching
+# the site's real deploy environment -- see task-6-report.md's "word-count
+# boundary" section for the full investigation, including the one shape
+# this rule still gets wrong).
+def test_summary_stops_after_a_paragraph_crossing_the_limit():
+    # Threshold is crossed inside a blockquote (a paragraph, then more
+    # nested content) -- a blockquote is a valid place to stop, just like
+    # a paragraph: Hugo's real summary ends exactly at the blockquote,
+    # 91 words, nothing further.
+    post = parse_post(Path("content/posts/clients-as-a-pitfall.md"))
+    text = summary(post.body)
+    assert len(text.split()) == 91
+    assert text.endswith("you have to assume it will never happen.")
+
+def test_summary_runs_on_past_a_heading_crossing_the_limit():
+    # Threshold is crossed inside a heading -- NOT a valid place to stop:
+    # Hugo's real summary runs on through the entire next paragraph
+    # (97 words) before stopping.
+    post = parse_post(Path("content/posts/dynamically-typed-statically-typed-metaprogramming.md"))
+    text = summary(post.body)
+    assert len(text.split()) == 97
+    assert text.endswith("If you’re sure you know, you can skip this.")
 
 def test_strikethrough_uses_del_not_s():
     # Goldmark emits <del>; markdown-it-py's default is <s>

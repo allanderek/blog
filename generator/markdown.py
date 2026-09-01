@@ -230,39 +230,56 @@ def _block_html(block: list) -> str:
 
 _SUMMARY_TAGS_RE = re.compile(r"</?(?:p|h2|li|blockquote)>")
 
-def _summary_html(body: str, length: int) -> str:
-    """Walks top-level blocks in order, including each one in full while
-    the running word count has not yet reached `length` -- never splitting
-    a block, even one that alone blows past the limit.
+_SUMMARY_STOPPABLE_TYPES = frozenset({"paragraph_open", "blockquote_open"})
 
-    Where the cut lands when a fenced code block sits near the boundary is
-    NOT reliably reproduced here. Confirmed right for a threshold crossed
-    inside a plain paragraph with no code nearby, and for one crossed
-    inside a large fence followed by exactly one more paragraph. But two
-    *other* posts whose threshold is also crossed just past a fence run
-    Hugo's real output on through a further whole fence+paragraph pair
-    before stopping -- and a rule built to explain those two broke a
-    previously-working case (crossing inside a large paragraph that
-    itself follows a fence, where Hugo stops immediately, no run-on at
-    all). Every per-block rule tried (fence counting in full, counting as
-    zero, run-on counts keyed to which kind of block crossed the
-    threshold or what preceded it) fixes some of these posts while
-    breaking others already known to be correct -- see task-6-report.md's
-    "word-count boundary" section for the specific posts and numbers.
-    Left as plain full-word-count accumulation, which is exactly right
-    whenever the boundary doesn't fall inside or right after a fence.
+def _summary_html(body: str, length: int) -> str:
+    """Walks top-level blocks in order, including each one in full (never
+    splitting a block, even one that alone blows past the limit) while
+    the running word count has not yet reached `length` -- plus one more
+    block, unconditionally, if the block that crossed the threshold was
+    NOT a paragraph or a blockquote.
+
+    A paragraph or a blockquote is always a valid place to stop: confirmed
+    against four shapes (threshold crossed in a lone first paragraph;
+    crossed in a paragraph following a fence+paragraph pair; crossed in a
+    paragraph following just a heading; crossed inside a blockquote)
+    where Hugo's real summary stops exactly there, nothing more. A
+    heading or a fence is NOT a valid place to stop: confirmed against
+    three more posts (crossed inside a heading; crossed inside a small
+    fence; crossed inside a large fence) where Hugo's real summary runs
+    on through exactly one more block -- necessarily a paragraph, since
+    headings and fences don't appear consecutively in this corpus --
+    before stopping.
+
+    This does NOT fully reconcile the evidence: one post crosses the
+    threshold in a paragraph that itself immediately follows a fence, same
+    shape as one of the "stop immediately" cases above, yet Hugo's real
+    summary runs on through a further whole fence+paragraph pair anyway.
+    No per-block rule tried explains both that post and the matching
+    "stop immediately" one at the same time -- see task-6-report.md's
+    "word-count boundary" section for the specific posts, word counts, and
+    the rules tried and rejected. This implements the rule above, which is
+    confirmed correct for seven of the eight posts gathered as evidence
+    and undershoots (stops one fence+paragraph pair too early) for the
+    eighth.
     """
     tokens = _MD.parse(body)
     parts: list[str] = []
     count = 0
+    run_on = None      # None until crossed; then True/False, consumed once
     for block in _iter_top_blocks(tokens):
-        if count >= length:
+        if run_on is False:
             break
         block_html = _block_html(block)
         block_text = _SUMMARY_TAGS_RE.sub("", block_html)
-        if block_text:
-            parts.append(block_html)
-            count += len(block_text.split())
+        if not block_text:
+            continue
+        parts.append(block_html)
+        count += len(block_text.split())
+        if run_on is None and count >= length:
+            run_on = block[0].type not in _SUMMARY_STOPPABLE_TYPES
+        elif run_on is True:
+            run_on = False
     return "\n".join(parts)
 
 def summary(body: str, length: int = 70) -> str:
