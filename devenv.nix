@@ -12,6 +12,7 @@
     (pkgs.python3.withPackages (ps: [
       ps.markdown-it-py
       ps.mdit-py-plugins
+      ps.linkify-it-py
       ps.pygments
       ps.pillow
       ps.pytest
