@@ -9,7 +9,13 @@
     pkgs.fd
     pkgs.sd
     pkgs.lychee   # used by ./check-links-external.sh
-    
+    (pkgs.python3.withPackages (ps: [
+      ps.markdown-it-py
+      ps.mdit-py-plugins
+      ps.pygments
+      ps.pillow
+      ps.pytest
+    ]))
   ];
 
   # See full reference at https://devenv.sh/reference/options/
