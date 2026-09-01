@@ -1,14 +1,26 @@
 """Site-wide context and the build entry point."""
 from __future__ import annotations
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import feeds
-from .content import Post, load_posts, load_index_body
-from .pages import (alias_stub, archives_page, group_posts_by_tag, home_page,
-                     list_page, post_page, tag_title, terms_index)
+from . import assets, feeds
+from .content import Post, load_front_matter, load_page, load_posts, load_index_body
+from .pages import (alias_stub, archives_page, categories_index, cv_page,
+                     consulting_page, group_posts_by_tag, home_page,
+                     list_page, not_found_page, post_page, tag_title,
+                     terms_index)
 
-CONTENT_ROOT = Path(__file__).resolve().parent.parent / "content"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CONTENT_ROOT = REPO_ROOT / "content"
+STATIC_ROOT = REPO_ROOT / "static"
+CSS_ROOT = REPO_ROOT / "assets" / "css"
+PORTRAIT_SRC = REPO_ROOT / "assets" / "images" / "portrait.png"
+
+# consulting-signature.html: `resources.Get("images/portrait.png").Resize
+# ("112x png")` -- the source is square, so this is both the resized
+# width and height.
+PORTRAIT_WIDTH = 112
 
 # hugo.toml [pagination] pagerSize -- also the trigger for the 176-post
 # /posts/ listing to need a second page and a `/posts/page/2/`.
@@ -28,16 +40,16 @@ class SiteContext:
     # stripped) -- see content.load_index_body for why it can't go through
     # parse_post like a real post.
     home_intro: str = ""
-    # TEMPORARY: assets.py (Task 11) will compute these from the real,
-    # fingerprinted CSS bundle. Hardcoded here so post pages can reach a
-    # byte-for-byte match against Hugo *now* -- captured from Hugo's own
-    # build of this repo (`direnv exec . hugo --destination /tmp/target`).
-    # Task 11 replaces both with values computed by assets.py; nothing
-    # downstream should assume these particular strings are permanent.
-    stylesheet_href: str = (
-        "/assets/css/stylesheet.9adc48ca951744ce8f6b0c8854fdd76fa8e68bfeafc106e171df63787f1e19c5.css"
-    )
-    stylesheet_integrity: str = "sha256-mtxIypUXRM6PawyIVP3Xb6jmi/6vwQbhcd9jeH8eGcU="
+    # Computed by `assets.build_stylesheet`/`assets.resize_portrait` in
+    # `build()`, below, before any page is rendered -- every page's <head>
+    # (stylesheet_href/stylesheet_integrity) or signature block
+    # (avatar_href) embeds these verbatim. The defaults here are never the
+    # real values in a `build()`-produced site; they only matter to a
+    # caller (a test) that builds a `SiteContext` directly without also
+    # running asset generation.
+    stylesheet_href: str = ""
+    stylesheet_integrity: str = ""
+    avatar_href: str = ""
     # TEMPORARY: like the two above, this is what the installed Hugo
     # version actually injects into the home page (`disableHugoGeneratorInject`
     # is unset in hugo.toml) -- Hugo's own doing, not a template call, and
@@ -95,10 +107,27 @@ def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteConte
                   title=title if title is not None
                   else tag_title(base_path.strip("/").rsplit("/", 1)[-1])))
 
+def _copy_static(out: Path) -> None:
+    """Hugo copies `static/` into the output root verbatim, file for
+    file (favicons, `cv.pdf`, `img/*`, ...) -- implemented generically
+    here, rather than naming each file, so a future addition under
+    `static/` ships without this function needing an edit."""
+    if not STATIC_ROOT.is_dir():
+        return
+    for src in STATIC_ROOT.rglob("*"):
+        if src.is_dir():
+            continue
+        dest = out / src.relative_to(STATIC_ROOT)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, dest)
+
 def build(out: Path) -> None:
     posts = load_posts(CONTENT_ROOT / "posts")
     home_intro = load_index_body(CONTENT_ROOT / "_index.md")
     site = _default_site(posts, home_intro)
+    site.stylesheet_href, site.stylesheet_integrity = assets.build_stylesheet(CSS_ROOT, out)
+    site.avatar_href = assets.resize_portrait(PORTRAIT_SRC, out, PORTRAIT_WIDTH)
+    _copy_static(out)
     for post in posts:
         page_dir = out / "posts" / post.slug
         page_dir.mkdir(parents=True, exist_ok=True)
@@ -126,17 +155,40 @@ def build(out: Path) -> None:
     (tags_dir / "index.xml").write_text(
         feeds.terms_rss(tags, site, "/tags/", tag_title("tags")))
     # /categories/: an unused taxonomy (no post ever sets `categories:`),
-    # so `terms_index`-style HTML isn't built -- only its feed is, since
-    # Hugo emits an (empty but real) one regardless. `terms_rss` with an
-    # empty `tags` list already matches Hugo's real, itemless output; see
-    # its own docstring.
+    # so its own terms page (`categories_index`) always renders the
+    # zero-terms case -- Hugo still emits both an (empty) HTML page and an
+    # (empty but real) feed regardless. `terms_rss` with an empty `tags`
+    # list already matches Hugo's real, itemless feed output; see its own
+    # docstring.
     categories_dir = out / "categories"
     categories_dir.mkdir(parents=True, exist_ok=True)
+    (categories_dir / "index.html").write_text(categories_index(site))
     (categories_dir / "index.xml").write_text(
         feeds.terms_rss([], site, "/categories/", tag_title("categories")))
 
     archives_dir = out / "archives"
     archives_dir.mkdir(parents=True, exist_ok=True)
     (archives_dir / "index.html").write_text(archives_page(posts, site))
+
+    # content/cv.md and content/consulting.md: the two non-post Kind
+    # "page" content files -- see pages.cv_page/consulting_page's own
+    # docstrings. Read straight from disk rather than threaded through
+    # `posts` (they are not `Post`s -- see content.load_front_matter's
+    # own docstring, which `feeds._load_root_extras` already relies on
+    # for the same two files).
+    cv_meta = load_front_matter(CONTENT_ROOT / "cv.md")
+    cv_html = (REPO_ROOT / "layouts" / "shortcodes" / "cv.html").read_text()
+    cv_dir = out / "cv"
+    cv_dir.mkdir(parents=True, exist_ok=True)
+    (cv_dir / "index.html").write_text(cv_page(site, cv_meta, cv_html))
+
+    consulting_meta, consulting_body = load_page(CONTENT_ROOT / "consulting.md")
+    consulting_url = str(consulting_meta.get("url", "/consulting/")).strip("/")
+    consulting_dir = out / consulting_url
+    consulting_dir.mkdir(parents=True, exist_ok=True)
+    (consulting_dir / "index.html").write_text(
+        consulting_page(site, consulting_meta, consulting_body))
+
+    (out / "404.html").write_text(not_found_page(site))
 
     (out / "sitemap.xml").write_text(feeds.sitemap(posts, tags, site))

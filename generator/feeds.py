@@ -28,12 +28,12 @@ Kind-"page" content file site-wide, not `mainSections`-filtered posts (that
 filtering is Atom-only -- see `_atom_entry`'s docstring for why the two
 formats diverge). `_load_root_extras` builds those two entries straight
 from `content/cv.md`/`content/consulting.md`'s own front matter -- reading
-front matter, not rendering the pages themselves (`{{< cv >}}`, Task 11's
-job, is far more than a feed item needs) -- and `rss()` merges them into
-`posts` for the root feed only, ordered by Hugo's actual default page sort.
-See `_load_root_extras` for the one field this can't reproduce (the CV
-item's own `<description>`, which does need that rendering) and the
-task-10 report for how all of this was found.
+front matter, not rendering either page in full -- and `rss()` merges them
+into `posts` for the root feed only, ordered by Hugo's actual default page
+sort. See `_load_root_extras` for how the CV item's own `<description>`
+(which needs `.Summary` of `{{< cv >}}`'s rendered content, not just front
+matter) is built once `pages.cv_page` exists to share that same summary
+logic with, and the task-10 report for how all of this was found.
 """
 from __future__ import annotations
 import re
@@ -44,10 +44,12 @@ from typing import TYPE_CHECKING
 
 from . import html, markdown
 from .content import Post, load_front_matter
-from .pages import tag_title
+from .pages import strip_style_comments, tag_title
 
 if TYPE_CHECKING:
     from .site import SiteContext
+
+_CV_SHORTCODE = Path(__file__).resolve().parent.parent / "layouts" / "shortcodes" / "cv.html"
 
 _CONTENT_ROOT = Path(__file__).resolve().parent.parent / "content"
 
@@ -143,21 +145,28 @@ def _load_root_extras(site: SiteContext) -> list[_RssEntry]:
     `weight: 10` is what actually puts it first overall; see
     `_hugo_page_order`.
 
-    The CV item's own `<description>` is the one thing here this can't
-    reproduce: Hugo's real one is `.Summary` of `{{< cv >}}`'s FULLY
-    RENDERED page (confirmed against real output: the escaped text starts
-    `&lt;!DOCTYPE html&gt;...`, the CV page's own literal markup, not
-    prose) -- a ~54KB shortcode expansion that is Task 11's CV-rendering
-    work, not something a feed should duplicate. Left empty, a known,
-    isolated gap -- everything else about this entry (title, link,
-    pubDate, guid, its position in the item order) matches Hugo exactly.
+    The CV item's own `<description>` is `.Summary` of `{{< cv >}}`'s
+    FULLY RENDERED page (confirmed against real output: the escaped text
+    starts `&lt;!DOCTYPE html&gt;...`, the CV page's own literal markup,
+    not prose) -- `markdown.extract_summary` applied to
+    `pages.strip_style_comments(cv.html)` (Hugo's own `.Content` for this
+    page -- see that function's docstring for why the raw shortcode text
+    alone isn't quite right), the same computation `pages.cv_page` does
+    for its own `<meta name="description">`, then absolutized and escaped
+    exactly like a real post's own RSS summary (`_rss_item_description`'s
+    `.Summary | html` pipeline) since it is still raw, tag-intact HTML at
+    this point, not the tag-stripped form `<meta name="description">`
+    needs.
     """
     cv_meta = load_front_matter(_CONTENT_ROOT / "cv.md")
     consulting_meta = load_front_matter(_CONTENT_ROOT / "consulting.md")
+    cv_content = strip_style_comments(_CV_SHORTCODE.read_text())
+    cv_summary = markdown.extract_summary(cv_content)
     cv = _RssEntry(
         title=html.esc(cv_meta.get("title", "")),
         permalink=f"{site.base_url}/cv/",
-        pub_date=_ZERO_PUBDATE, description="",
+        pub_date=_ZERO_PUBDATE,
+        description=html.esc_text(_absolutize(cv_summary, site)),
         weight=int(cv_meta.get("weight", 0)),
     )
     consulting_url = consulting_meta.get("url", "/consulting/")

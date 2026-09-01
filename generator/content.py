@@ -86,11 +86,21 @@ def load_front_matter(path: Path) -> dict:
     needed -- `feeds.py`'s root RSS item for `content/cv.md`/
     `content/consulting.md`, which Hugo's `.RegularPages` includes
     alongside every post (see feeds.py's module docstring)."""
+    return load_page(path)[0]
+
+def load_page(path: Path) -> tuple[dict, str]:
+    """Front matter AND body, for a page with no `date:` whose own body
+    needs rendering too -- `content/consulting.md` (real markdown prose;
+    `pages.consulting_page` renders it exactly like a post's own body).
+    `content/cv.md`'s own body is just the `{{< cv >}}` shortcode call,
+    of no use to a renderer (see `pages.cv_page`, which reads
+    `layouts/shortcodes/cv.html` directly instead) -- callers that only
+    need the front matter use `load_front_matter` above."""
     try:
-        meta, _ = _parse_front_matter(path.read_text())
+        meta, body = _parse_front_matter(path.read_text())
     except ValueError as e:
         raise ValueError(f"{path}: {e}") from e
-    return meta
+    return meta, body
 
 def parse_post(path: Path) -> Post:
     text = path.read_text()

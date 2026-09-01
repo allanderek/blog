@@ -20,12 +20,6 @@ from .content import Post
 if TYPE_CHECKING:
     from .site import SiteContext
 
-# TEMPORARY: like SiteContext.stylesheet_href, this is a fingerprinted
-# resources.Get(...).Resize(...) output that only assets.py (Task 11) can
-# compute for real. Captured from Hugo's own build; every post uses the
-# same signature image, so one constant covers all of them until then.
-_SIGNATURE_AVATAR = "/images/portrait_hu_6510263e774a9def.png"
-
 _MENU = [
     ("Archive", "/archives/"),
     ("Consulting", "/consulting/"),
@@ -708,7 +702,7 @@ def _signature(site: SiteContext, inline: bool = False) -> str:
     # (see home_page); every post gets the default, non-inline position.
     css_class = "signature signature-inline" if inline else "signature"
     return f"""<aside class="{css_class}" aria-label="About the author">
-    <img class="signature-avatar" src="{_SIGNATURE_AVATAR}" alt="" width="56" height="56">
+    <img class="signature-avatar" src="{site.avatar_href}" alt="" width="56" height="56">
     <div class="signature-body">
         <p class="signature-text">
             <strong>Allan Clark</strong> &mdash; I write this blog, and I&rsquo;m available for
@@ -1090,23 +1084,31 @@ def group_posts_by_tag(posts: list[Post]) -> list[tuple[str, str, list[Post]]]:
             grouped.setdefault(slug, []).append(post)
     return [(names[slug], slug, grouped[slug]) for slug in sorted(grouped)]
 
-def terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext) -> str:
-    """/tags/ (Kind "taxonomy"): layouts/_default/terms.html, a project
-    override with its own bespoke header/list markup -- NOT list.html's
-    generic page-header partial that `list_page` reuses for /posts/ and a
-    single tag's own /tags/<tag>/ page. `tags` is `group_posts_by_tag`'s
-    own (display_name, slug, posts) triples, already in alphabetical-by-
-    slug order; the count shown next to each tag is simply that tag's own
-    post count."""
-    permalink = f"{site.base_url}/tags/"
+def _terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext,
+                  title: str, base_path: str) -> str:
+    """layouts/_default/terms.html, a project override with its own
+    bespoke header/list markup -- NOT list.html's generic page-header
+    partial that `list_page` reuses for /posts/ and a single term's own
+    /<taxonomy>/<term>/ page. Shared by `terms_index` (/tags/, real
+    entries) and `categories_index` (/categories/, always empty -- no
+    post ever sets `categories:`, confirmed against a real build that
+    Hugo still emits this page, just with a bare `<ul>`). `tags` is
+    `group_posts_by_tag`'s own (display_name, slug, posts) triples,
+    already in alphabetical-by-slug order; the count shown next to each
+    entry is simply that term's own post count. `title`/`base_path` pick
+    the taxonomy ("Tags"/"/tags/" or "Categories"/"/categories/") --
+    `base_path`'s own taxonomy name doubles as the URL segment each
+    entry's own link is built under, since a term's slug alone isn't
+    rooted to a taxonomy."""
+    permalink = f"{site.base_url}{base_path}"
     items = "\n".join(
         f"""    <li>
-        <a href="{site.base_url}/tags/{slug}/">{html.esc(name)} <sup><strong><sup>{len(tag_posts)}</sup></strong></sup> </a>
+        <a href="{site.base_url}{base_path}{slug}/">{html.esc(name)} <sup><strong><sup>{len(tag_posts)}</sup></strong></sup> </a>
     </li>"""
         for name, slug, tag_posts in tags
     )
     main = f"""<header class="page-header">
-    <h1>Tags</h1>
+    <h1>{html.esc(title)}</h1>
 </header>
 
 <ul class="terms-tags">
@@ -1129,13 +1131,25 @@ def terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext) -> s
 <html lang="en" dir="auto">
 
 <head>
-{_head_taxonomy(site, permalink, "Tags", "/tags/")}
+{_head_taxonomy(site, permalink, title, base_path)}
 </head>
 
 {body}
 
 </html>
 """
+
+def terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext) -> str:
+    """/tags/ (Kind "taxonomy"): see `_terms_index`."""
+    return _terms_index(tags, site, "Tags", "/tags/")
+
+def categories_index(site: SiteContext) -> str:
+    """/categories/ (Kind "taxonomy"): the unused `categories` taxonomy's
+    own terms page -- no post in this corpus ever sets `categories:`, so
+    this is always the zero-terms case of `_terms_index`, confirmed
+    against a real Hugo build (`<ul class="terms-tags">` with no `<li>`
+    at all)."""
+    return _terms_index([], site, "Categories", "/categories/")
 
 def _render_inline_markdown_entities(text: str) -> str:
     """Like `_render_inline_markdown`, but through `markdown.render_entities`
@@ -1242,6 +1256,294 @@ def archives_page(posts: list[Post], site: SiteContext) -> str:
 
 <head>
 {_head_archives(site, permalink)}
+</head>
+
+{body}
+
+</html>
+"""
+
+# --- content/cv.md and content/consulting.md -------------------------------
+#
+# Both are genuine Kind "page" content files (single.html, the same layout
+# a real post gets), but neither is a `Post`: cv.md's entire body is one
+# shortcode call (see `cv_page`), and neither sets a `date:`, so
+# `post_page`'s own machinery (built around a real `Post`) isn't a fit.
+# `_content_page` is the shared assembly both build on: `_head_archives`-
+# shaped (no RSS alternate link of its own, keywords always "", a zero
+# `time.Time` for both JSON-LD dates), wrapping a post's own
+# `<article class="post-single">` body instead of archives.html's
+# year/month listing.
+
+_STYLE_BLOCK_RE = re.compile(r"(<style[^>]*>)(.*?)(</style>)", re.S)
+_CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
+
+def strip_style_comments(raw_html: str) -> str:
+    """The one, narrow transform Hugo applies to a shortcode's raw HTML
+    before it reaches `.Content`: every CSS comment inside a
+    `<style>...</style>` block becomes a single space (never simply
+    deleted -- deleting instead of spacing risks joining two tokens either
+    side of the comment into one). Confirmed against a real build of
+    cv.md's rendered page: cv.html's own thirteen `/* ... */` comments
+    (all inside its one <style> block) each become one space; every byte
+    outside that block, and every byte of the block that ISN'T a comment,
+    survives untouched. Public (unlike this module's other rendering
+    helpers) because `feeds.py`'s root RSS item for `/cv/` needs it too --
+    that item's own `<description>` keeps `.Summary`'s raw HTML tags
+    intact (`.Summary | html`, not this page's own tag-STRIPPED `<meta
+    name="description">`), so the comment text would otherwise survive
+    into that one feed, unlike everywhere else this generator reads
+    `.Summary`, `.Plain` or `.WordCount` from `.Content` -- all three
+    strip `<style>` content wholesale regardless of what's inside it, so
+    this transform happens to be invisible to them (confirmed applying it
+    before or after `markdown.extract_summary`/`plain`/`word_count`
+    reaches the exact same result for those three). `cv_page` therefore
+    applies this once, up front, rather than at each call site. Nothing
+    else in this generator has found a comparable transform anywhere else
+    in a real Hugo build, so it is applied nowhere but here."""
+    def repl(m: re.Match) -> str:
+        opening, block, closing = m.group(1), m.group(2), m.group(3)
+        return opening + _CSS_COMMENT_RE.sub(" ", block) + closing
+    return _STYLE_BLOCK_RE.sub(repl, raw_html)
+
+def _content_page_meta(site: SiteContext) -> str:
+    """post_meta.html's own output when `.Date.IsZero` -- true for both
+    cv.md and consulting.md, neither of which sets a `date:` front-matter
+    key -- so its `{{ if not .Date.IsZero }}` guard drops the whole
+    `<span title=...>` date entirely, leaving just the author. Confirmed
+    against a real build of both pages."""
+    return f"{html.esc(site.author)}\n\n"
+
+def _head_content_page(site: SiteContext, permalink: str, title: str,
+                        desc_attr: str, og_desc_attr: str, schema_json: str) -> str:
+    """<head> for cv.md/consulting.md: `_head_archives`'s own shape (no
+    RSS alternate link, keywords always "", `.IsPage` JSON-LD), plus one
+    fallback rule a fixed "Archive" title never exercises: the <title>/
+    twitter:title pair use `title` raw (empty for cv.md, whose own
+    `title: ""` front matter), but og:title falls back to `site.title`
+    when `title` is empty (opengraph.html: `{{ with or .Title site.Title
+    site.Params.title }}`) -- confirmed against a real build that cv.md's
+    own og:title reads the site title, not "", even though every other
+    title-shaped field on that page (the <title> tag itself,
+    twitter:title) stays empty."""
+    display_title = f"{html.esc(title)} | {html.esc(site.title)}" if title else html.esc(site.title)
+    og_title = html.esc(title) if title else html.esc(site.title)
+    return f"""{_META_TOP}
+
+{_feed_and_analytics(site)}
+<title>{display_title}</title>
+<meta name="keywords" content="">
+<meta name="description" content="{desc_attr}">
+<meta name="author" content="{html.esc(site.author)}">
+<link rel="canonical" href="{permalink}">
+<link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
+{_favicons_block(site)}
+<link rel="alternate" hreflang="en" href="{permalink}">
+{_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
+  <meta property="og:site_name" content="{html.esc(site.title)}">
+  <meta property="og:title" content="{og_title}">
+  <meta property="og:description" content="{og_desc_attr}">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="article">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{html.esc(title)}">
+<meta name="twitter:description" content="{desc_attr}">
+
+
+{schema_json}"""
+
+def _schema_json_content_page(title: str, permalink: str, jsonld_description: str,
+                               article_body: str, word_count: int, site: SiteContext) -> str:
+    """schema_json.html's BreadcrumbList + BlogPosting pair for cv.md/
+    consulting.md, built the same way `_schema_json_archives` builds
+    archives.md's: a single self-referencing breadcrumb, and Go's zero
+    `time.Time` for both `datePublished`/`dateModified` since neither page
+    sets a `date:`."""
+    breadcrumbs = _breadcrumb_list([(_js_value(title), permalink)])
+    blog_posting = _blog_posting_json(
+        title, title, jsonld_description, [],
+        article_body, str(word_count),
+        "0001-01-01T00:00:00Z", "0001-01-01T00:00:00Z", permalink, site,
+    )
+    return breadcrumbs + "\n" + blog_posting
+
+def _content_page(site: SiteContext, permalink: str, title: str, content_html: str,
+                   desc_attr: str, og_desc_attr: str, jsonld_description: str,
+                   article_body: str, word_count: int, with_signature: bool) -> str:
+    """The `<article class="post-single">`/<body>/<head> assembly shared
+    by `cv_page` and `consulting_page`. `with_signature` is consulting.md's
+    own carve-out: the signature partial baseof.html renders on every
+    other page is suppressed on exactly this one (a page whose entire
+    purpose is "hire me" doesn't also point back at itself -- see
+    check-site.sh's "no signature on consulting" and its own comment);
+    cv.md keeps it, like every other page this generator builds."""
+    header = f"""<header class="post-header">
+
+    <h1 class="post-title entry-hint-parent">
+      {html.esc(title)}
+    </h1>
+    <div class="post-meta">{_content_page_meta(site)}</div>
+  </header>"""
+
+    article = f"""<article class="post-single">
+  {header}
+  <div class="post-content">{content_html}
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>"""
+
+    signature_block = f"{_signature(site)}\n\n" if with_signature else ""
+    body = f"""<body class="" id="top">
+{_theme_init_script()}
+
+{_header(site, permalink)}
+<main class="main">
+
+{article}
+    </main>
+{signature_block}{_footer(site)}
+</body>"""
+
+    schema = _schema_json_content_page(title, permalink, jsonld_description,
+                                        article_body, word_count, site)
+    head = _head_content_page(site, permalink, title, desc_attr, og_desc_attr, schema)
+
+    return f"""<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head>
+{head}
+</head>
+
+{body}
+
+</html>
+"""
+
+def _summary_attrs(summary_html: str) -> tuple[str, str, str]:
+    """The three escaped forms every Kind "page" derives from its own
+    `.Summary` (a `template.HTML` value): `desc_attr` (meta description
+    AND twitter:description -- both read `.Summary` through Go's
+    attribute-context auto-escaper, which strips tags first), `og_desc_attr`
+    (og:description: `.Summary | plainify | htmlUnescape | chomp`), and
+    `jsonld_description` (the JSON-LD "description" field: `.Summary |
+    plainify`, no htmlUnescape or chomp -- mirrors `_jsonld_description_text`'s
+    logic for a real post). `summary_html` is the RAW (tags intact)
+    `.Summary` value -- consulting.md's own literal `summary:` front-matter
+    override (plain prose, no tags) or cv.md's auto-extracted
+    `markdown.extract_summary` prefix (see `cv_page`)."""
+    desc_attr = html.esc_norm(markdown.strip_tags(summary_html))
+    plain_summary = markdown.plainify(summary_html)
+    og_desc_attr = html.esc(_html_std.unescape(plain_summary).rstrip("\r\n"))
+    return desc_attr, og_desc_attr, plain_summary
+
+def consulting_page(site: SiteContext, front_matter: dict, body: str) -> str:
+    """content/consulting.md: a genuine markdown post body (rendered
+    exactly like `post_page` renders one), but front matter with no
+    `date:` and a `summary:` key that OVERRIDES Hugo's own auto-extracted
+    `.Summary` outright (a real Hugo feature -- `feeds.py`'s own
+    `_load_root_extras` already relies on this for the root RSS item; see
+    its docstring). `front_matter` is `content.load_front_matter`'s own
+    dict; `body` is the markdown text following it. No signature block --
+    see `_content_page`'s `with_signature`."""
+    title = str(front_matter.get("title", ""))
+    permalink = f"{site.base_url}{front_matter.get('url', '/consulting/')}"
+    summary_html = str(front_matter.get("summary", ""))
+    desc_attr, og_desc_attr, jsonld_description = _summary_attrs(summary_html)
+
+    content_html = _anchor_headings(markdown.render(body))
+    content_entities = markdown.render_entities(body)
+    article_body = markdown.plain(content_entities)
+    word_count = markdown.word_count(content_entities)
+
+    return _content_page(site, permalink, title, content_html,
+                          desc_attr, og_desc_attr, jsonld_description,
+                          article_body, word_count, with_signature=False)
+
+def cv_page(site: SiteContext, front_matter: dict, cv_html: str) -> str:
+    """content/cv.md: its entire body is one shortcode call, `{{< cv >}}`
+    (see `layouts/shortcodes/cv.html`, an opaque artifact authored outside
+    this repo -- inserted verbatim, never parsed/templated), which Hugo
+    substitutes in as raw HTML with NO markdown reprocessing at all --
+    confirmed against a real build matching this generator's own
+    `markdown.plain`/`word_count`/`extract_summary`, applied to
+    `strip_style_comments(cv_html)` (Hugo's own `.Content` for this page;
+    see that function's docstring), byte-for-byte. `front_matter` is
+    `content.load_front_matter`'s own dict (`title: ""`, `weight: 10`, no
+    `date:`/`summary:`, so `.Summary` is Hugo's real auto-extraction, not
+    an override -- contrast `consulting_page`)."""
+    title = str(front_matter.get("title", ""))
+    permalink = f"{site.base_url}/cv/"
+    content_html = strip_style_comments(cv_html)
+    summary_html = markdown.extract_summary(content_html)
+    desc_attr, og_desc_attr, jsonld_description = _summary_attrs(summary_html)
+
+    article_body = markdown.plain(content_html)
+    word_count = markdown.word_count(content_html)
+
+    return _content_page(site, permalink, title, content_html,
+                          desc_attr, og_desc_attr, jsonld_description,
+                          article_body, word_count, with_signature=True)
+
+# --- 404.html ---------------------------------------------------------------
+
+def not_found_page(site: SiteContext) -> str:
+    """layouts/404.html: `{{ define "main" }}<div class="not-found">404</div>
+    {{ end }}` inside baseof.html's ordinary shell -- Kind "page", body
+    class "list" (matching a taxonomy/section list, not an article --
+    confirmed against a real build), its own canonical/`og:url` of
+    "/404.html" (not whatever path a browser actually 404'd on), no
+    JSON-LD at all (this Kind fails schema_json.html's `.IsPage .IsSection`
+    guard, like a taxonomy list -- see `_head_taxonomy`), and no RSS
+    alternate link (unlike a section/taxonomy list, this Kind carries no
+    `AlternativeOutputFormats` of its own)."""
+    permalink = f"{site.base_url}/404.html"
+    title = "404 Page not found"
+    desc_attr = html.esc(site.description)
+
+    head = f"""{_META_TOP}
+
+{_feed_and_analytics(site)}
+<title>{html.esc(title)} | {html.esc(site.title)}</title>
+<meta name="keywords" content="">
+<meta name="description" content="{desc_attr}">
+<meta name="author" content="{html.esc(site.author)}">
+<link rel="canonical" href="{permalink}">
+<link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
+{_favicons_block(site)}
+<link rel="alternate" hreflang="en" href="{permalink}">
+{_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
+  <meta property="og:site_name" content="{html.esc(site.title)}">
+  <meta property="og:title" content="{html.esc(title)}">
+  <meta property="og:description" content="{desc_attr}">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{html.esc(title)}">
+<meta name="twitter:description" content="{desc_attr}">
+"""
+
+    body = f"""<body class="list" id="top">
+{_theme_init_script()}
+
+{_header(site)}
+<main class="main">
+<div class="not-found">404</div>
+    </main>
+{_signature(site)}
+
+{_footer(site)}
+</body>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head>
+{head}
 </head>
 
 {body}
