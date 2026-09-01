@@ -30,10 +30,11 @@ tool's own encoder):
   a real build of this repo) is kept as the target path regardless --
   reverse-engineering Hugo's own resize-cache hashing algorithm just to
   reproduce that one, permanently-fixed name for this site's single
-  avatar image is out of scope here; every page's own `<img src>` already
-  depends on this exact literal path (see pages.py's `_SIGNATURE_AVATAR`),
-  so changing it would be a much larger regression than the deviation
-  above.
+  avatar image is out of scope here; every page's own `<img src>`
+  (`SiteContext.avatar_href`, computed by `site.build` from this
+  function's own return value) already depends on this exact literal
+  path, so changing it would be a much larger regression than the
+  deviation above.
 """
 from __future__ import annotations
 import base64
@@ -62,10 +63,21 @@ def _sorted_glob_text(css_root: Path, rel_dir: str) -> list[str]:
 def _bundle_text(css_root: Path) -> str:
     """head.html's own concatenation order: license.css, then the "core"
     group (theme-vars, reset, common/*.css sorted, chroma-styles,
-    chroma-mod, the includes group [scroll-bar.css unless disabled, then
-    the blank resource], zmedia), then extended/*.css sorted. See this
-    module's docstring for why this concatenates raw file text rather
-    than each group's Hugo `resources.Minify` output."""
+    chroma-mod, the includes group, zmedia), then extended/*.css sorted.
+
+    The includes group's own inner order is the blank resource FIRST,
+    then scroll-bar.css (unless disabled) -- head.html builds it as
+    `$includes := slice` then `$includes = $includes | append (blank)`
+    (Hugo's `append`, piped, appends its argument onto the END of the
+    piped collection: `[blank]`), then, if not disabled,
+    `$includes = (append $ScrollStyle $includes)` (the same function
+    called directly, so $includes is now the LAST/collection argument:
+    ScrollStyle appended onto the end of `[blank]`, giving
+    `[blank, ScrollStyle]`) -- easy to misread as the other way around
+    since the two `append` calls in that source read in the opposite
+    argument order from each other. See this module's docstring for why
+    this concatenates raw file text rather than each group's Hugo
+    `resources.Minify` output."""
     parts = [_read(css_root, "core/license.css")]
     core = [
         _read(css_root, "core/theme-vars.css"),
@@ -73,10 +85,10 @@ def _bundle_text(css_root: Path) -> str:
         *_sorted_glob_text(css_root, "common"),
         _read(css_root, "includes/chroma-styles.css"),
         _read(css_root, "includes/chroma-mod.css"),
+        _INCLUDES_BLANK,
     ]
     if not _DISABLE_SCROLL_BAR_STYLE:
         core.append(_read(css_root, "includes/scroll-bar.css"))
-    core.append(_INCLUDES_BLANK)
     core.append(_read(css_root, "core/zmedia.css"))
     parts.extend(core)
     parts.extend(_sorted_glob_text(css_root, "extended"))

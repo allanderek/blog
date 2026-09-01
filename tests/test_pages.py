@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
-from generator.content import Post
-from generator.pages import (alias_stub, archives_page, group_posts_by_tag,
-                              list_page, post_page, tag_title, term_page,
+from pathlib import Path
+from generator.content import Post, load_page
+from generator.pages import (alias_stub, archives_page, categories_index,
+                              consulting_page, cv_page, group_posts_by_tag,
+                              list_page, not_found_page, post_page,
+                              strip_style_comments, tag_title, term_page,
                               terms_index)
 from generator.site import SiteContext
 
@@ -211,6 +214,100 @@ def test_archives_page_marks_its_own_nav_entry_active():
 def test_other_page_kinds_have_no_active_nav_entry():
     assert 'class="active"' not in post_page(_post(), _site())
     assert 'class="active"' not in term_page("Elm", [], 1, 1, _site())
+
+
+# --- strip_style_comments ---------------------------------------------------
+#
+# Reproduces one, narrow Hugo behaviour found while building the CV page:
+# every CSS comment inside a <style>...</style> block becomes a single
+# space in Hugo's own rendered .Content -- confirmed against a real build
+# (see pages.py's own docstring for that function). These pin down the
+# regex's actual, deliberately narrow behaviour at its edges, since a CSS
+# comment stripper is easy to get subtly wrong.
+
+def test_strip_style_comments_removes_a_comment_that_looks_like_a_css_rule():
+    # The comment's own text could itself be mistaken for a real
+    # declaration by a careless implementation (e.g. one that just looked
+    # for "{...}" pairs) -- it must vanish as a unit, and the real rules
+    # either side must survive untouched.
+    html = '<style>a{color:red}/* .b{color:blue} */c{color:green}</style>'
+    result = strip_style_comments(html)
+    assert ".b" not in result
+    assert "color:blue" not in result
+    # Replaced with exactly one space -- never simply deleted (deleting
+    # instead of spacing risks joining the tokens either side into one).
+    assert result == '<style>a{color:red} c{color:green}</style>'
+
+def test_strip_style_comments_leaves_an_unterminated_comment_untouched():
+    # No closing "*/" anywhere in the block, so nothing here looks like a
+    # complete comment to the regex -- the literal "/*" and everything
+    # after it survive untouched, same as any other <style> byte that
+    # isn't part of a real, closed comment.
+    html = '<style>a { color: red; } /* never closes c { color: green; }</style>'
+    assert strip_style_comments(html) == html
+
+def test_strip_style_comments_is_not_css_string_aware():
+    # A known, narrow limitation, pinned down rather than left implicit: a
+    # "/* ... */"-shaped run INSIDE a CSS string literal still reads as a
+    # real comment to this transform, since it has no notion of CSS
+    # string context -- this matches the one, specific behaviour observed
+    # in a real Hugo build, not a general-purpose CSS parser.
+    html = '<style>content: "/* not a comment */"; color: red;</style>'
+    assert strip_style_comments(html) == '<style>content: " "; color: red;</style>'
+
+def test_strip_style_comments_only_touches_style_blocks():
+    html = '<p>Some prose with /* not css */ in it.</p>'
+    assert strip_style_comments(html) == html
+
+# --- cv_page / consulting_page / not_found_page / categories_index --------
+
+def _cv_front_matter() -> dict:
+    return {"title": "", "linktitle": "CV", "menu": "main",
+            "hidePageTitle": True, "weight": 10}
+
+def test_cv_page_inserts_the_shortcode_verbatim():
+    # The CV is an opaque artifact authored outside this repo -- it must
+    # land in the page unescaped and unreformatted. A raw double-quoted
+    # attribute survives verbatim only if nothing along the way ran it
+    # through html.esc() (which would turn '"' into "&#34;" and '<a'
+    # into "&lt;a").
+    cv_html = Path("layouts/shortcodes/cv.html").read_text()
+    page = cv_page(_site(), _cv_front_matter(), cv_html)
+    assert '<a href="https://github.com/allanderek" class="profile-link">GitHub</a>' in page
+
+def test_cv_page_has_a_signature_block():
+    cv_html = Path("layouts/shortcodes/cv.html").read_text()
+    page = cv_page(_site(), _cv_front_matter(), cv_html)
+    assert '<aside class="signature"' in page
+
+def test_consulting_page_renders_its_markdown_body():
+    front_matter, body = load_page(Path("content/consulting.md"))
+    page = consulting_page(_site(), front_matter, body)
+    assert "Elm" in page
+    assert "<h1" in page and "Consulting" in page
+
+def test_consulting_page_has_no_signature_block():
+    # Unlike every other page kind this generator builds -- the signature
+    # itself links to /consulting/, so the consulting page doesn't also
+    # point back at itself. check-site.sh asserts the same thing against
+    # a real Hugo build ("no signature on consulting").
+    front_matter, body = load_page(Path("content/consulting.md"))
+    page = consulting_page(_site(), front_matter, body)
+    assert '<aside class="signature' not in page
+
+def test_not_found_page_renders_the_404_marker():
+    page = not_found_page(_site())
+    assert '<div class="not-found">404</div>' in page
+    assert "<title>404 Page not found" in page
+
+def test_categories_index_has_no_terms():
+    # The `categories` taxonomy is unused site-wide -- no post ever sets
+    # `categories:` -- so Hugo still emits this page, just with a bare
+    # <ul> and no <li> entries at all.
+    page = categories_index(_site())
+    assert "<h1>Categories</h1>" in page
+    terms_list = page[page.index('<ul class="terms-tags">'):page.index("</ul>")]
+    assert "<li>" not in terms_list
 
 def test_alias_stub_matches_hugos_pagination_alias_format():
     # Byte-exact against /tmp/t8-hugo/posts/page/1/index.html (base_url
