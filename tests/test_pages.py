@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from generator.content import Post
-from generator.pages import alias_stub, list_page, post_page
+from generator.pages import (alias_stub, archives_page, group_posts_by_tag,
+                              list_page, post_page, tag_title, term_page,
+                              terms_index)
 from generator.site import SiteContext
 
 # A title an author could plausibly type, deliberately containing every
@@ -109,6 +111,106 @@ def test_list_page_title_default_capitalises_after_hyphens_not_just_first_letter
     # "language-design" into "Language-design" instead of "Language-Design").
     page = list_page([], 1, 1, "/language-design/", _site())
     assert "\n    Language-Design\n" in page
+
+def test_tag_title_capitalises_after_space_and_hyphen_but_leaves_rest():
+    assert tag_title("SQLite") == "SQLite"
+    assert tag_title("LLMs") == "LLMs"
+    assert tag_title("language-design") == "Language-Design"
+    assert tag_title("dead code") == "Dead Code"
+
+def test_term_page_title_uses_real_spelling_and_marks_entries_tag_entry():
+    # A tag's own term page auto-titles itself via `tag_title`'s
+    # capitalise-after-boundary rule applied to the real front-matter
+    # spelling ("SQLite" survives unchanged) -- never derived from the
+    # lowercased URL slug (the same trap `list_page`'s own title param
+    # guards against). Every entry also gets list.html's extra
+    # "tag-entry" class, which a section listing (e.g. /posts/) never
+    # does.
+    page = term_page("SQLite", [_post()], 1, 1, _site())
+    assert "\n    SQLite\n" in page
+    assert 'class="post-entry tag-entry"' in page
+    assert "https://example.com/tags/sqlite/" in page
+
+def test_term_page_title_capitalises_after_hyphen_not_derived_from_slug():
+    page = term_page("language-design", [], 1, 1, _site())
+    assert "\n    Language-Design\n" in page
+    assert "https://example.com/tags/language-design/" in page
+
+def test_term_page_has_no_json_ld():
+    # Kind "term" satisfies neither schema_json.html's `.IsPage` nor
+    # `.IsSection` guard -- confirmed zero `application/ld+json` scripts
+    # on Hugo's own /tags/<tag>/index.html.
+    page = term_page("Elm", [], 1, 1, _site())
+    assert "application/ld+json" not in page
+
+def test_term_page_description_is_site_wide_not_title_suffixed():
+    # Unlike a section (e.g. /posts/, whose description is "Posts -
+    # site.Title"), a term page's description falls straight through to
+    # the site-wide description -- see `_head_taxonomy`.
+    page = term_page("Elm", [], 1, 1, _site())
+    assert "Elm - Test Site" not in page
+
+def test_terms_index_shows_raw_spelling_verbatim():
+    # /tags/ lists each tag's RAW front-matter spelling (terms.html's own
+    # `.Name`) -- unlike that same tag's own term page, which auto-titles
+    # itself via `tag_title`'s capitalise-after-boundary rule. Confirmed
+    # against real Hugo output: /tags/index.html shows "language-design"
+    # all lowercase for the very same tag whose own
+    # /tags/language-design/ page titles itself "Language-Design".
+    tags = [("language-design", "language-design", [_post()])]
+    page = terms_index(tags, _site())
+    assert ">language-design <sup>" in page
+    assert "Language-Design" not in page
+
+def test_terms_index_has_no_json_ld():
+    page = terms_index([], _site())
+    assert "application/ld+json" not in page
+
+def test_group_posts_by_tag_sorts_by_slug_and_preserves_newest_first_order():
+    newer = Post(slug="newer", title="Newer", tags=["Elm", "SQLite"],
+                 date=datetime(2024, 2, 1, tzinfo=timezone.utc), body="Body.\n")
+    older = Post(slug="older", title="Older", tags=["Elm"],
+                 date=datetime(2024, 1, 1, tzinfo=timezone.utc), body="Body.\n")
+    grouped = group_posts_by_tag([newer, older])  # already newest-first
+    slugs = [slug for _, slug, _ in grouped]
+    assert slugs == sorted(slugs)
+    elm_posts = next(posts for name, slug, posts in grouped if slug == "elm")
+    assert elm_posts == [newer, older]
+
+def test_archives_page_groups_newest_year_first_with_typographic_title():
+    newer = Post(slug="a", title="Link: python's constants",
+                 date=datetime(2024, 3, 5, tzinfo=timezone.utc), body="Body.\n")
+    older = Post(slug="b", title="Older post", date=datetime(2023, 12, 1, tzinfo=timezone.utc), body="Body.\n")
+    page = archives_page([newer, older], _site())
+    assert page.index('id="2024"') < page.index('id="2023"')
+    # archives.html's `.Title | markdownify` renders the typographer's
+    # substitution as a literal entity ("&rsquo;"), unlike every other
+    # listing's plain `html.esc(post.title)` ("&#39;") -- see
+    # `_render_inline_markdown_entities`.
+    assert "python&rsquo;s constants" in page
+    assert 'aria-label="post link to Link: python&#39;s constants"' in page
+
+def test_archives_page_has_breadcrumb_and_blog_posting_json_ld():
+    # Unlike a term/taxonomy list, content/archives.md is a genuine Kind
+    # "page" and gets the full pair, built from its own front matter
+    # (title "Archive", summary "archives", no date) rather than a Post.
+    page = archives_page([], _site())
+    assert page.count("application/ld+json") == 2
+    assert '"@type": "BreadcrumbList"' in page
+    assert '"@type": "BlogPosting"' in page
+    assert '"datePublished": "0001-01-01T00:00:00Z"' in page
+
+def test_archives_page_marks_its_own_nav_entry_active():
+    # header.html: `<span {{- if eq $menu_item_url $page_url }}
+    # class="active" {{- end }}>` -- /archives/ is the only page kind
+    # this generator builds whose own permalink coincides with a menu URL.
+    page = archives_page([], _site())
+    assert '<span class="active">Archive</span>' in page
+    assert "<span>Consulting</span>" in page
+
+def test_other_page_kinds_have_no_active_nav_entry():
+    assert 'class="active"' not in post_page(_post(), _site())
+    assert 'class="active"' not in term_page("Elm", [], 1, 1, _site())
 
 def test_alias_stub_matches_hugos_pagination_alias_format():
     # Byte-exact against /tmp/t8-hugo/posts/page/1/index.html (base_url

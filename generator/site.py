@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .content import Post, load_posts, load_index_body
-from .pages import alias_stub, home_page, list_page, post_page
+from .pages import (alias_stub, archives_page, group_posts_by_tag, home_page,
+                     list_page, post_page, tag_title, terms_index)
 
 CONTENT_ROOT = Path(__file__).resolve().parent.parent / "content"
 
@@ -54,23 +55,28 @@ def _default_site(posts: list[Post], home_intro: str = "") -> SiteContext:
     )
 
 def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteContext,
-                    title: str | None = None) -> None:
-    """Writes every page of a paginated section listing (`base_path`, e.g.
-    "/posts/"): the bare page (the newest `PAGER_SIZE` posts, newest-first
-    since `posts` already is), a `page/N/` page for each page after that,
-    and the `page/1/` alias stub Hugo's `disableAliases = false` emits for
-    every paginated listing -- even for a single-page listing, matching
-    Hugo (see `pages.alias_stub`) -- nothing in check-site.sh asserts that
-    stub exists, so it is easy to silently drop; `compare.py` is what
-    catches it. `title` is threaded straight through to `list_page` --
-    see its docstring for why a tag listing must pass its real
-    front-matter spelling here rather than leaving it to derive one."""
+                    title: str | None = None, taxonomy: bool = False) -> None:
+    """Writes every page of a paginated listing (`base_path`, e.g.
+    "/posts/" or "/tags/elm/"): the bare page (the newest `PAGER_SIZE`
+    posts, newest-first since `posts` already is), a `page/N/` page for
+    each page after that (a tag can need one too -- "programming" alone
+    has 106 posts, one over `PAGER_SIZE`), and the `page/1/` alias stub
+    Hugo's `disableAliases = false` emits for every paginated listing --
+    even for a single-page one, matching Hugo (see `pages.alias_stub`) --
+    nothing in check-site.sh asserts that stub exists, so it is easy to
+    silently drop; `compare.py` is what catches it. `title` is threaded
+    straight through to `list_page` -- see its docstring for why a tag
+    listing must pass its real front-matter spelling here rather than
+    leaving it to derive one. `taxonomy` is also threaded straight
+    through, selecting `list_page`'s taxonomy <head>/entry-class
+    behaviour for a tag's own listing."""
     total_pages = max(1, -(-len(posts) // PAGER_SIZE))  # ceil division
     section_dir = out / base_path.strip("/")
     section_dir.mkdir(parents=True, exist_ok=True)
     for page_num in range(1, total_pages + 1):
         page_posts = posts[(page_num - 1) * PAGER_SIZE: page_num * PAGER_SIZE]
-        page_html = list_page(page_posts, page_num, total_pages, base_path, site, title=title)
+        page_html = list_page(page_posts, page_num, total_pages, base_path, site,
+                               title=title, taxonomy=taxonomy)
         page_dir = section_dir if page_num == 1 else section_dir / "page" / str(page_num)
         page_dir.mkdir(parents=True, exist_ok=True)
         (page_dir / "index.html").write_text(page_html)
@@ -89,3 +95,15 @@ def build(out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(home_page(site))
     _write_section(out, "/posts/", posts, site)
+
+    tags = group_posts_by_tag(posts)
+    for name, slug, tag_posts in tags:
+        _write_section(out, f"/tags/{slug}/", tag_posts, site,
+                        title=tag_title(name), taxonomy=True)
+    tags_dir = out / "tags"
+    tags_dir.mkdir(parents=True, exist_ok=True)
+    (tags_dir / "index.html").write_text(terms_index(tags, site))
+
+    archives_dir = out / "archives"
+    archives_dir.mkdir(parents=True, exist_ok=True)
+    (archives_dir / "index.html").write_text(archives_page(posts, site))

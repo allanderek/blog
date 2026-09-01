@@ -9,6 +9,7 @@ no post in this corpus actually sets (cover images, ShowToc, canonicalURL,
 """
 from __future__ import annotations
 import html as _html_std
+import itertools
 import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -104,11 +105,14 @@ def _js_value(s: str) -> str:
 
 _TAG_WORD_START_RE = re.compile(r"(^|[ -])([a-zA-Z])")
 
-def _tag_title(tag: str) -> str:
+def tag_title(tag: str) -> str:
     """Hugo's taxonomy term title: capitalise the first letter after a
     space OR a hyphen, leave the rest untouched -- "SQLite"/"LLMs" survive,
     "dead code" becomes "Dead Code", "language-design" becomes
-    "Language-Design"."""
+    "Language-Design". Public (unlike this module's other rendering
+    helpers) because `site.py`'s per-tag build loop needs it too, to turn
+    `group_posts_by_tag`'s raw front-matter spelling into the display
+    title a tag's own term page uses -- see `term_page`."""
     return _TAG_WORD_START_RE.sub(lambda m: m.group(1) + m.group(2).upper(), tag)
 
 def _tag_slug(tag: str) -> str:
@@ -236,7 +240,7 @@ def _head(post: Post, site: SiteContext, permalink: str, description: str,
     published = post.date.strftime(_ISO_OFFSET)
 
     tag_metas = "\n".join(
-        f'    <meta property="article:tag" content="{html.esc(_tag_title(t))}">'
+        f'    <meta property="article:tag" content="{html.esc(tag_title(t))}">'
         for t in post.tags[:6]
     )
 
@@ -306,25 +310,21 @@ def _head_home(site: SiteContext, permalink: str, description_attr: str,
 
 {_schema_json_home(site)}"""
 
-def _head_section(site: SiteContext, permalink: str, title: str, base_path: str) -> str:
-    """<head> for a section's list page (Kind "section", e.g. /posts/):
-    head.html's non-`.IsHome` branch (title suffixed with " | {site.Title}",
-    an empty <meta name="keywords"> since a section carries no front-matter
-    tags of its own, and the ".Summary | default (printf \"%s - %s\"
-    .Title site.Title)" description fallback -- .Summary is always empty
-    here, since no content/<section>/_index.md exists to give a section
-    real body content) and opengraph.html/twitter_cards.html/schema_json.html's
-    shared `.IsSection` behaviour: the site-wide description for
-    og/twitter (a section has no `.Summary` to fall back to there either),
-    `og:type` "website" like the home page, and a BreadcrumbList with no
-    BlogPosting -- see `_schema_json_section`. Confirmed identical across
-    every page of a paginated section (`/tmp/t8-hugo/posts/index.html` vs.
-    `.../posts/page/2/index.html`): Hugo's paginator keeps the same
-    underlying section Page for every page it renders, so nothing here
-    varies with `page_num`/`total_pages`, only the caller's post list and
-    pagination nav do."""
-    desc_attr = html.esc(f"{title} - {site.title}")
-    og_desc_attr = html.esc(site.description)
+def _head_list_common(site: SiteContext, permalink: str, title: str, base_path: str,
+                       desc_attr: str, og_desc_attr: str, schema_json: str) -> str:
+    """The <head> fields every paginated listing page shares -- `_head_section`
+    (Kind "section", e.g. /posts/) and `_head_taxonomy` (Kind "term"/
+    "taxonomy", e.g. /tags/elm/ and /tags/) -- regardless of page number
+    (see `_head_section`'s own docstring for why nothing here varies with
+    page_num/total_pages). Only the description/og:description pair and
+    whether a JSON-LD block follows differ between the two Kinds; both are
+    supplied by the caller rather than recomputed here. `schema_json`
+    empty means no JSON-LD at all (confirmed zero `application/ld+json`
+    scripts on `/tmp/t9-hugo/tags/elm/index.html` and
+    `/tmp/t9-hugo/tags/index.html`) -- passing "" leaves exactly the one
+    blank line head.html's own output has before `</head>` in that case,
+    instead of the schema block's own two."""
+    tail = f"\n\n\n{schema_json}" if schema_json else "\n"
     return f"""{_META_TOP}
 
 {_feed_and_analytics(site)}
@@ -345,10 +345,83 @@ def _head_section(site: SiteContext, permalink: str, title: str, base_path: str)
   <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="{html.esc(title)}">
-<meta name="twitter:description" content="{og_desc_attr}">
+<meta name="twitter:description" content="{og_desc_attr}">{tail}"""
+
+def _head_section(site: SiteContext, permalink: str, title: str, base_path: str) -> str:
+    """<head> for a section's list page (Kind "section", e.g. /posts/):
+    head.html's non-`.IsHome` branch (title suffixed with " | {site.Title}",
+    an empty <meta name="keywords"> since a section carries no front-matter
+    tags of its own, and the ".Summary | default (printf \"%s - %s\"
+    .Title site.Title)" description fallback -- .Summary is always empty
+    here, since no content/<section>/_index.md exists to give a section
+    real body content) and opengraph.html/twitter_cards.html/schema_json.html's
+    shared `.IsSection` behaviour: the site-wide description for
+    og/twitter (a section has no `.Summary` to fall back to there either),
+    `og:type` "website" like the home page, and a BreadcrumbList with no
+    BlogPosting -- see `_schema_json_section`."""
+    desc_attr = html.esc(f"{title} - {site.title}")
+    og_desc_attr = html.esc(site.description)
+    return _head_list_common(site, permalink, title, base_path, desc_attr, og_desc_attr,
+                              schema_json=_schema_json_section(title, permalink))
+
+def _head_taxonomy(site: SiteContext, permalink: str, title: str, base_path: str) -> str:
+    """<head> for a taxonomy list page (Kind "taxonomy", e.g. /tags/) or a
+    single term's own list page (Kind "term", e.g. /tags/elm/). Neither
+    Kind satisfies head.html's `(or .IsPage .IsSection)` description
+    fallback guard, or opengraph.html's/twitter_cards.html's equivalents,
+    so <meta name="description">, og:description AND twitter:description
+    all fall straight through to the site-wide description -- never the
+    "Title - site.Title" fallback `_head_section` computes for /posts/ --
+    and schema_json.html's own `(or .IsPage .IsSection)` guard for its
+    BreadcrumbList/BlogPosting pair is false too, so this Kind gets no
+    JSON-LD at all. Confirmed against `/tmp/t9-hugo/tags/elm/index.html`
+    and `/tmp/t9-hugo/tags/index.html` (identical `og:type` "website" as a
+    section, though -- that part of opengraph.html only branches on
+    `.IsPage`, which is false for both Kinds)."""
+    desc_attr = html.esc(site.description)
+    return _head_list_common(site, permalink, title, base_path, desc_attr, desc_attr, schema_json="")
+
+def _head_archives(site: SiteContext, permalink: str) -> str:
+    """<head> for content/archives.md (Kind "page", not a listing at all --
+    `archives_page` is the one page kind this generator builds that isn't
+    `list_page`-shaped). head.html's `.IsPage` branch: <meta
+    name="description"> falls to `.Summary` (this file's front matter
+    `summary: "archives"`, never a listing's own description rules) since
+    it sets no `description:`. opengraph.html's `.IsPage` branch normally
+    also emits `article:section`/`article:published_time`/
+    `article:modified_time`/`article:tag` metas, all guarded by `{{ with
+    ... }}` -- every one of them is empty or the zero value for this page
+    (no `date:` front matter, root-level content file so `.Section` is
+    "", and no `tags:`), so none of those four metas appear. Also unlike
+    a section/taxonomy list, this page has no own RSS `AlternativeOutputFormats`
+    entry, so there is no `<link rel="alternate" type="application/rss+xml"
+    href=".../archives/index.xml">` line either. Confirmed byte-for-byte
+    against `/tmp/t9-hugo/archives/index.html`."""
+    title = "Archive"
+    desc_attr = html.esc("archives")
+    return f"""{_META_TOP}
+
+{_feed_and_analytics(site)}
+<title>{html.esc(title)} | {html.esc(site.title)}</title>
+<meta name="keywords" content="">
+<meta name="description" content="{desc_attr}">
+<meta name="author" content="{html.esc(site.author)}">
+<link rel="canonical" href="{permalink}">
+<link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
+{_favicons_block(site)}
+<link rel="alternate" hreflang="en" href="{permalink}">
+{_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
+  <meta property="og:site_name" content="{html.esc(site.title)}">
+  <meta property="og:title" content="{title}">
+  <meta property="og:description" content="{desc_attr}">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="article">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc_attr}">
 
 
-{_schema_json_section(title, permalink)}"""
+{_schema_json_archives(permalink, site)}"""
 
 def _breadcrumb_list(items: list[tuple[str, str]]) -> str:
     """schema_json.html's `BreadcrumbList` block -- the composable piece
@@ -382,36 +455,33 @@ def _breadcrumb_list(items: list[tuple[str, str]]) -> str:
 }}
 </script>"""
 
-def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_description: str) -> str:
-    # Hugo's `.Content` carries goldmark's typographic entities, and both
-    # `articleBody` (which decodes them) and `.WordCount` are computed
-    # from it.
-    content_html = markdown.render_entities(post.body)
-    plain = markdown.plain(content_html)
-    word_count = markdown.word_count(content_html)
-    published_z = post.date.strftime(_ISO_Z)
-    keywords = ", ".join(_js_value(t) for t in post.tags)
-
-    breadcrumbs = _breadcrumb_list([
-        (_js_value("Posts"), f"{site.base_url}/posts/"),
-        (_js_value(post.title), permalink),
-    ])
-
-    blog_posting = f"""<script type="application/ld+json">
+def _blog_posting_json(headline: str, name_inner: str, description: str, keywords: list[str],
+                        article_body: str, word_count: str, published_z: str, modified_z: str,
+                        permalink: str, site: SiteContext) -> str:
+    """schema_json.html's `BlogPosting` block -- the composable piece
+    shared by `_schema_json` (a real post) and `_schema_json_archives`
+    (content/archives.md, a Kind "page" with no post body of its own but
+    still `.IsPage`, so it gets the exact same block, just built from its
+    own front matter/zero values instead). `headline`/`name_inner` are
+    almost always the same title; kept as two params because `name_inner`
+    goes through `_js_string_inner` (see that function's docstring) while
+    `headline` and everything else use `_js_value`."""
+    keywords_js = ", ".join(_js_value(k) for k in keywords)
+    return f"""<script type="application/ld+json">
 {{
   "@context": "https://schema.org",
   "@type": "BlogPosting",
-  "headline": {_js_value(post.title)},
-  "name": "{_js_string_inner(post.title)}",
-  "description": {_js_value(jsonld_description)},
+  "headline": {_js_value(headline)},
+  "name": "{_js_string_inner(name_inner)}",
+  "description": {_js_value(description)},
   "keywords": [
-    {keywords}
+    {keywords_js}
   ],
-  "articleBody": {_js_value(plain)},
+  "articleBody": {_js_value(article_body)},
   "wordCount" : "{word_count}",
   "inLanguage": "en",
   "datePublished": "{published_z}",
-  "dateModified": "{published_z}",
+  "dateModified": "{modified_z}",
   "author":{{
     "@type": "Person",
     "name": {_js_value(site.author)}
@@ -431,6 +501,39 @@ def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_descripti
 }}
 </script>"""
 
+def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_description: str) -> str:
+    # Hugo's `.Content` carries goldmark's typographic entities, and both
+    # `articleBody` (which decodes them) and `.WordCount` are computed
+    # from it.
+    content_html = markdown.render_entities(post.body)
+    plain = markdown.plain(content_html)
+    word_count = markdown.word_count(content_html)
+    published_z = post.date.strftime(_ISO_Z)
+
+    breadcrumbs = _breadcrumb_list([
+        (_js_value("Posts"), f"{site.base_url}/posts/"),
+        (_js_value(post.title), permalink),
+    ])
+    blog_posting = _blog_posting_json(
+        post.title, post.title, jsonld_description, post.tags,
+        plain, str(word_count), published_z, published_z, permalink, site,
+    )
+    return breadcrumbs + "\n" + blog_posting
+
+def _schema_json_archives(permalink: str, site: SiteContext) -> str:
+    """content/archives.md's own JSON-LD: `.IsPage` is true for this Kind
+    "page" content file (unlike a tag/taxonomy list -- see
+    `_head_taxonomy`), so it gets the full BreadcrumbList + BlogPosting
+    pair, just built from its own front matter (`title: "Archive"`,
+    `summary: "archives"`, no `tags`/`date`) instead of a Post: no body
+    content (empty `articleBody`, "0" `wordCount`), and Go's zero
+    `time.Time` for both dates -- this page sets no `date:` front matter
+    at all. Confirmed against `/tmp/t9-hugo/archives/index.html`."""
+    breadcrumbs = _breadcrumb_list([(_js_value("Archive"), permalink)])
+    blog_posting = _blog_posting_json(
+        "Archive", "Archive", "archives", [],
+        "", "0", "0001-01-01T00:00:00Z", "0001-01-01T00:00:00Z", permalink, site,
+    )
     return breadcrumbs + "\n" + blog_posting
 
 def _schema_json_home(site: SiteContext) -> str:
@@ -478,11 +581,19 @@ def _theme_init_script() -> str:
 
 </script>"""
 
-def _header(site: SiteContext) -> str:
+def _header(site: SiteContext, permalink: str | None = None) -> str:
+    """header.html's nav, shared by every page kind. `permalink`, the
+    current page's own permalink, marks the one menu entry whose URL
+    matches it with `class="active"`
+    (layouts/partials/header.html: `<span {{- if eq $menu_item_url
+    $page_url }} class="active" {{- end }}>`) -- None (the default) never
+    matches, correct for every page kind except `archives_page`, the only
+    one whose own permalink coincides with a menu entry (/archives/).
+    Confirmed against `/tmp/t9-hugo/archives/index.html`'s own nav."""
     menu_items = "\n".join(
         f"""            <li>
                 <a href="{site.base_url}{path}" title="{html.esc(name)}">
-                    <span>{html.esc(name)}</span>
+                    <span{' class="active"' if f'{site.base_url}{path}' == permalink else ''}>{html.esc(name)}</span>
                 </a>
             </li>"""
         for name, path in _MENU
@@ -628,7 +739,7 @@ def _post_meta(post: Post, site: SiteContext) -> str:
 
 def _post_tags(post: Post, site: SiteContext) -> str:
     items = "\n".join(
-        f'      <li><a href="{site.base_url}/tags/{html.esc(_tag_slug(t))}/">{html.esc(_tag_title(t))}</a></li>'
+        f'      <li><a href="{site.base_url}/tags/{html.esc(_tag_slug(t))}/">{html.esc(tag_title(t))}</a></li>'
         for t in post.tags
     )
     return f"""    <ul class="post-tags">
@@ -786,18 +897,25 @@ def home_page(site: SiteContext) -> str:
 </html>
 """
 
-def _list_entry(post: Post, site: SiteContext) -> str:
+def _list_entry(post: Post, site: SiteContext, tag_entry: bool = False) -> str:
     """list.html's `<article class="post-entry">` for one post in a
     listing: title, `.Summary` (list.html always reads `.Summary`
     directly -- unlike the meta `<meta name="description">` above, it
     never falls back to a front-matter `description:`), the same
     post-meta line a post page's own header uses (`_post_meta_core`), and
-    the entry-level permalink."""
+    the entry-level permalink. `tag_entry` is list.html's own `$term`
+    check (`.Data.Term`, set for every entry on a Kind "term" page, e.g.
+    /tags/elm/): true adds an extra "tag-entry" class Hugo's own
+    /posts/ listing never gets -- confirmed against
+    `/tmp/t9-hugo/tags/elm/index.html`'s `<article class="post-entry
+    tag-entry">` vs. `/tmp/t9-hugo/posts/index.html`'s plain
+    `<article class="post-entry">`."""
     summary_text, truncated = markdown.entry_summary(post.body)
     summary_html = html.esc(summary_text) + ("..." if truncated else "")
     title = html.esc(post.title)
     permalink = f"{site.base_url}/posts/{post.slug}/"
-    return f"""<article class="post-entry"> 
+    css_class = "post-entry tag-entry" if tag_entry else "post-entry"
+    return f"""<article class="{css_class}"> 
   <header class="entry-header">
     <h2 class="entry-hint-parent">{title}
     </h2>
@@ -848,25 +966,32 @@ def _list_title(base_path: str) -> str:
     "SQLite"/"LLMs" are unrecoverable from it by ANY capitalisation
     rule -- a caller with the real front-matter spelling must pass
     `title` explicitly instead of relying on this derivation)."""
-    return _tag_title(base_path.strip("/").rsplit("/", 1)[-1])
+    return tag_title(base_path.strip("/").rsplit("/", 1)[-1])
 
 def list_page(posts: list[Post], page_num: int, total_pages: int, base_path: str,
-              site: SiteContext, title: str | None = None) -> str:
-    """.../_default/list.html for one page of a paginated section listing
-    (Kind "section", e.g. /posts/ and /posts/page/2/). `base_path` is the
-    section's own bare, absolute-from-root path ("/posts/"); `posts` is
+              site: SiteContext, title: str | None = None, taxonomy: bool = False) -> str:
+    """.../_default/list.html for one page of a paginated listing --
+    either a section (Kind "section", e.g. /posts/ and /posts/page/2/) or,
+    when `taxonomy` is true, a single tag's own term page (Kind "term",
+    e.g. /tags/elm/ and /tags/programming/page/2/ -- "programming" alone
+    has 106 posts, one over PAGER_SIZE). `base_path` is the listing's own
+    bare, absolute-from-root path ("/posts/", "/tags/elm/"); `posts` is
     already the slice this particular page renders (`pagerSize`-many,
     newest-first); `page_num`/`total_pages` drive only the prev/next
     pagination nav -- see `_head_section`'s docstring for why nothing else
     in <head> varies by page number. `title` is the page's real display
     title (e.g. a tag's front-matter spelling); when omitted it falls
     back to `_list_title`'s derivation from `base_path`, which is only
-    correct for a plain, single-word, already-lowercase section name."""
+    correct for a plain, single-word, already-lowercase section name.
+    `taxonomy` selects `_head_taxonomy` over `_head_section` (see that
+    function's docstring for how the two Kinds' <head> differ) and marks
+    every entry with list.html's own extra "tag-entry" class -- see
+    `_list_entry`."""
     permalink = f"{site.base_url}{base_path}"
     if title is None:
         title = _list_title(base_path)
 
-    entries = "\n\n".join(_list_entry(post, site) for post in posts)
+    entries = "\n\n".join(_list_entry(post, site, tag_entry=taxonomy) for post in posts)
     prev_url = (permalink if page_num == 2
                 else f"{site.base_url}{base_path}page/{page_num - 1}/" if page_num > 2
                 else None)
@@ -894,17 +1019,31 @@ def list_page(posts: list[Post], page_num: int, total_pages: int, base_path: str
 {_footer(site)}
 </body>"""
 
+    head = (_head_taxonomy(site, permalink, title, base_path) if taxonomy
+            else _head_section(site, permalink, title, base_path))
     return f"""<!DOCTYPE html>
 <html lang="en" dir="auto">
 
 <head>
-{_head_section(site, permalink, title, base_path)}
+{head}
 </head>
 
 {body}
 
 </html>
 """
+
+def term_page(tag: str, posts: list[Post], page_num: int, total_pages: int, site: SiteContext) -> str:
+    """/tags/<slug>/ (and its /page/N/ siblings) for one tag: `list_page`
+    with `taxonomy=True`, and `title`/`base_path` derived from the tag's
+    own front-matter spelling (`_tag_title`) and lowercased slug
+    (`_tag_slug`) rather than passed in raw -- unlike `list_page` itself,
+    a caller here only ever has the one true spelling a tag can have (see
+    `group_posts_by_tag`), so there is no risk of the slug-derivation trap
+    `list_page`'s own docstring warns about."""
+    slug = _tag_slug(tag)
+    return list_page(posts, page_num, total_pages, f"/tags/{slug}/", site,
+                      title=tag_title(tag), taxonomy=True)
 
 def alias_stub(target_url: str, site: SiteContext) -> str:
     """A `disableAliases = false` pagination alias: Hugo's own built-in
@@ -922,5 +1061,190 @@ def alias_stub(target_url: str, site: SiteContext) -> str:
 \t\t<meta charset="utf-8">
 \t\t<meta http-equiv="refresh" content="0; url={absolute}">
 \t</head>
+</html>
+"""
+
+def group_posts_by_tag(posts: list[Post]) -> list[tuple[str, str, list[Post]]]:
+    """Every distinct tag across `posts`, as (display_name, slug, that
+    tag's own posts) triples sorted alphabetically by slug -- Hugo's own
+    `.Data.Terms.Alphabetical` order (`terms.html`'s own `range`), which
+    `terms_index` needs for /tags/ and `site.py`'s per-tag build loop
+    reuses so it doesn't need a second pass over `posts`. `display_name`
+    is the RAW front-matter spelling of the tag (its first occurrence --
+    tag spellings were normalised in an earlier content migration so
+    every post using a given tag spells it identically), never
+    `_tag_title`'s capitalised form: `terms_index`'s own `.Name` is that
+    raw spelling verbatim (confirmed against `/tmp/t9-hugo/tags/index.html`
+    showing "language-design" all-lowercase, even though that very tag's
+    own term page auto-titles itself "Language-Design" -- see
+    `term_page`). `posts` is assumed already newest-first (site.posts is),
+    so each tag's own post list comes out newest-first too, without a
+    re-sort -- confirmed against `/tmp/t9-hugo/tags/elm/index.html`'s own
+    entry order."""
+    names: dict[str, str] = {}
+    grouped: dict[str, list[Post]] = {}
+    for post in posts:
+        for tag in post.tags:
+            slug = _tag_slug(tag)
+            names.setdefault(slug, tag)
+            grouped.setdefault(slug, []).append(post)
+    return [(names[slug], slug, grouped[slug]) for slug in sorted(grouped)]
+
+def terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext) -> str:
+    """/tags/ (Kind "taxonomy"): layouts/_default/terms.html, a project
+    override with its own bespoke header/list markup -- NOT list.html's
+    generic page-header partial that `list_page` reuses for /posts/ and a
+    single tag's own /tags/<tag>/ page. `tags` is `group_posts_by_tag`'s
+    own (display_name, slug, posts) triples, already in alphabetical-by-
+    slug order; the count shown next to each tag is simply that tag's own
+    post count."""
+    permalink = f"{site.base_url}/tags/"
+    items = "\n".join(
+        f"""    <li>
+        <a href="{site.base_url}/tags/{slug}/">{html.esc(name)} <sup><strong><sup>{len(tag_posts)}</sup></strong></sup> </a>
+    </li>"""
+        for name, slug, tag_posts in tags
+    )
+    main = f"""<header class="page-header">
+    <h1>Tags</h1>
+</header>
+
+<ul class="terms-tags">
+{items}
+</ul>"""
+
+    body = f"""<body class="list" id="top">
+{_theme_init_script()}
+
+{_header(site)}
+<main class="main">
+{main}
+    </main>
+{_signature(site)}
+
+{_footer(site)}
+</body>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head>
+{_head_taxonomy(site, permalink, "Tags", "/tags/")}
+</head>
+
+{body}
+
+</html>
+"""
+
+def _render_inline_markdown_entities(text: str) -> str:
+    """Like `_render_inline_markdown`, but through `markdown.render_entities`
+    instead of `markdown.render` -- archives.html's own
+    `{{ .Title | markdownify }}` for each entry's heading renders the
+    typographer's substitutions as literal HTML entities ("&rsquo;"), not
+    real Unicode characters, unlike every other place a post title reaches
+    a page verbatim (`_list_entry`, `_recent_item`, ... all just
+    `html.esc(post.title)`, which leaves a straight quote as "&#39;").
+    Confirmed against `/tmp/t9-hugo/archives/index.html`'s own
+    archive-entry-title for "Link: python's..." ("&rsquo;s", not "&#39;s"
+    or a real "’")."""
+    rendered = markdown.render_entities(text)
+    m = _INLINE_MD_P_RE.match(rendered)
+    return m.group(1) if m else rendered
+
+def _archive_entry(post: Post, site: SiteContext) -> str:
+    """archives.html's `<div class="archive-entry">`: the heading goes
+    through `.Title | markdownify` (`_render_inline_markdown_entities`),
+    the `<a>`'s aria-label through plain `.Title | plainify` (just
+    `html.esc(post.title)`, same as every other listing's entry-link --
+    see `_render_inline_markdown_entities`'s docstring for why those two
+    differ), and the meta line reuses `_post_meta_core` exactly as a
+    post's own header and a list entry's footer do."""
+    title_md = _render_inline_markdown_entities(post.title)
+    aria_title = html.esc(post.title)
+    permalink = f"{site.base_url}/posts/{post.slug}/"
+    return f"""      <div class="archive-entry">
+        <h3 class="archive-entry-title entry-hint-parent">{title_md}
+        </h3>
+        <div class="archive-meta">{_post_meta_core(post, site)}</div>
+        <a class="entry-link" aria-label="post link to {aria_title}" href="{permalink}"></a>
+      </div>"""
+
+def _archive_month(year: str, month: str, posts: list[Post], site: SiteContext) -> str:
+    anchor = f"{year}-{month}"
+    entries = "\n".join(_archive_entry(p, site) for p in posts)
+    return f"""  <div class="archive-month">
+    <h3 class="archive-month-header" id="{anchor}">
+      <a class="archive-header-link" href="#{anchor}">{month}</a>
+      <sup class="archive-count">&nbsp;{len(posts)}</sup>
+    </h3>
+    <div class="archive-posts">
+{entries}
+    </div>
+  </div>"""
+
+def _archive_year(year: str, posts: list[Post], site: SiteContext) -> str:
+    months = "\n".join(
+        _archive_month(year, month, list(month_posts), site)
+        for month, month_posts in itertools.groupby(posts, key=lambda p: p.date.strftime("%B"))
+    )
+    return f"""<div class="archive-year">
+  <h2 class="archive-year-header" id="{year}">
+    <a class="archive-header-link" href="#{year}">{year}</a>
+    <sup class="archive-count">&nbsp;{len(posts)}</sup>
+  </h2>
+{months}
+</div>"""
+
+def archives_page(posts: list[Post], site: SiteContext) -> str:
+    """content/archives.md (layout "archives", front matter `title:
+    "Archive"`, `summary: "archives"`, `url: "/archives/"`, no `date`) --
+    a genuine Kind "page", not a listing, so its own <head>
+    (`_head_archives`) and JSON-LD (`_schema_json_archives`) are built
+    separately from `list_page`'s. `posts` is every post (site.posts,
+    already newest-first -- `mainSections` is just "posts", so
+    archives.html's own `$pages := where site.RegularPages "Type" "in"
+    site.Params.mainSections` is exactly this list), grouped by publish
+    year then, within each year, by publish month -- both passes use a
+    single `itertools.groupby` safely since a date-descending list is
+    already contiguous by year and, within a year, by month. Both
+    groupings, and the years/months themselves, therefore come out
+    newest-first for free, matching `.GroupByPublishDate`/`.GroupByDate`'s
+    own ordering. No pagination: archives.html never calls `.Paginate`,
+    regardless of how many posts there are."""
+    permalink = f"{site.base_url}/archives/"
+    years = "\n".join(
+        _archive_year(str(year), list(year_posts), site)
+        for year, year_posts in itertools.groupby(posts, key=lambda p: p.date.year)
+    )
+    main = f"""<header class="page-header">
+  <h1>
+    Archive
+  </h1>
+</header>
+{years}"""
+
+    body = f"""<body class="list" id="top">
+{_theme_init_script()}
+
+{_header(site, permalink)}
+<main class="main">
+
+{main}
+    </main>
+{_signature(site)}
+
+{_footer(site)}
+</body>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head>
+{_head_archives(site, permalink)}
+</head>
+
+{body}
+
 </html>
 """

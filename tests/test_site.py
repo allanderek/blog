@@ -37,6 +37,18 @@ def test_page_count_is_the_pager_size_ceiling(tmp_path: Path, count, expected_pa
     one_past = tmp_path / "posts" / "page" / str(expected_pages + 1)
     assert not one_past.exists(), f"unexpected page {expected_pages + 1} for {count} posts"
 
+def test_write_section_paginates_a_tag_listing_too(tmp_path: Path):
+    # A tag can need a second page just like /posts/ does -- "programming"
+    # alone has 106 posts in the real corpus, one over PAGER_SIZE.
+    _write_section(tmp_path, "/tags/elm/", _posts(PAGER_SIZE + 1), _site(),
+                    title="Elm", taxonomy=True)
+    assert (tmp_path / "tags" / "elm" / "index.html").exists()
+    assert (tmp_path / "tags" / "elm" / "page" / "2" / "index.html").exists()
+    assert (tmp_path / "tags" / "elm" / "page" / "1" / "index.html").exists()
+    page1 = (tmp_path / "tags" / "elm" / "index.html").read_text()
+    assert 'class="post-entry tag-entry"' in page1
+    assert "application/ld+json" not in page1
+
 def test_page_1_alias_stub_is_written_even_for_a_single_page_listing(tmp_path: Path):
     # Nothing in check-site.sh asserts this stub exists; only compare.py
     # against Hugo's own `disableAliases = false` output catches it if a
