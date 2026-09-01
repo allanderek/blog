@@ -62,10 +62,14 @@ def _parse_scalar(raw: str):
         return int(raw)
     return raw.strip('"').strip("'")
 
-def parse_post(path: Path) -> Post:
-    text = path.read_text()
+def _parse_front_matter(text: str) -> tuple[dict, str]:
+    """The front-matter block (as a plain dict, keys/values parsed via
+    `_parse_scalar`) and the body that follows it, lstripped of the blank
+    line(s) `---` normally leaves behind. Shared by `parse_post` (which
+    additionally requires a `date:` key) and `load_front_matter` (which
+    doesn't -- `content/cv.md`/`content/consulting.md` have none)."""
     if not text.startswith("---"):
-        raise ValueError(f"{path}: no front matter")
+        raise ValueError("no front matter")
     end = text.index("\n---", 3)
     front, body = text[3:end], text[end + 4:].lstrip("\n")
     meta: dict = {}
@@ -74,6 +78,26 @@ def parse_post(path: Path) -> Post:
             continue
         key, _, value = line.partition(":")
         meta[key.strip()] = _parse_scalar(value)
+    return meta, body
+
+def load_front_matter(path: Path) -> dict:
+    """Front matter only, for a page with no `date:` (so it can't go
+    through `parse_post`, which requires one) whose metadata is still
+    needed -- `feeds.py`'s root RSS item for `content/cv.md`/
+    `content/consulting.md`, which Hugo's `.RegularPages` includes
+    alongside every post (see feeds.py's module docstring)."""
+    try:
+        meta, _ = _parse_front_matter(path.read_text())
+    except ValueError as e:
+        raise ValueError(f"{path}: {e}") from e
+    return meta
+
+def parse_post(path: Path) -> Post:
+    text = path.read_text()
+    try:
+        meta, body = _parse_front_matter(text)
+    except ValueError as e:
+        raise ValueError(f"{path}: {e}") from e
     raw_date = str(meta["date"])
     return Post(
         slug=path.stem,

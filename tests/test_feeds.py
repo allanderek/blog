@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from generator.content import Post
-from generator.feeds import ATOM_ENTRY_LIMIT, atom, rss
+from generator.feeds import ATOM_ENTRY_LIMIT, atom, rss, sitemap, terms_rss
 from generator.site import SiteContext
 
 DANGEROUS_TITLE = """Cats & Dogs <script>alert("x")</script> it's "great\""""
@@ -160,3 +160,99 @@ def test_atom_published_and_updated_match_the_posts_own_date():
     out = atom([_post("p", date=when)], _site())
     assert "<published>2023-06-15T09:30:00+00:00</published>" in out
     assert "<updated>2023-06-15T09:30:00+00:00</updated>" in out
+
+
+def test_atom_entry_category_block_has_hugos_exact_whitespace_padding():
+    # A real bug, not paranoia: the first attempt at this only emitted ONE
+    # of the two whitespace-only lines Hugo's own output has before the
+    # first <category>, and neither the zero-tag nor the single-tag test
+    # above caught it -- only a byte-exact real-corpus diff did. Two tags
+    # is the minimum that exercises "two before the first, one between,
+    # two after".
+    out = atom([_post("p", tags=["Elm", "programming"])], _site())
+    expected_tail = (
+        '    <content type="html">'
+        + out.split('<content type="html">', 1)[1].split("</content>", 1)[0]
+        + "</content>\n"
+        '    \n'
+        '    \n'
+        '    <category term="Elm"/>\n'
+        '    \n'
+        '    <category term="programming"/>\n'
+        '    \n'
+        '    \n'
+        '  </entry>'
+    )
+    assert expected_tail in out
+
+
+def test_rss_include_site_pages_adds_cv_and_consulting_cv_first():
+    # cv.md's real weight: 10 puts it before every (weight-0) post
+    # regardless of date; consulting.md's real zero .Date puts it dead
+    # last among the weight-0 group. Reads the real content/cv.md and
+    # content/consulting.md front matter (no fixture to swap in without
+    # threading a content root through feeds.py -- see _load_root_extras).
+    posts = _posts(2)
+    out = rss(posts, _site(), title=_site().title, include_site_pages=True)
+    assert out.count("<item>") == len(posts) + 2
+    links = [line.strip().removeprefix("<link>").removesuffix("</link>")
+             for line in out.splitlines() if line.strip().startswith("<link>")][1:]  # [0] is the channel's own
+    assert links[0] == "https://example.com/cv/"
+    assert links[-1] == "https://example.com/consulting/"
+    assert links[1:-1] == [f"https://example.com/posts/{p.slug}/" for p in posts]
+
+
+def test_rss_without_include_site_pages_is_posts_only():
+    posts = _posts(2)
+    out = rss(posts, _site(), title=_site().title)
+    assert out.count("<item>") == len(posts)
+    assert "/cv/" not in out
+    assert "/consulting/" not in out
+
+
+# --- terms_rss() -----------------------------------------------------------
+
+def test_terms_rss_items_are_terms_not_posts():
+    tags = [("Elm", "elm", [_post("p1", tags=["Elm"])])]
+    out = terms_rss(tags, _site(), "/tags/", "Tags")
+    assert "<title>Elm</title>" in out
+    assert "<link>https://example.com/tags/elm/</link>" in out
+    assert "<description></description>" in out
+
+
+def test_terms_rss_empty_has_no_items_and_no_last_build_date():
+    # The real /categories/index.xml: an unused taxonomy, no terms.
+    out = terms_rss([], _site(), "/categories/", "Categories")
+    assert "<item>" not in out
+    assert "<lastBuildDate>" not in out
+    assert "<title>Categories on Test Site</title>" in out
+
+
+def test_terms_rss_orders_by_newest_post_then_linktitle_case_insensitively():
+    newer = datetime(2024, 6, 1, tzinfo=timezone.utc)
+    older = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    tags = [
+        ("zzz", "zzz", [_post("p1", date=older)]),
+        ("Aaa", "aaa", [_post("p2", date=newer)]),
+    ]
+    out = terms_rss(tags, _site(), "/tags/", "Tags")
+    assert out.index("Aaa") < out.index("zzz")
+
+
+# --- sitemap() ---------------------------------------------------------
+
+def test_sitemap_lists_every_post_and_omits_lastmod_for_dateless_pages():
+    posts = _posts(3)
+    out = sitemap(posts, [], _site())
+    for post in posts:
+        assert f"<loc>https://example.com/posts/{post.slug}/</loc>" in out
+    assert "<loc>https://example.com/</loc>" in out
+    assert "<loc>https://example.com/posts/</loc>" in out
+    assert "<loc>https://example.com/archives/</loc>" in out
+    assert "<loc>https://example.com/consulting/</loc>" in out
+    assert "<loc>https://example.com/cv/</loc>" in out
+    # cv.md/consulting.md/archives.md/categories all carry no date in the
+    # real corpus this reads front matter from -- none should get a
+    # <lastmod> line of its own: one dated entry per post, plus home,
+    # /posts/, and /tags/ (all sharing the newest post's own date).
+    assert out.count("<lastmod>") == len(posts) + 3

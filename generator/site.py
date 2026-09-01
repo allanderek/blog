@@ -105,11 +105,12 @@ def build(out: Path) -> None:
         (page_dir / "index.html").write_text(post_page(post, site))
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(home_page(site))
-    # The site-wide feeds. Deliberately built from `posts` alone, not
-    # every Hugo `RegularPage` -- see feeds.py's module docstring for why
-    # Hugo's own `/index.xml` (which also lists `/cv/` and `/consulting/`)
-    # is not fully reproducible yet.
-    (out / "index.xml").write_text(feeds.rss(posts, site, title=site.title))
+    # The site-wide feeds. `include_site_pages` merges in `/cv/`/
+    # `/consulting/` (every other feed's `.Pages` is genuinely just its
+    # own posts) -- see feeds.py's module docstring for the one field of
+    # the CV item this still can't reproduce.
+    (out / "index.xml").write_text(
+        feeds.rss(posts, site, title=site.title, include_site_pages=True))
     rss_dir = out / "rss"
     rss_dir.mkdir(parents=True, exist_ok=True)
     (rss_dir / "index.xml").write_text(feeds.atom(posts, site))
@@ -122,7 +123,20 @@ def build(out: Path) -> None:
     tags_dir = out / "tags"
     tags_dir.mkdir(parents=True, exist_ok=True)
     (tags_dir / "index.html").write_text(terms_index(tags, site))
+    (tags_dir / "index.xml").write_text(
+        feeds.terms_rss(tags, site, "/tags/", tag_title("tags")))
+    # /categories/: an unused taxonomy (no post ever sets `categories:`),
+    # so `terms_index`-style HTML isn't built -- only its feed is, since
+    # Hugo emits an (empty but real) one regardless. `terms_rss` with an
+    # empty `tags` list already matches Hugo's real, itemless output; see
+    # its own docstring.
+    categories_dir = out / "categories"
+    categories_dir.mkdir(parents=True, exist_ok=True)
+    (categories_dir / "index.xml").write_text(
+        feeds.terms_rss([], site, "/categories/", tag_title("categories")))
 
     archives_dir = out / "archives"
     archives_dir.mkdir(parents=True, exist_ok=True)
     (archives_dir / "index.html").write_text(archives_page(posts, site))
+
+    (out / "sitemap.xml").write_text(feeds.sitemap(posts, tags, site))
