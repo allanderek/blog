@@ -354,13 +354,18 @@ def _breadcrumb_list(items: list[tuple[str, str]]) -> str:
     """schema_json.html's `BreadcrumbList` block -- the composable piece
     shared by `_schema_json` (a post: two entries, "Posts" then the post
     itself) and `_schema_json_section` (a section list page like /posts/:
-    one self-referencing entry; taxonomy pages in a later task add a
-    third shape built from the same helper -- "Tags" then the term).
-    `items` is (name, url) pairs in position order; `name` must already be
-    a JSON-ready value (`_js_value(...)` -- see that function's docstring
-    for why the BlogPosting's own "name" field needs `_js_string_inner`
-    instead, a distinction no breadcrumb name needs since none is ever
-    written inside pre-existing literal quotes)."""
+    one self-referencing entry). Confirmed against real Hugo output that
+    this is NOT a third shape a tag page also needs: schema_json.html's
+    guard is `.IsPage .IsSection`, and Hugo's `.IsSection` is only true
+    for Kind "section" -- a tag/taxonomy page is Kind "term"/"taxonomy",
+    so it falls through that guard entirely and gets no JSON-LD at all
+    (`/tmp/t8-hugo/tags/python/index.html` and `/tmp/t8-hugo/tags/index.html`
+    both have zero `application/ld+json` scripts). `items` is (name, url)
+    pairs in position order; `name` must already be a JSON-ready value
+    (`_js_value(...)` -- see that function's docstring for why the
+    BlogPosting's own "name" field needs `_js_string_inner` instead, a
+    distinction no breadcrumb name needs since none is ever written
+    inside pre-existing literal quotes)."""
     entries = ",\n".join(f"""    {{
       "@type": "ListItem",
       "position":  {position} ,
@@ -832,23 +837,34 @@ def _pagination_footer(prev_url: str | None, next_url: str | None) -> str:
 def _list_title(base_path: str) -> str:
     """The list page's own auto Title (list.html's <h1>, and the source
     for "<title>Title | site.Title</title>"/the description fallback/
-    og:title/twitter:title in `_head_section`) -- for a section with no
-    content/<section>/_index.md, Hugo's default section Title is simply
-    the capitalised section name. `/posts/` is the only section this
-    generator builds yet."""
-    return base_path.strip("/").rsplit("/", 1)[-1].capitalize()
+    og:title/twitter:title in `_head_section`), used only as a fallback
+    when `list_page` isn't given an explicit `title` -- for a section
+    with no content/<section>/_index.md, Hugo's default section Title
+    capitalises after each space/hyphen and otherwise leaves casing
+    alone, the exact rule `_tag_title` already implements (`/posts/`
+    happens to be a single all-lowercase word, so this fallback is
+    enough for it, but it can never be enough on its own for a tag's
+    display name: a tag slug is lowercased on the way into the URL, so
+    "SQLite"/"LLMs" are unrecoverable from it by ANY capitalisation
+    rule -- a caller with the real front-matter spelling must pass
+    `title` explicitly instead of relying on this derivation)."""
+    return _tag_title(base_path.strip("/").rsplit("/", 1)[-1])
 
 def list_page(posts: list[Post], page_num: int, total_pages: int, base_path: str,
-              site: SiteContext) -> str:
+              site: SiteContext, title: str | None = None) -> str:
     """.../_default/list.html for one page of a paginated section listing
     (Kind "section", e.g. /posts/ and /posts/page/2/). `base_path` is the
     section's own bare, absolute-from-root path ("/posts/"); `posts` is
     already the slice this particular page renders (`pagerSize`-many,
     newest-first); `page_num`/`total_pages` drive only the prev/next
     pagination nav -- see `_head_section`'s docstring for why nothing else
-    in <head> varies by page number."""
+    in <head> varies by page number. `title` is the page's real display
+    title (e.g. a tag's front-matter spelling); when omitted it falls
+    back to `_list_title`'s derivation from `base_path`, which is only
+    correct for a plain, single-word, already-lowercase section name."""
     permalink = f"{site.base_url}{base_path}"
-    title = _list_title(base_path)
+    if title is None:
+        title = _list_title(base_path)
 
     entries = "\n\n".join(_list_entry(post, site) for post in posts)
     prev_url = (permalink if page_num == 2

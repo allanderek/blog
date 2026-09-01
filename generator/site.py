@@ -53,20 +53,24 @@ def _default_site(posts: list[Post], home_intro: str = "") -> SiteContext:
         home_intro=home_intro,
     )
 
-def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteContext) -> None:
+def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteContext,
+                    title: str | None = None) -> None:
     """Writes every page of a paginated section listing (`base_path`, e.g.
     "/posts/"): the bare page (the newest `PAGER_SIZE` posts, newest-first
     since `posts` already is), a `page/N/` page for each page after that,
     and the `page/1/` alias stub Hugo's `disableAliases = false` emits for
-    every paginated listing (see `pages.alias_stub`) -- nothing in
-    check-site.sh asserts that stub exists, so it is easy to silently
-    drop; `compare.py` is what catches it."""
+    every paginated listing -- even for a single-page listing, matching
+    Hugo (see `pages.alias_stub`) -- nothing in check-site.sh asserts that
+    stub exists, so it is easy to silently drop; `compare.py` is what
+    catches it. `title` is threaded straight through to `list_page` --
+    see its docstring for why a tag listing must pass its real
+    front-matter spelling here rather than leaving it to derive one."""
     total_pages = max(1, -(-len(posts) // PAGER_SIZE))  # ceil division
     section_dir = out / base_path.strip("/")
     section_dir.mkdir(parents=True, exist_ok=True)
     for page_num in range(1, total_pages + 1):
         page_posts = posts[(page_num - 1) * PAGER_SIZE: page_num * PAGER_SIZE]
-        page_html = list_page(page_posts, page_num, total_pages, base_path, site)
+        page_html = list_page(page_posts, page_num, total_pages, base_path, site, title=title)
         page_dir = section_dir if page_num == 1 else section_dir / "page" / str(page_num)
         page_dir.mkdir(parents=True, exist_ok=True)
         (page_dir / "index.html").write_text(page_html)
