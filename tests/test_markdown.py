@@ -180,7 +180,7 @@ def test_known_language_is_highlighted_inside_the_wrapper():
     assert '<div class="highlight">' in out
     assert 'background-color:#272822' in out
     assert '<code class="language-python" data-lang="python">' in out
-    assert 'style="color:#66D9EF">if</span>' in out    # a real token span
+    assert 'style="color:#66d9ef">if</span>' in out    # a real token span
 
 def test_unknown_language_keeps_the_structure_but_not_the_colouring():
     # Chroma has a MoonBit lexer and Pygments does not. Falling back to the

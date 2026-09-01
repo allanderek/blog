@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import feeds
 from .content import Post, load_posts, load_index_body
 from .pages import (alias_stub, archives_page, group_posts_by_tag, home_page,
                      list_page, post_page, tag_title, terms_index)
@@ -83,6 +84,16 @@ def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteConte
     stub_dir = section_dir / "page" / "1"
     stub_dir.mkdir(parents=True, exist_ok=True)
     (stub_dir / "index.html").write_text(alias_stub(base_path, site))
+    # One RSS feed per section/term, at its own bare `base_path` only --
+    # never per pagination page (Hugo emits no `page/N/index.xml`; the
+    # feed always lists every one of `posts`, not just one page's slice --
+    # see feeds.rss's docstring). `title` defaults the same way
+    # `list_page` does when the caller (the `/posts/` case) leaves it
+    # unset: `tag_title` on the last path segment of `base_path`.
+    (section_dir / "index.xml").write_text(
+        feeds.rss(posts, site, base_path,
+                  title=title if title is not None
+                  else tag_title(base_path.strip("/").rsplit("/", 1)[-1])))
 
 def build(out: Path) -> None:
     posts = load_posts(CONTENT_ROOT / "posts")
@@ -94,6 +105,14 @@ def build(out: Path) -> None:
         (page_dir / "index.html").write_text(post_page(post, site))
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(home_page(site))
+    # The site-wide feeds. Deliberately built from `posts` alone, not
+    # every Hugo `RegularPage` -- see feeds.py's module docstring for why
+    # Hugo's own `/index.xml` (which also lists `/cv/` and `/consulting/`)
+    # is not fully reproducible yet.
+    (out / "index.xml").write_text(feeds.rss(posts, site, title=site.title))
+    rss_dir = out / "rss"
+    rss_dir.mkdir(parents=True, exist_ok=True)
+    (rss_dir / "index.xml").write_text(feeds.atom(posts, site))
     _write_section(out, "/posts/", posts, site)
 
     tags = group_posts_by_tag(posts)

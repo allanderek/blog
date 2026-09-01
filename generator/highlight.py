@@ -87,6 +87,46 @@ def _compact_styles(body: str) -> str:
 def _drop_default_colour(body: str) -> str:
     return _DEFAULT_SPAN_RE.sub(r"\1", body)
 
+# Pygments 2.20's HtmlFormatter uppercases every token's own `color: #XXXXXX`
+# (it does NOT touch `_PRE_STYLE` above, which reads the style's hex strings
+# directly rather than through the formatter -- those are already lowercase,
+# matching Chroma). Chroma itself always writes lowercase hex. Invisible on
+# the page and masked out of compare.py's HTML diff (code blocks are
+# replaced wholesale), which is why this went unnoticed until task 10's feed
+# content -- escaped text, not live markup -- put a code block's raw HTML
+# inside a byte-compared field for the first time. Must run after
+# `_drop_default_colour`, whose own regex is matched against the uppercase
+# form Pygments actually emits.
+_HEX_COLOUR_RE = re.compile(r"#[0-9A-Fa-f]{6}\b")
+
+def _lowercase_hex_colours(body: str) -> str:
+    return _HEX_COLOUR_RE.sub(lambda m: m.group(0).lower(), body)
+
+# Pygments 2.20's own "monokai" style has drifted from Chroma's for five
+# token types (`Token.Operator`, `Token.Keyword.Namespace`, `Token.Name.Tag`,
+# `Token.Generic.Deleted`, `Token.Generic.Prompt`, all `#f92672` in Chroma vs.
+# `#ff4689` here) plus `Token.Comment`/`Token.Generic.Subheading` (`#75715e`
+# vs. `#959077`) and `Token.Error`'s foreground (`#960050` vs. `#ed007e`;
+# its `background-color:#1e0010` already agrees). Confirmed against the full
+# corpus: none of the four Pygments colours below appears anywhere in
+# Hugo's own real output, and all four Chroma colours already do -- so this
+# is a straight substitution, not a guess. Same story as the hex-casing fix
+# above: invisible on the page, masked out of compare.py's HTML diff, only
+# surfaced by task 10's feed content. NOT a fix for the deeper case Chroma
+# and Pygments disagree on which SPANS a token boundary falls at (e.g. an
+# `@` treated as `Token.Error` here but part of a wider `Token.Comment` in
+# Chroma) -- that is a lexer difference, not a palette one, and is left as
+# accepted drift like any other code-block difference.
+_COLOUR_CORRECTIONS = {
+    "#ff4689": "#f92672",
+    "#959077": "#75715e",
+    "#ed007e": "#960050",
+}
+_COLOUR_CORRECTION_RE = re.compile("|".join(re.escape(c) for c in _COLOUR_CORRECTIONS))
+
+def _correct_style_drift(body: str) -> str:
+    return _COLOUR_CORRECTION_RE.sub(lambda m: _COLOUR_CORRECTIONS[m.group(0)], body)
+
 _SPAN_TAG_RE = re.compile(r"<(/?)span[^>]*>")
 _LINE_OPEN = '<span style="display:flex;"><span>'
 _LINE_CLOSE = "</span></span>"
@@ -168,7 +208,7 @@ def highlight(code: str, lang: str, attrs: str = "") -> str | None:
     # `&#34;`. A bare `&quot;` here can only have come from a real `"` in
     # the source -- a literal "&quot;" typed in the code would already read
     # "&amp;quot;" by this point.
-    body = _wrap_lines(_drop_default_colour(
+    body = _wrap_lines(_correct_style_drift(_lowercase_hex_colours(_drop_default_colour(
         _compact_styles(_pyg_highlight(code, lexer, _FORMATTER))
-    )).replace("&quot;", "&#34;")
+    )))).replace("&quot;", "&#34;")
     return _chroma_pre(lang, body)

@@ -54,3 +54,21 @@ _ESCAPE_RE_NORM = re.compile("|".join(re.escape(c) for c in _ESCAPE_TABLE_NORM))
 
 def esc_norm(s: object) -> str:
     return _ESCAPE_RE_NORM.sub(lambda m: _ESCAPE_TABLE_NORM[m.group(0)], str(s))
+
+
+# A THIRD table, for the one place Hugo calls the explicit `html` template
+# function (`{{ .Summary | html }}` in the RSS/Atom feed templates) rather
+# than relying on html/template's own contextual auto-escaping. That
+# function is Go's plain `html/template.HTMLEscapeString`, which escapes
+# `& < > " '` but -- unlike the contextual escaper `esc` above mirrors --
+# never touches `+`. Confirmed against a real feed: an escaped `<code>+</code>`
+# survives as a literal "+", not "&#43;". Used for feed `<description>` and
+# `<content>` text nodes, where the value being escaped is already-rendered
+# HTML (so its own "&rsquo;"-style entities get their "&" doubled into
+# "&amp;rsquo;", same as any other "&").
+_ESCAPE_TABLE_TEXT = {k: v for k, v in _ESCAPE_TABLE.items() if k != "+"}
+_ESCAPE_RE_TEXT = re.compile("|".join(re.escape(c) for c in _ESCAPE_TABLE_TEXT))
+
+
+def esc_text(s: object) -> str:
+    return _ESCAPE_RE_TEXT.sub(lambda m: _ESCAPE_TABLE_TEXT[m.group(0)], str(s))
