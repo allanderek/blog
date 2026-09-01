@@ -24,7 +24,7 @@ from markdown_it.common.utils import unescapeAll
 from markdown_it.token import Token as MdToken
 from mdit_py_plugins.deflist import deflist_plugin
 from .slugs import Slugger
-from .highlight import highlight
+from .highlight import go_escape_html, highlight
 
 def _render_strikethrough_open(tokens, idx, options, env) -> str:
     return "<del>"
@@ -50,17 +50,6 @@ def _make_image_rule(renderer):
         return f"<img{renderer.renderAttrs(token)}>"
     return render_image
 
-# Go's html.EscapeString, which both Chroma and Hugo's unhighlighted fence
-# path use for code text. markdown-it-py's own escapeHtml differs on two
-# characters (`&quot;` for `"`, and no escape at all for `'`); that never
-# shows in the rendered <pre> (compare.py masks code blocks) but it does
-# show in the JSON-LD `description`, which quotes a code block's own text.
-_GO_ESCAPE_HTML = {"&": "&amp;", "'": "&#39;", "<": "&lt;", ">": "&gt;", '"': "&#34;"}
-_GO_ESCAPE_HTML_RE = re.compile("[&'<>\"]")
-
-def _go_escape_html(s: str) -> str:
-    return _GO_ESCAPE_HTML_RE.sub(lambda m: _GO_ESCAPE_HTML[m.group(0)], s)
-
 def _make_fence_rule(renderer):
     """Build the `fence` render rule bound to this MarkdownIt's renderer.
 
@@ -70,9 +59,12 @@ def _make_fence_rule(renderer):
     scroll-bar.css). markdown-it-py's built-in fence rule only skips its own
     `<pre><code>` wrapping when highlight() returns a string starting with
     the literal "<pre" — a div-first result can never satisfy that, so we
-    replace the whole rule and make the wrap/don't-wrap decision ourselves,
-    mirroring the built-in rule's plain-text fallback exactly for an
-    unlabelled or unrecognised language.
+    replace the whole rule and make the wrap/don't-wrap decision ourselves.
+
+    `highlight()` returning None means "no language", NOT "could not
+    highlight": a named language Pygments does not know still gets Hugo's
+    full highlighted structure, just without the colouring. See
+    highlight.py's docstring for the three cases.
     """
     def render_fence(tokens, idx, options, env) -> str:
         token = tokens[idx]
@@ -84,22 +76,21 @@ def _make_fence_rule(renderer):
             if len(arr) == 2:
                 lang_attrs = arr[1]
         highlighted = highlight(token.content, lang_name, lang_attrs)
-        if highlighted:
+        if highlighted is not None:
             # No trailing newline: Hugo's own output glues the closing
             # </div> directly onto whatever HTML follows (confirmed against
             # the "dsls" post, where "</div><p>As you can see" has zero
             # whitespace between them).
             return f'<div class="highlight">{highlighted}</div>'
-        # Same story for the plain <pre><code> fallback (an unlabelled or
-        # unrecognised fence, e.g. a bare ``` block): confirmed against the
-        # "builder-pattern" post, "</code></pre><p>Now you can provide"
-        # also has zero whitespace between them.
-        escaped = _go_escape_html(token.content)
-        if info:
-            tmp_token = MdToken(type="", tag="", nesting=0, attrs=token.attrs.copy())
-            tmp_token.attrJoin("class", options.langPrefix + lang_name)
-            return "<pre><code" + renderer.renderAttrs(tmp_token) + ">" + escaped + "</code></pre>"
-        return "<pre><code" + renderer.renderAttrs(token) + ">" + escaped + "</code></pre>"
+        # No language at all. Chroma is still what renders this -- hence the
+        # tabindex -- but with nothing to colour it emits no wrapper div, no
+        # styling and no language class. (An INDENTED code block is a
+        # different thing again and never reaches here: goldmark and
+        # markdown-it-py both give it a plain "<pre><code>".) Same story
+        # about the trailing newline as above: confirmed against the
+        # "builder-pattern" post, where "</code></pre><p>Now you can
+        # provide" also has zero whitespace between them.
+        return f'<pre tabindex="0"><code>{go_escape_html(token.content)}</code></pre>'
     return render_fence
 
 def _widen_email_fuzzy_boundary(md: MarkdownIt) -> None:

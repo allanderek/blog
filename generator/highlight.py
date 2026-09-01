@@ -16,8 +16,25 @@ tokens it recognises; anything else falls through to the `<pre>`'s own
 `color`), and the tab-size declarations, which matter for the `make`
 examples that contain literal tabs.
 
-An unlabelled block must NEVER be guessed at: 25 blocks have no language and
-must stay unhighlighted.
+`highlight()` distinguishes THREE cases, not two -- a fence's language can
+be absent, known, or named but unknown to Pygments, and Hugo renders all
+three differently:
+
+  - **unlabelled** (25 blocks in this corpus): `None`, and markdown.py's
+    fence rule emits Hugo's bare `<pre tabindex="0"><code>` form. A block
+    with no language must NEVER be guessed at.
+  - **known language**: the styled `<pre>` with Chroma-shaped token spans.
+  - **labelled, unknown language** (one block: MoonBit, which Chroma has a
+    lexer for and Pygments does not): the SAME structure as a known
+    language -- `div.highlight`, the styled `<pre tabindex="0" ...>`,
+    `<code class="language-X" data-lang="X">` -- but with the code text
+    merely escaped, no token spans. Hugo highlights it, so falling back to
+    the unlabelled form would leave that one block visually unlike every
+    other code block on the site (unstyled, not Monokai) on top of the
+    colouring difference. Only the colouring is accepted drift.
+
+Note this supersedes Task 4's two-case contract, where returning "" meant
+"fall back entirely".
 
 Three differences between Pygments' and Chroma's markup are corrected below
 (`_compact_styles`, `_drop_default_colour`, `_wrap_lines`). None of them is
@@ -118,24 +135,40 @@ def _wrap_lines(body: str) -> str:
         end_line()
     return "".join(out)
 
-def highlight(code: str, lang: str, attrs: str = "") -> str:
+# Go's html.EscapeString, which is what Chroma escapes code text with.
+# markdown-it-py's own escapeHtml differs on two characters (`&quot;` for
+# `"`, and no escape at all for `'`); that never shows in the rendered
+# <pre> (compare.py masks code blocks) but it does show in the JSON-LD
+# `description`, which quotes a code block's own text.
+_GO_ESCAPE_HTML = {"&": "&amp;", "'": "&#39;", "<": "&lt;", ">": "&gt;", '"': "&#34;"}
+_GO_ESCAPE_HTML_RE = re.compile("[&'<>\"]")
+
+def go_escape_html(s: str) -> str:
+    return _GO_ESCAPE_HTML_RE.sub(lambda m: _GO_ESCAPE_HTML[m.group(0)], s)
+
+def _chroma_pre(lang: str, body: str) -> str:
+    return (
+        f'<pre tabindex="0" style="{_PRE_STYLE}">'
+        f'<code class="language-{lang}" data-lang="{lang}">{body}</code></pre>'
+    )
+
+def highlight(code: str, lang: str, attrs: str = "") -> str | None:
+    """The `<pre>...</pre>` for a fence, or None if there is no language at
+    all -- see this module's docstring for the three cases."""
     if not lang:
-        return ""          # unlabelled: let the fence rule escape it plainly
+        return None
     try:
         lexer = get_lexer_by_name(lang.lower())
     except ClassNotFound:
-        return ""          # unknown language: plain, never guessed
-    # Pygments escapes a double quote as `&quot;`; Go's html.EscapeString,
-    # which Chroma uses, writes `&#34;`. Invisible in the rendered <pre>
-    # (compare.py masks code blocks) but not in the JSON-LD `description`
-    # and `<meta name="description">`, which quote a code block's own text
-    # verbatim. A bare `&quot;` here can only have come from a real `"` in
+        # Chroma wraps every line whether or not it colours anything in it,
+        # so the wrapper goes on here too -- Hugo's summary word count reads
+        # those spans (see markdown.py's `extract_summary`).
+        return _chroma_pre(lang, _wrap_lines(go_escape_html(code)))
+    # Pygments escapes a double quote as `&quot;` where Chroma writes
+    # `&#34;`. A bare `&quot;` here can only have come from a real `"` in
     # the source -- a literal "&quot;" typed in the code would already read
     # "&amp;quot;" by this point.
     body = _wrap_lines(_drop_default_colour(
         _compact_styles(_pyg_highlight(code, lexer, _FORMATTER))
     )).replace("&quot;", "&#34;")
-    return (
-        f'<pre tabindex="0" style="{_PRE_STYLE}">'
-        f'<code class="language-{lang}" data-lang="{lang}">{body}</code></pre>'
-    )
+    return _chroma_pre(lang, body)

@@ -133,11 +133,6 @@ def test_unlabelled_block_has_no_colour_spans():
     out = render("```\nx = 1\n```")
     assert "<span style=" not in out
 
-def test_unknown_language_falls_back_to_plain():
-    out = render("```nosuchlang\nx = 1\n```")
-    assert "<span style=" not in out
-    assert out.count("<pre") == 1
-
 def test_h1_heading_gets_an_id():
     # a body-level `# heading` renders as <h1>, and it must get an id too,
     # same as <h2>..<h6> -- Hugo emits anchor ids for all of them.
@@ -168,3 +163,33 @@ def test_raw_html_s_is_not_rewritten():
     out = render("<s>manual</s>")
     assert "<s>manual</s>" in out
     assert "<del>" not in out
+
+
+# A fence's language can be absent, known, or named but unknown to Pygments,
+# and Hugo renders all three differently. `highlight()` returning None means
+# the first of those, NOT "could not highlight" -- the two-case reading is
+# what a future reader will expect, so pin all three.
+def test_unlabelled_fence_gets_hugos_bare_pre():
+    out = render("```\nplain text\n```")
+    assert '<pre tabindex="0"><code>plain text\n</code></pre>' in out
+    assert "highlight" not in out          # no wrapper div, no styling
+    assert "language-" not in out
+
+def test_known_language_is_highlighted_inside_the_wrapper():
+    out = render("```python\nif x:\n    pass\n```")
+    assert '<div class="highlight">' in out
+    assert 'background-color:#272822' in out
+    assert '<code class="language-python" data-lang="python">' in out
+    assert 'style="color:#66D9EF">if</span>' in out    # a real token span
+
+def test_unknown_language_keeps_the_structure_but_not_the_colouring():
+    # Chroma has a MoonBit lexer and Pygments does not. Falling back to the
+    # unlabelled form would leave this one block unstyled amongst 500-odd
+    # Monokai ones; only the token colouring is accepted drift.
+    out = render("```moonbit\nfn f() -> Int { 1 }\n```")
+    assert '<div class="highlight">' in out
+    assert 'background-color:#272822' in out
+    assert '<code class="language-moonbit" data-lang="moonbit">' in out
+    assert '<span style="color:#' not in out           # nothing was coloured
+    # Chroma still wraps each line whether or not it coloured anything in it.
+    assert '<span style="display:flex;"><span>fn f() -&gt; Int { 1 }\n' in out
