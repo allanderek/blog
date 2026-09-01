@@ -43,30 +43,45 @@ _ID_ATTR_RE = re.compile(r'id="([^"]+)"')
 # review (task-5-report.md) found `htmlmod.unescape()` erasing document-wide
 # -- equating a documented "&lt;script&gt;" with a live "<script>", and a
 # correctly-escaped "&amp;" in a URL query string with a malformed bare
-# "&". That distinction still matters just as much INSIDE a feed element
-# (a post could legitimately show a literal "&lt;script&gt;" in a code
-# sample); what changed is that the fully-decoded form here is not "live,
-# executable markup landing where an escaped example was expected" -- it's
-# what the SAME content already compares as, verbatim, on the post's own
-# page (which real, un-fed `.html` comparison never decodes at all).
-# Un-decoded, the two sides of that comparison were never at parity to
-# begin with -- comparing one copy plain and its only other copy always
-# wearing one extra layer of escaping was never testing content, only
-# testing which format it happened to be quoted in.
-#
-# Also why this is gated on `is_feed` (the caller passes `rel.suffix ==
-# ".xml"`), not just the tag names: an attacker-controlled `.html` page
+# "&". Also why this is gated on `is_feed` (the caller passes `rel.suffix
+# == ".xml"`), not just the tag names: an attacker-controlled `.html` page
 # cannot forge its way into this path by spelling out a literal
 # "<description>...</description>" in its own body text, because that
-# path never runs on an `.html` file at all -- belt and suspenders on top
-# of these two tag names not appearing anywhere in this project's real
-# page templates.
+# path never runs on an `.html` file at all.
+#
+# A SECOND, narrower guard sits on top of that, added after an actual
+# Critical: decoding is not enough on its own, because the very NEXT
+# thing `normalise()` does is the `<pre>...</pre>` exclusion, and that
+# regex matches on the DECODED text -- so a correctly-escaped, benign code
+# sample and a bug that leaks a genuinely live `<script>` into the exact
+# same position both decode into something starting with a real "<pre"
+# and ending with a real "</pre>", and both get masked to the SAME
+# "@@CODE@@" placeholder. Reproduced: a fixture with Hugo's `<description>`
+# holding a properly double-escaped, harmless code sample and the
+# generator's holding a LIVE, entirely unescaped `<script>` at the same
+# position compared CLEAN before this guard existed (see the task-10
+# report). The fix is a structural invariant, not a smarter mask: a
+# CORRECTLY escaped feed body can NEVER contain a literal, bare `<` or
+# `>` character -- every tag delimiter and every literal angle bracket in
+# the underlying (already-escaped) HTML gets escaped exactly once more for
+# XML embedding, with no exceptions, so a bare one appearing in the RAW,
+# not-yet-decoded body can only mean this escaping layer itself failed.
+# Confirmed against the ENTIRE real corpus, both Hugo's and the
+# generator's: zero bare `<`/`>` inside any `<description>`/`<content
+# type="html">` body, anywhere (see the report for the check). A body
+# that fails this check is left COMPLETELY undecoded -- forcing it back
+# to a literal, character-for-character comparison, exactly how it
+# compared before `_decode_feed_content` existed, rather than risking it
+# ever reaching the `<pre>` exclusion in a decoded, tag-shaped state.
 _DESCRIPTION_RE = re.compile(r'(<description>)(.*?)(</description>)', re.S)
 _ATOM_CONTENT_RE = re.compile(r'(<content type="html">)(.*?)(</content>)', re.S)
 
 def _decode_feed_content(text: str) -> str:
     def unescape(m: re.Match) -> str:
-        return m.group(1) + html_entities.unescape(m.group(2)) + m.group(3)
+        body = m.group(2)
+        if "<" in body or ">" in body:
+            return m.group(0)
+        return m.group(1) + html_entities.unescape(body) + m.group(3)
     text = _DESCRIPTION_RE.sub(unescape, text)
     text = _ATOM_CONTENT_RE.sub(unescape, text)
     return text
