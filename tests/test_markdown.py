@@ -36,11 +36,25 @@ def test_code_block_structure_preserved():
     assert "<pre" in out and "</pre>" in out
 
 def test_highlighted_block_is_not_double_wrapped():
-    # highlight() must return a string starting with the literal "<pre" so
-    # markdown-it-py's fence renderer uses it verbatim instead of wrapping it
-    # in a second <pre><code>...</code></pre> shell.
+    # the custom fence rule must produce exactly one <pre>, wrapped in
+    # exactly one Chroma-style <div class="highlight">.
     out = render("```python\nx = 1\n```")
     assert out.count("<pre") == 1
+    assert out.count('<div class="highlight">') == 1
+
+def test_highlighted_block_has_chroma_wrapper_and_attrs():
+    # matches Hugo/Chroma exactly: div.highlight is styled in main.css and
+    # referenced by chroma-mod.css/scroll-bar.css, so it must sit outside
+    # the <pre>; tabindex/color/tab-size on <pre> matter visually even
+    # though they're inside the region compare.py's normalise() ignores.
+    out = render("```make\nall:\n\techo hi\n```")
+    assert out.startswith(
+        '<div class="highlight"><pre tabindex="0" '
+        'style="color:#f8f8f2;background-color:#272822;'
+        '-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;">'
+        '<code class="language-make" data-lang="make">'
+    )
+    assert out.rstrip().endswith("</code></pre></div>")
 
 def test_highlighted_block_has_differentiated_tokens():
     # a known language must come out with per-token colour spans, not flat
