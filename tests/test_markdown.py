@@ -34,3 +34,34 @@ def test_accepted_drift_directional_quotes():
 def test_code_block_structure_preserved():
     out = render("```elm\nx = 1\n```")
     assert "<pre" in out and "</pre>" in out
+
+def test_h1_heading_gets_an_id():
+    # a body-level `# heading` renders as <h1>, and it must get an id too,
+    # same as <h2>..<h6> -- Hugo emits anchor ids for all of them.
+    assert 'id="conclusion"' in render("# Conclusion")
+
+def test_image_attribute_order_matches_hugo():
+    # Hugo's render-image.html hook merges alt/src/title/loading into one
+    # map and ranges over it, which Go sorts alphabetically: alt, loading, src.
+    out = render("![alt](/img/x.png)")
+    assert '<img alt="alt" loading="lazy" src="/img/x.png">' in out
+
+def test_bare_email_adjacent_to_quote_is_linkified():
+    # real text from content/posts/gmail-and-spam.md: a quoted address
+    # immediately preceded by an apostrophe must still be autolinked.
+    out = render("such as 'lovesakina33@gmail.com'.")
+    assert '<a href="mailto:lovesakina33@gmail.com">' in out
+
+def test_raw_html_img_is_not_rewritten():
+    # an author-typed <img> tag is raw HTML, not markdown-it's own image
+    # node -- our lazy-loading transform must not touch it.
+    out = render('<img src="/img/x.png">')
+    assert 'loading="lazy"' not in out
+    assert '<img src="/img/x.png">' in out
+
+def test_raw_html_s_is_not_rewritten():
+    # an author-typed <s> tag is raw HTML, not markdown-it's own
+    # strikethrough node -- our <del> transform must not touch it.
+    out = render("<s>manual</s>")
+    assert "<s>manual</s>" in out
+    assert "<del>" not in out
