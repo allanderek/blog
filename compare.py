@@ -6,6 +6,7 @@ lines: the categorised report is what makes this usable day to day.
 """
 from __future__ import annotations
 import hashlib
+import html as html_entities
 import re, sys, collections, difflib
 from pathlib import Path
 
@@ -26,9 +27,56 @@ _TYPOGRAPHIC = {
 _HEADING_ID_RE = re.compile(r'<h[1-6]\b[^>]*\bid="([^"]+)"')
 _ID_ATTR_RE = re.compile(r'id="([^"]+)"')
 
+# Task 10: a feed's <description>/<content type="html"> element carries a
+# post's own rendered HTML, escaped ONE level for XML embedding on top of
+# whatever escaping that HTML already carries from being a normal page (a
+# goldmark/markdown-it-py entity like "&rsquo;" reaching a feed reads
+# "&amp;rsquo;"; a live "<pre>" block reads "&lt;pre&gt;"). None of the
+# rules below can see through that extra layer -- the code-block exclusion
+# can't match "&lt;pre", and "&amp;ndash;" doesn't match the `_TYPOGRAPHIC`
+# table's "&ndash;" key -- so real, already-accepted drift was being
+# reported as a difference purely because of which element it landed in.
+#
+# `_decode_feed_content` undoes exactly that one extra layer, and ONLY
+# inside these two element bodies, never elsewhere in the document: this
+# is the same "escaped vs. live markup" distinction Task 5's Critical
+# review (task-5-report.md) found `htmlmod.unescape()` erasing document-wide
+# -- equating a documented "&lt;script&gt;" with a live "<script>", and a
+# correctly-escaped "&amp;" in a URL query string with a malformed bare
+# "&". That distinction still matters just as much INSIDE a feed element
+# (a post could legitimately show a literal "&lt;script&gt;" in a code
+# sample); what changed is that the fully-decoded form here is not "live,
+# executable markup landing where an escaped example was expected" -- it's
+# what the SAME content already compares as, verbatim, on the post's own
+# page (which real, un-fed `.html` comparison never decodes at all).
+# Un-decoded, the two sides of that comparison were never at parity to
+# begin with -- comparing one copy plain and its only other copy always
+# wearing one extra layer of escaping was never testing content, only
+# testing which format it happened to be quoted in.
+#
+# Also why this is gated on `is_feed` (the caller passes `rel.suffix ==
+# ".xml"`), not just the tag names: an attacker-controlled `.html` page
+# cannot forge its way into this path by spelling out a literal
+# "<description>...</description>" in its own body text, because that
+# path never runs on an `.html` file at all -- belt and suspenders on top
+# of these two tag names not appearing anywhere in this project's real
+# page templates.
+_DESCRIPTION_RE = re.compile(r'(<description>)(.*?)(</description>)', re.S)
+_ATOM_CONTENT_RE = re.compile(r'(<content type="html">)(.*?)(</content>)', re.S)
+
+def _decode_feed_content(text: str) -> str:
+    def unescape(m: re.Match) -> str:
+        return m.group(1) + html_entities.unescape(m.group(2)) + m.group(3)
+    text = _DESCRIPTION_RE.sub(unescape, text)
+    text = _ATOM_CONTENT_RE.sub(unescape, text)
+    return text
+
 # Accepted drift, per the spec. Applied to BOTH sides before comparison, so a
-# difference of this kind cannot reach the report.
-def normalise(text: str) -> str:
+# difference of this kind cannot reach the report. `is_feed` (an `.xml` file)
+# additionally runs `_decode_feed_content` first -- see its own comment.
+def normalise(text: str, is_feed: bool = False) -> str:
+    if is_feed:
+        text = _decode_feed_content(text)
     text = re.sub(r"<pre.*?</pre>", "@@CODE@@", text, flags=re.S)
     for entity, literal in _TYPOGRAPHIC.items():
         text = text.replace(entity, literal)
@@ -89,8 +137,9 @@ def main(hugo_dir: str, gen_dir: str) -> int:
             continue
         raw_a = (hugo / rel).read_text(errors="replace")
         raw_b = (gen / rel).read_text(errors="replace")
-        a = normalise(raw_a)
-        b = normalise(raw_b)
+        is_feed = rel.suffix == ".xml"
+        a = normalise(raw_a, is_feed=is_feed)
+        b = normalise(raw_b, is_feed=is_feed)
         if a == b:
             continue
         heading_ids_a = set(_HEADING_ID_RE.findall(raw_a))
