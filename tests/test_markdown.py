@@ -35,6 +35,28 @@ def test_code_block_structure_preserved():
     out = render("```elm\nx = 1\n```")
     assert "<pre" in out and "</pre>" in out
 
+def test_highlighted_block_is_not_double_wrapped():
+    # highlight() must return a string starting with the literal "<pre" so
+    # markdown-it-py's fence renderer uses it verbatim instead of wrapping it
+    # in a second <pre><code>...</code></pre> shell.
+    out = render("```python\nx = 1\n```")
+    assert out.count("<pre") == 1
+
+def test_highlighted_block_has_differentiated_tokens():
+    # a known language must come out with per-token colour spans, not flat
+    # escaped text.
+    out = render("```python\nx = 1  # comment\n```")
+    assert "<span style=" in out
+
+def test_unlabelled_block_has_no_colour_spans():
+    out = render("```\nx = 1\n```")
+    assert "<span style=" not in out
+
+def test_unknown_language_falls_back_to_plain():
+    out = render("```nosuchlang\nx = 1\n```")
+    assert "<span style=" not in out
+    assert out.count("<pre") == 1
+
 def test_h1_heading_gets_an_id():
     # a body-level `# heading` renders as <h1>, and it must get an id too,
     # same as <h2>..<h6> -- Hugo emits anchor ids for all of them.
