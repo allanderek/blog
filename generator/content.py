@@ -97,13 +97,13 @@ def load_page(path: Path) -> tuple[dict, str]:
     `content/cv.html` directly instead) -- callers that only need the
     front matter use `load_front_matter` above."""
     try:
-        meta, body = _parse_front_matter(path.read_text())
+        meta, body = _parse_front_matter(path.read_text(encoding="utf-8"))
     except ValueError as e:
         raise ValueError(f"{path}: {e}") from e
     return meta, body
 
 def parse_post(path: Path) -> Post:
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     try:
         meta, body = _parse_front_matter(text)
     except ValueError as e:
@@ -136,7 +136,7 @@ def load_index_body(path: Path) -> str:
     parse_post (which does `meta["date"]` and is meant to raise on exactly
     that). Strip the front matter the same way parse_post does and hand
     back the raw markdown body only; pages.py renders it."""
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     if not text.startswith("---"):
         raise ValueError(f"{path}: no front matter")
     end = text.index("\n---", 3)

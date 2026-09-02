@@ -160,7 +160,7 @@ def _load_root_extras(site: SiteContext) -> list[_RssEntry]:
     """
     cv_meta = load_front_matter(_CONTENT_ROOT / "cv.md")
     consulting_meta = load_front_matter(_CONTENT_ROOT / "consulting.md")
-    cv_content = strip_style_comments(_CV_SHORTCODE.read_text())
+    cv_content = strip_style_comments(_CV_SHORTCODE.read_text(encoding="utf-8"))
     cv_summary = markdown.extract_summary(cv_content)
     cv = _RssEntry(
         title=html.esc(cv_meta.get("title", "")),
@@ -318,7 +318,6 @@ def rss(posts: list[Post], site: SiteContext, base_path: str = "/",
     <title>{html.esc(_channel_title(title, site))}</title>
     <link>{permalink}</link>
     <description>{html.esc(_channel_description(title, site))}</description>
-    <generator>Hugo -- 0.165.0</generator>
     <language>en-us</language>
 {last_build}    <atom:link href="{self_href}" rel="self" type="application/rss+xml" />
 {items}  </channel>
@@ -374,7 +373,6 @@ def terms_rss(tags: list[tuple[str, str, list[Post]]], site: SiteContext,
     <title>{html.esc(_channel_title(title, site))}</title>
     <link>{permalink}</link>
     <description>{html.esc(_channel_description(title, site))}</description>
-    <generator>Hugo -- 0.165.0</generator>
     <language>en-us</language>
 {last_build}    <atom:link href="{self_href}" rel="self" type="application/rss+xml" />
 {items}  </channel>
@@ -462,7 +460,6 @@ def atom(posts: list[Post], site: SiteContext) -> str:
         f"    <name>{html.esc(site.author)}</name>",
         "    ",
         "  </author>",
-        "  <generator>Hugo -- gohugo.io</generator>",
         "  ",
         entries_xml,
         "  ",

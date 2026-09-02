@@ -53,11 +53,11 @@ _DISABLE_SCROLL_BAR_STYLE = False
 
 
 def _read(css_root: Path, rel: str) -> str:
-    return (css_root / rel).read_text()
+    return (css_root / rel).read_text(encoding="utf-8")
 
 
 def _sorted_glob_text(css_root: Path, rel_dir: str) -> list[str]:
-    return [p.read_text() for p in sorted((css_root / rel_dir).glob("*.css"))]
+    return [p.read_text(encoding="utf-8") for p in sorted((css_root / rel_dir).glob("*.css"))]
 
 
 def _bundle_text(css_root: Path) -> str:

@@ -45,17 +45,27 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Python dependencies
-        # Keep in step with the Python packages pinned in devenv.nix: a
-        # local devenv shell and CI running different versions of these
-        # hides breaking changes until a local upgrade suddenly fails a
-        # build that CI was still passing.
+        # Pinned to exact versions so a local devenv shell and CI stay in
+        # step: an unpinned install here would let a package upgrade land
+        # in CI unnoticed and silently change generator output (see
+        # generator/highlight.py, which reads Pygments' style dict by
+        # name). Bump these deliberately, alongside devenv.nix.
         run: |
-          pip install markdown-it-py mdit-py-plugins linkify-it-py pygments pillow
+          pip install markdown-it-py==4.2.0 mdit-py-plugins==0.6.1 linkify-it-py==2.0.3 pygments==2.20.0 pillow==12.3.0 pytest==9.1.1
       - name: Build with the generator
         env:
           TZ: America/Los_Angeles
         run: |
           python3 -m generator build --out ./public
+      - name: Run tests
+        run: |
+          pytest -q
+      - name: Check site
+        run: |
+          ./check-site.sh
+      - name: Check internal links
+        run: |
+          ./check-links-internal.sh
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

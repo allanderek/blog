@@ -84,10 +84,10 @@ def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteConte
                                title=title, taxonomy=taxonomy)
         page_dir = section_dir if page_num == 1 else section_dir / "page" / str(page_num)
         page_dir.mkdir(parents=True, exist_ok=True)
-        (page_dir / "index.html").write_text(page_html)
+        (page_dir / "index.html").write_text(page_html, encoding="utf-8")
     stub_dir = section_dir / "page" / "1"
     stub_dir.mkdir(parents=True, exist_ok=True)
-    (stub_dir / "index.html").write_text(alias_stub(base_path, site))
+    (stub_dir / "index.html").write_text(alias_stub(base_path, site), encoding="utf-8")
     # One RSS feed per section/term, at its own bare `base_path` only --
     # never per pagination page (Hugo emits no `page/N/index.xml`; the
     # feed always lists every one of `posts`, not just one page's slice --
@@ -97,7 +97,8 @@ def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteConte
     (section_dir / "index.xml").write_text(
         feeds.rss(posts, site, base_path,
                   title=title if title is not None
-                  else tag_title(base_path.strip("/").rsplit("/", 1)[-1])))
+                  else tag_title(base_path.strip("/").rsplit("/", 1)[-1])),
+        encoding="utf-8")
 
 def _copy_static(out: Path) -> None:
     """Hugo copies `static/` into the output root verbatim, file for
@@ -123,18 +124,19 @@ def build(out: Path) -> None:
     for post in posts:
         page_dir = out / "posts" / post.slug
         page_dir.mkdir(parents=True, exist_ok=True)
-        (page_dir / "index.html").write_text(post_page(post, site))
+        (page_dir / "index.html").write_text(post_page(post, site), encoding="utf-8")
     out.mkdir(parents=True, exist_ok=True)
-    (out / "index.html").write_text(home_page(site))
+    (out / "index.html").write_text(home_page(site), encoding="utf-8")
     # The site-wide feeds. `include_site_pages` merges in `/cv/`/
     # `/consulting/` (every other feed's `.Pages` is genuinely just its
     # own posts) -- see feeds.py's module docstring for the one field of
     # the CV item this still can't reproduce.
     (out / "index.xml").write_text(
-        feeds.rss(posts, site, title=site.title, include_site_pages=True))
+        feeds.rss(posts, site, title=site.title, include_site_pages=True),
+        encoding="utf-8")
     rss_dir = out / "rss"
     rss_dir.mkdir(parents=True, exist_ok=True)
-    (rss_dir / "index.xml").write_text(feeds.atom(posts, site))
+    (rss_dir / "index.xml").write_text(feeds.atom(posts, site), encoding="utf-8")
     _write_section(out, "/posts/", posts, site)
 
     tags = group_posts_by_tag(posts)
@@ -143,9 +145,10 @@ def build(out: Path) -> None:
                         title=tag_title(name), taxonomy=True)
     tags_dir = out / "tags"
     tags_dir.mkdir(parents=True, exist_ok=True)
-    (tags_dir / "index.html").write_text(terms_index(tags, site))
+    (tags_dir / "index.html").write_text(terms_index(tags, site), encoding="utf-8")
     (tags_dir / "index.xml").write_text(
-        feeds.terms_rss(tags, site, "/tags/", tag_title("tags")))
+        feeds.terms_rss(tags, site, "/tags/", tag_title("tags")),
+        encoding="utf-8")
     # /categories/: an unused taxonomy (no post ever sets `categories:`),
     # so its own terms page (`categories_index`) always renders the
     # zero-terms case -- Hugo still emits both an (empty) HTML page and an
@@ -154,13 +157,14 @@ def build(out: Path) -> None:
     # docstring.
     categories_dir = out / "categories"
     categories_dir.mkdir(parents=True, exist_ok=True)
-    (categories_dir / "index.html").write_text(categories_index(site))
+    (categories_dir / "index.html").write_text(categories_index(site), encoding="utf-8")
     (categories_dir / "index.xml").write_text(
-        feeds.terms_rss([], site, "/categories/", tag_title("categories")))
+        feeds.terms_rss([], site, "/categories/", tag_title("categories")),
+        encoding="utf-8")
 
     archives_dir = out / "archives"
     archives_dir.mkdir(parents=True, exist_ok=True)
-    (archives_dir / "index.html").write_text(archives_page(posts, site))
+    (archives_dir / "index.html").write_text(archives_page(posts, site), encoding="utf-8")
 
     # content/cv.md and content/consulting.md: the two non-post Kind
     # "page" content files -- see pages.cv_page/consulting_page's own
@@ -169,18 +173,18 @@ def build(out: Path) -> None:
     # own docstring, which `feeds._load_root_extras` already relies on
     # for the same two files).
     cv_meta = load_front_matter(CONTENT_ROOT / "cv.md")
-    cv_html = (CONTENT_ROOT / "cv.html").read_text()
+    cv_html = (CONTENT_ROOT / "cv.html").read_text(encoding="utf-8")
     cv_dir = out / "cv"
     cv_dir.mkdir(parents=True, exist_ok=True)
-    (cv_dir / "index.html").write_text(cv_page(site, cv_meta, cv_html))
+    (cv_dir / "index.html").write_text(cv_page(site, cv_meta, cv_html), encoding="utf-8")
 
     consulting_meta, consulting_body = load_page(CONTENT_ROOT / "consulting.md")
     consulting_url = str(consulting_meta.get("url", "/consulting/")).strip("/")
     consulting_dir = out / consulting_url
     consulting_dir.mkdir(parents=True, exist_ok=True)
     (consulting_dir / "index.html").write_text(
-        consulting_page(site, consulting_meta, consulting_body))
+        consulting_page(site, consulting_meta, consulting_body), encoding="utf-8")
 
-    (out / "404.html").write_text(not_found_page(site))
+    (out / "404.html").write_text(not_found_page(site), encoding="utf-8")
 
-    (out / "sitemap.xml").write_text(feeds.sitemap(posts, tags, site))
+    (out / "sitemap.xml").write_text(feeds.sitemap(posts, tags, site), encoding="utf-8")

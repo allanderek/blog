@@ -655,14 +655,19 @@ does **not** run Hugo's `resources.Minify` (the `tdewolff` minifier) first —
 matching that minifier byte-for-byte from Python was judged impractical.
 Rendered CSS is functionally identical to Hugo's (confirmed after normalising
 minification artifacts, `task-11-report.md` fix round 1), just larger
-(26,622 vs. Hugo's 17,900 bytes) and unminified, so its SHA-256 — and
-therefore the fingerprinted filename and the `integrity` attribute on every
-page's `<link>` — differs from Hugo's
-(`stylesheet.9adc48ca951744ce8f6b0c8854fdd76fa8e68bfeafc106e171df63787f1e19c5.css`
-vs. `stylesheet.78a811c31f5443b4286b806ccb2e9a27c09c5cd16c56a49525ae45c13cb8db90.css`).
-Explicitly pre-authorised by Allan (`progress.md`'s Task 11 CSS-minification
-ruling) as an accepted escape hatch. Whether to add real minification later is
-a separate, optional decision, not a defect.
+(26,622 vs. Hugo's 17,900 bytes) and unminified, so it has a different
+SHA-256 — and therefore a different fingerprinted filename and `integrity`
+attribute on every page's `<link>` — than Hugo's build produced. (An earlier
+revision of this document quoted specific hashes for both sides. The
+generator's own hash is not stable — any CSS edit changes it — so quoting one
+in prose only invites this drift; and the "Hugo" hash quoted alongside it
+turned out to be wrong: it was reproducible as the generator's own
+pre-`11c622b` bundle in its earlier, buggy concatenation order, not anything
+Hugo ever produced. Both hashes have been removed rather than corrected, since
+the true Hugo-side hash cannot be recovered now that Hugo is no longer in this
+repository.) Explicitly pre-authorised by Allan (`progress.md`'s Task 11
+CSS-minification ruling) as an accepted escape hatch. Whether to add real
+minification later is a separate, optional decision, not a defect.
 
 ### The resized portrait PNG differs in bytes
 
@@ -696,13 +701,16 @@ allow-list... Everything else — crucially `&lt; &gt; &amp; &quot; &#39;` — i
 structural markup/escaping and must stay untouched"), not an oversight: it
 absorbs cosmetic differences between markdown-it-py's and goldmark's
 typographer extensions (direction-tracking for quotes, dash-run handling) that
-have no bearing on document structure or URLs. Two specific corpus cases ride
-on this same allow-list rather than being individually special-cased: a
-four-dot run (`....`) where goldmark keeps a trailing literal period but
-markdown-it-py folds all four into `…` (both sides normalise to `...`), and an
-unflanked `--` run that goldmark converts to an en-dash but markdown-it-py
-leaves literal (both sides normalise to `--`) — see `progress.md`'s Task 3
-ruling and `compare.py`'s own comment beside `_TYPOGRAPHIC`.
+have no bearing on document structure or URLs. `progress.md`'s Task 3 ruling
+originally cited two specific corpus cases as riding on this allow-list — a
+four-dot run (`....`) and an unflanked `--` run — but both were subsequently
+fixed (Task 6 fix round 4) to match goldmark exactly: a four-dot run now
+folds to `&hellip;.` (a literal trailing period after the entity, per quirk #4
+above), not the all-dots fold this allow-list was written to excuse, and every
+probed unflanked `--` form renders `&ndash;`/`&mdash;` like goldmark's. No
+corpus case currently depends on this allow-list for either rule; it remains
+in place only as a general safety margin for future content, not to paper
+over a live difference.
 
 ### `posts/prog-lang-websites`: one JSON-LD difference from the MoonBit lexer gap
 
