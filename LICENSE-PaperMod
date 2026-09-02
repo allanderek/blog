@@ -1,8 +1,13 @@
-The templates under `layouts/` and the stylesheets under `assets/css/`
-(excluding `assets/css/extended/`, which is Allan's own) were vendored from
-the hugo-PaperMod theme (https://github.com/adityatelange/hugo-PaperMod) at
-commit a020be2137458dd0a1f4f3a024cd7b076931e9e3, and are distributed here
-under the original MIT licence below.
+The stylesheets under `css/` (excluding `css/extended/`, which is Allan's
+own) were vendored from the hugo-PaperMod theme
+(https://github.com/adityatelange/hugo-PaperMod) at commit
+a020be2137458dd0a1f4f3a024cd7b076931e9e3, and are distributed here under the
+original MIT licence below.
+
+PaperMod's templates were also vendored at that commit, under `layouts/`, but
+were removed when the site moved from Hugo to the Python generator in
+`generator/`; no PaperMod template code remains. The stylesheets moved from
+`assets/css/` to `css/` in the same change.
 
 MIT License
 
