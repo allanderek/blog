@@ -3,7 +3,7 @@ from pathlib import Path
 from generator.content import Post, load_page
 from generator.pages import (alias_stub, archives_page, categories_index,
                               consulting_page, cv_page, group_posts_by_tag,
-                              list_page, not_found_page, post_page,
+                              home_page, list_page, not_found_page, post_page,
                               strip_style_comments, tag_title, term_page,
                               terms_index)
 from generator.site import SiteContext
@@ -83,13 +83,15 @@ def test_pagination_nav_at_both_ends_of_a_three_page_set():
     p2 = list_page(posts, 2, 3, "/posts/", site)
     p3 = list_page(posts, 3, 3, "/posts/", site)
 
+    # Pagination nav is same-origin navigation, so root-relative -- see
+    # test_pagination_nav_links_are_root_relative below.
     assert '<a class="prev"' not in p1
-    assert '<a class="next" href="https://example.com/posts/page/2/">' in p1
+    assert '<a class="next" href="/posts/page/2/">' in p1
 
-    assert '<a class="prev" href="https://example.com/posts/">' in p2
-    assert '<a class="next" href="https://example.com/posts/page/3/">' in p2
+    assert '<a class="prev" href="/posts/">' in p2
+    assert '<a class="next" href="/posts/page/3/">' in p2
 
-    assert '<a class="prev" href="https://example.com/posts/page/2/">' in p3
+    assert '<a class="prev" href="/posts/page/2/">' in p3
     assert '<a class="next"' not in p3
 
 def test_single_page_listing_has_no_pagination_nav_at_all():
@@ -214,6 +216,84 @@ def test_archives_page_marks_its_own_nav_entry_active():
 def test_other_page_kinds_have_no_active_nav_entry():
     assert 'class="active"' not in post_page(_post(), _site())
     assert 'class="active"' not in term_page("Elm", [], 1, 1, _site())
+
+
+# --- same-origin links are root-relative, off-origin metadata stays absolute
+#
+# The nav bar used to point at site.base_url even when the dev server is
+# browsed under a different origin (see docs/hugo-quirks.md's "Deliberate
+# deviations" entry) -- Hugo/PaperMod's absLangURL exists for multilingual
+# sites injecting a language prefix, which this single-language site never
+# needs. Same-origin navigation/assets are now root-relative; anything
+# consumed off-origin (canonical, og:url, hreflang, JSON-LD) still needs the
+# real absolute URL and must keep it.
+
+def test_nav_favicon_and_footer_links_are_root_relative():
+    page = post_page(_post(), _site())
+    assert 'href="/archives/"' in page
+    assert 'href="/consulting/"' in page
+    assert 'href="/cv/"' in page
+    assert 'href="/rss/index.xml"' in page
+    assert 'href="/"' in page  # logo and footer copyright link
+    assert 'href="/favicons/favicon.ico"' in page
+    assert 'href="/favicons/site.webmanifest"' in page
+
+def test_post_tag_links_are_root_relative():
+    post = _post()
+    post.tags = ["testing"]
+    page = post_page(post, _site())
+    assert '<li><a href="/tags/testing/">Testing</a></li>' in page
+
+def test_active_nav_entry_still_matches_after_href_became_relative():
+    # The regression this guards against: making the href relative while
+    # leaving the "active" comparison mismatched (one side absolute, one
+    # relative) would silently drop this highlight -- see _header's own
+    # docstring/comment for why the comparison still needs both sides
+    # absolute even though the href itself doesn't.
+    page = archives_page([], _site())
+    assert '<span class="active">Archive</span>' in page
+
+def test_list_entry_and_pagination_links_are_root_relative():
+    site = _site()
+    posts = [_post()]
+    page = list_page(posts, 2, 3, "/posts/", site)
+    assert 'aria-label="post link to' in page
+    idx = page.index('aria-label="post link to')
+    assert 'href="/posts/dangerous-title/"' in page[idx:idx + 200]
+    assert '<a class="prev" href="/posts/">' in page
+    assert '<a class="next" href="/posts/page/3/">' in page
+
+def test_terms_index_entry_links_are_root_relative():
+    tags = group_posts_by_tag([_post()])
+    page = terms_index(tags, _site())
+    assert 'href="/tags/testing/"' in page
+
+def test_archive_entry_links_are_root_relative():
+    page = archives_page([_post()], _site())
+    assert 'aria-label="post link to' in page
+    idx = page.index('aria-label="post link to')
+    assert 'href="/posts/dangerous-title/"' in page[idx:idx + 200]
+
+def test_home_page_nav_favicon_and_listing_links_are_root_relative():
+    site = _site()
+    site.posts = [_post()]
+    page = home_page(site)
+    assert 'href="/archives/"' in page
+    assert 'href="/favicons/favicon.ico"' in page
+    assert 'href="/index.xml"' in page
+    assert 'href="/rss/index.xml"' in page
+    assert 'href="/posts/dangerous-title/"' in page
+
+def test_canonical_og_url_hreflang_and_jsonld_stay_absolute():
+    # The off-origin/metadata exceptions -- these are broken or meaningless
+    # if made relative, so they must keep repeating site.base_url.
+    page = post_page(_post(), _site())
+    assert '<link rel="canonical" href="https://example.com/posts/dangerous-title/">' in page
+    assert '<meta property="og:url" content="https://example.com/posts/dangerous-title/">' in page
+    assert '<link rel="alternate" hreflang="en" href="https://example.com/posts/dangerous-title/">' in page
+    assert '"@id": "https://example.com/posts/dangerous-title/"' in page
+    assert '"item": "https://example.com/posts/"' in page
+    assert '"logo": {\n      "@type": "ImageObject",\n      "url": "https://example.com/favicons/favicon.ico"' in page
 
 
 # --- strip_style_comments ---------------------------------------------------

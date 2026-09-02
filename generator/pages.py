@@ -170,17 +170,21 @@ _META_TOP = """<meta charset="utf-8">
 <meta name="robots" content="index, follow">"""
 
 def _feed_and_analytics(site: SiteContext) -> str:
-    return f"""<link rel="alternate" type="application/rss+xml" title="{html.esc(site.title)} RSS Feed" href="{site.base_url}/rss/index.xml">
-<link rel="alternate" type="application/atom+xml" title="{html.esc(site.title)} Atom Feed" href="{site.base_url}/rss/index.xml">
+    # Same-origin navigation/asset link, made root-relative -- see the
+    # "Deliberate deviations from Hugo" section of docs/hugo-quirks.md for
+    # why this (and every other link in this docstring's neighbourhood)
+    # no longer repeats site.base_url the way Hugo/PaperMod's absLangURL did.
+    return f"""<link rel="alternate" type="application/rss+xml" title="{html.esc(site.title)} RSS Feed" href="/rss/index.xml">
+<link rel="alternate" type="application/atom+xml" title="{html.esc(site.title)} Atom Feed" href="/rss/index.xml">
 <script data-goatcounter="https://poleprediction.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>"""
 
 def _favicons_block(site: SiteContext) -> str:
-    return f"""<link rel="icon" href="{site.base_url}/favicons/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="{site.base_url}/favicons/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="{site.base_url}/favicons/favicon-32x32.png">
-<link rel="apple-touch-icon" href="{site.base_url}/favicons/apple-touch-icon.png">
-<link rel="manifest" href="{site.base_url}/favicons/site.webmanifest">
+    return f"""<link rel="icon" href="/favicons/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png">
+<link rel="manifest" href="/favicons/site.webmanifest">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">"""
 
@@ -287,8 +291,8 @@ def _head_home(site: SiteContext, permalink: str, description_attr: str,
 <link rel="canonical" href="{permalink}">
 <link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
 {_favicons_block(site)}
-<link rel="alternate" type="application/rss+xml" href="{site.base_url}/index.xml">
-<link rel="alternate" type="application/atom+xml" href="{site.base_url}/rss/index.xml">
+<link rel="alternate" type="application/rss+xml" href="/index.xml">
+<link rel="alternate" type="application/atom+xml" href="/rss/index.xml">
 <link rel="alternate" hreflang="en" href="{permalink}">
 {_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
   <meta property="og:site_name" content="{html.esc(site.title)}">
@@ -328,7 +332,7 @@ def _head_list_common(site: SiteContext, permalink: str, title: str, base_path: 
 <link rel="canonical" href="{permalink}">
 <link crossorigin="anonymous" href="{site.stylesheet_href}" integrity="{site.stylesheet_integrity}" rel="preload stylesheet" as="style">
 {_favicons_block(site)}
-<link rel="alternate" type="application/rss+xml" href="{site.base_url}{base_path}index.xml">
+<link rel="alternate" type="application/rss+xml" href="{base_path}index.xml">
 <link rel="alternate" hreflang="en" href="{permalink}">
 {_NOSCRIPT_BLOCK}<meta property="og:url" content="{permalink}">
   <meta property="og:site_name" content="{html.esc(site.title)}">
@@ -583,9 +587,13 @@ def _header(site: SiteContext, permalink: str | None = None) -> str:
     matches, correct for every page kind except `archives_page`, the only
     one whose own permalink coincides with a menu entry (/archives/).
     Confirmed against `/tmp/t9-hugo/archives/index.html`'s own nav."""
+    # href is root-relative -- but the "active" comparison still needs both
+    # sides absolute (permalink always is), so it keeps using
+    # f'{site.base_url}{path}' rather than comparing `path` to permalink
+    # directly, which would never match.
     menu_items = "\n".join(
         f"""            <li>
-                <a href="{site.base_url}{path}" title="{html.esc(name)}">
+                <a href="{path}" title="{html.esc(name)}">
                     <span{' class="active"' if f'{site.base_url}{path}' == permalink else ''}>{html.esc(name)}</span>
                 </a>
             </li>"""
@@ -594,7 +602,7 @@ def _header(site: SiteContext, permalink: str | None = None) -> str:
     return f"""<header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="{site.base_url}/" accesskey="h" title="{html.esc(site.title)} (Alt + H)">{html.esc(site.title)}</a>
+            <a href="/" accesskey="h" title="{html.esc(site.title)} (Alt + H)">{html.esc(site.title)}</a>
             <div class="logo-switches">
                 <button id="theme-toggle" accesskey="t" title="(Alt + T)">
                     <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
@@ -627,7 +635,7 @@ def _header(site: SiteContext, permalink: str | None = None) -> str:
 def _footer(site: SiteContext) -> str:
     year = datetime.now(timezone.utc).year
     return f"""<footer class="footer">
-        <span>&copy; {year} <a href="{site.base_url}/">{html.esc(site.title)}</a></span>
+        <span>&copy; {year} <a href="/">{html.esc(site.title)}</a></span>
 </footer>
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
@@ -727,7 +735,7 @@ def _post_meta(post: Post, site: SiteContext) -> str:
 
 def _post_tags(post: Post, site: SiteContext) -> str:
     items = "\n".join(
-        f'      <li><a href="{site.base_url}/tags/{html.esc(_tag_slug(t))}/">{html.esc(tag_title(t))}</a></li>'
+        f'      <li><a href="/tags/{html.esc(_tag_slug(t))}/">{html.esc(tag_title(t))}</a></li>'
         for t in post.tags
     )
     return f"""    <ul class="post-tags">
@@ -901,7 +909,7 @@ def _list_entry(post: Post, site: SiteContext, tag_entry: bool = False) -> str:
     summary_text, truncated = markdown.entry_summary(post.body)
     summary_html = html.esc(summary_text) + ("..." if truncated else "")
     title = html.esc(post.title)
-    permalink = f"{site.base_url}/posts/{post.slug}/"
+    permalink = f"/posts/{post.slug}/"
     css_class = "post-entry tag-entry" if tag_entry else "post-entry"
     return f"""<article class="{css_class}"> 
   <header class="entry-header">
@@ -980,10 +988,12 @@ def list_page(posts: list[Post], page_num: int, total_pages: int, base_path: str
         title = _list_title(base_path)
 
     entries = "\n\n".join(_list_entry(post, site, tag_entry=taxonomy) for post in posts)
-    prev_url = (permalink if page_num == 2
-                else f"{site.base_url}{base_path}page/{page_num - 1}/" if page_num > 2
+    # Pagination nav is same-origin navigation, so root-relative -- unlike
+    # `permalink` just above, which stays absolute for canonical/og:url.
+    prev_url = (base_path if page_num == 2
+                else f"{base_path}page/{page_num - 1}/" if page_num > 2
                 else None)
-    next_url = (f"{site.base_url}{base_path}page/{page_num + 1}/"
+    next_url = (f"{base_path}page/{page_num + 1}/"
                 if page_num < total_pages else None)
     pagination = _pagination_footer(prev_url, next_url) if total_pages > 1 else ""
 
@@ -1097,7 +1107,7 @@ def _terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext,
     permalink = f"{site.base_url}{base_path}"
     items = "\n".join(
         f"""    <li>
-        <a href="{site.base_url}{base_path}{slug}/">{html.esc(name)} <sup><strong><sup>{len(tag_posts)}</sup></strong></sup> </a>
+        <a href="{base_path}{slug}/">{html.esc(name)} <sup><strong><sup>{len(tag_posts)}</sup></strong></sup> </a>
     </li>"""
         for name, slug, tag_posts in tags
     )
@@ -1170,7 +1180,7 @@ def _archive_entry(post: Post, site: SiteContext) -> str:
     post's own header and a list entry's footer do."""
     title_md = _render_inline_markdown_entities(post.title)
     aria_title = html.esc(post.title)
-    permalink = f"{site.base_url}/posts/{post.slug}/"
+    permalink = f"/posts/{post.slug}/"
     return f"""      <div class="archive-entry">
         <h3 class="archive-entry-title entry-hint-parent">{title_md}
         </h3>

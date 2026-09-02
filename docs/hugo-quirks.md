@@ -732,3 +732,39 @@ False`, isolated to exactly this mechanism). Closing this would require a
 Pygments MoonBit lexer whose token boundaries agree with Chroma's — judged out
 of scope for the migration and not attempted, to avoid a hand-fitted lexer
 built only to make one file compare equal.
+
+### Same-origin navigation and asset links are root-relative, not absolute
+
+Hugo/PaperMod renders the nav menu, the logo/home link, the footer copyright
+link, favicon/manifest links, feed `<link rel="alternate">` tags, tag links,
+pagination prev/next links, and every listed post's link through
+`absLangURL`, which always emits a full `site.base_url`-prefixed URL. That
+exists to let a multilingual site inject its language prefix into internal
+links — this is a single-language site, so it bought nothing but a footgun:
+Allan develops against a remote dev server browsed under a different origin
+(`https://localhost.poleprediction.com`) than the production `base_url`
+(`https://blog.poleprediction.com`) baked into every page, so every nav click
+left the dev site for production. Hugo's own dev server papered over this
+with a `--baseURL` flag that pointed `absLangURL` at the dev origin instead;
+that flag never carried over to this generator.
+
+The generator now emits all of the above as root-relative (`/archives/`, not
+`https://blog.poleprediction.com/archives/`) — `generator/pages.py`'s
+`_header`, `_footer`, `_favicons_block`, `_feed_and_analytics`,
+`_post_tags`, `_list_entry`, `list_page`'s pagination, `terms_index`, and
+`_archive_entry` all build these hrefs without `site.base_url` now.
+`_header`'s "active" nav-entry comparison is the one place that still
+constructs `f'{site.base_url}{path}'` internally — see its own comment —
+purely to compare against `permalink` (which stays absolute), not to build
+the href itself.
+
+Metadata read *off-origin* — where a relative URL would be broken or
+meaningless outside a browser tab on this exact page — is deliberately left
+absolute: `<link rel="canonical">`, `<meta property="og:url">` and the other
+OpenGraph/Twitter URLs, `<link rel="alternate" hreflang="en">`, and every URL
+value inside a JSON-LD block (`"url"`, `"logo"`, `"@id"`, breadcrumb
+`"item"` entries). `generator/feeds.py` and the sitemap were not touched at
+all — RSS/Atom/sitemap URLs are consumed by off-origin readers (feed
+aggregators, search engines), never by a browser navigating this site, so
+they keep the same absolutising behaviour Hugo always used there (see quirk
+#9 above, which already documents RSS's own separate absolutising pass).

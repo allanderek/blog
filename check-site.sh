@@ -98,8 +98,10 @@ check "no ERROR lines in build output" "! grep -q '^ERROR' $OUT/build.log"
 check "archive page exists"            "test -f $OUT/archives/index.html"
 check "archive lists a 2016 post"      "grep -q 'selenium-and-casper' $OUT/archives/index.html"
 check "archive lists the newest post"  "archive_lists_newest"
-# PaperMod renders menu URLs through absLangURL, so the nav href is absolute.
-check "nav links to the archive"       "grep -qE 'href=\"[^\"]*/archives/\"' $OUT/index.html"
+# Same-origin nav, so the generator emits a root-relative href -- see
+# docs/hugo-quirks.md's "Deliberate deviations" entry (Hugo/PaperMod's
+# absLangURL made this absolute, which only multilingual sites need).
+check "nav links to the archive"       "grep -qF 'href=\"/archives/\"' $OUT/index.html"
 
 # Match intro prose and explicit hrefs, not page chrome: "Allan Clark" also
 # appears in the author meta tag, and "poleprediction.com" is the site's own
@@ -147,7 +149,7 @@ check "CV page still generated"        "test -f $OUT/cv/index.html"
 # these also catch a theme update silently reinstating the original baseof.
 check "consulting page generated"      "test -f $OUT/consulting/index.html"
 check "consulting page mentions Elm"   "grep -q 'Elm' $OUT/consulting/index.html"
-check "nav links to consulting"        "grep -qE 'href=\"[^\"]*/consulting/\" title=\"Consulting\"' $OUT/index.html"
+check "nav links to consulting"        "grep -qF 'href=\"/consulting/\" title=\"Consulting\"' $OUT/index.html"
 check "one signature on home"          "test \$(grep -c '<aside class=\"signature' $OUT/index.html) -eq 1"
 check "home signature is inline"       "grep -q '<aside class=\"signature signature-inline\"' $OUT/index.html"
 check "signature precedes Start here"  "before '<aside class=\"signature' 'id=\"start-here\"'"
