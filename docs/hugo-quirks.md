@@ -768,3 +768,34 @@ all — RSS/Atom/sitemap URLs are consumed by off-origin readers (feed
 aggregators, search engines), never by a browser navigating this site, so
 they keep the same absolutising behaviour Hugo always used there (see quirk
 #9 above, which already documents RSS's own separate absolutising pass).
+
+### The `/page/1/` alias stubs: relative refresh, and a title that says what it does
+
+The 70 pagination alias stubs (quirk #14) are Hugo's own built-in alias
+template, and it repeats the absolute target URL in all three of `<title>`,
+`<link rel="canonical">` and `<meta http-equiv="refresh">`. Two of those three
+now diverge, for different reasons. See `generator/pages.py`'s `alias_stub()`,
+whose docstring carries the same breakdown.
+
+**`canonical` — unchanged, still absolute.** A canonical URL must be absolute;
+a relative one is meaningless to the crawlers that read it.
+
+**`refresh` — now root-relative** (`url=/posts/`, not
+`url=https://blog.poleprediction.com/posts/`). This is same-origin navigation,
+exactly like the nav links in the entry above, and for the same reason: an
+absolute target meant that landing on `/posts/page/1/` on the dev server
+bounced the reader to production. That was the one remaining route out of the
+dev site after the nav links were made relative. All 70 stubs now redirect
+within whatever origin serves them.
+
+**`<title>` — now `Redirecting to /posts/`**, where Hugo emitted the bare
+target URL (`https://blog.poleprediction.com/posts/`). Hugo's choice is a poor
+one: a title should say what the page is, and this one showed in the browser
+tab for the instant before the redirect fired, and would be indexed as a page
+titled with a bare URL by any crawler that ignored the canonical. Low stakes —
+the page redirects in zero seconds — but there was no reason to keep it once
+byte-compatibility with Hugo stopped being the goal.
+
+Pinned by `tests/test_pages.py::test_alias_stub_matches_hugos_pagination_alias_format`,
+whose name is now slightly wrong: it no longer matches Hugo's format, it pins
+this deliberate divergence from it.

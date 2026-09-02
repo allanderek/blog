@@ -1047,17 +1047,26 @@ def alias_stub(target_url: str, site: SiteContext) -> str:
     """A `disableAliases = false` pagination alias: Hugo's own built-in
     alias template, emitted for every paginated listing's implicit
     "/page/1/" URL, redirecting it to the listing's own bare URL.
-    `target_url` is that bare, absolute-from-root path (e.g. "/posts/");
-    the stub's <title>/canonical/refresh all repeat the absolute URL it
-    redirects to -- captured verbatim from `/tmp/t8-hugo/posts/page/1/index.html`."""
+    `target_url` is that bare, absolute-from-root path (e.g. "/posts/").
+
+    Hugo repeated the absolute URL in all three of <title>, canonical and the
+    refresh. We diverge in two of the three:
+
+      canonical  absolute, unchanged -- a canonical URL must be absolute.
+      refresh    root-relative, so a dev server does not bounce the reader to
+                 production; same-origin navigation, same reason as the nav.
+      <title>    Hugo emitted the bare target URL. A title should say what the
+                 page is, and this one shows in a browser tab for the instant
+                 before the redirect fires, so it now reads "Redirecting to X".
+    """
     absolute = f"{site.base_url}{target_url}"
     return f"""<!DOCTYPE html>
 <html lang="en-us">
 \t<head>
-\t\t<title>{absolute}</title>
+\t\t<title>Redirecting to {target_url}</title>
 \t\t<link rel="canonical" href="{absolute}">
 \t\t<meta charset="utf-8">
-\t\t<meta http-equiv="refresh" content="0; url={absolute}">
+\t\t<meta http-equiv="refresh" content="0; url={target_url}">
 \t</head>
 </html>
 """

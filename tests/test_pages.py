@@ -390,17 +390,20 @@ def test_categories_index_has_no_terms():
     assert "<li>" not in terms_list
 
 def test_alias_stub_matches_hugos_pagination_alias_format():
-    # Byte-exact against /tmp/t8-hugo/posts/page/1/index.html (base_url
-    # substituted for the real site's).
+    # Was byte-exact against Hugo's own alias template. The refresh target is
+    # now root-relative -- a deliberate divergence, so a dev server does not
+    # bounce the reader to production. <title> and canonical stay absolute:
+    # canonical must be. The <title> was Hugo's bare target URL and now says
+    # what the page is doing, since it shows in a tab before the redirect.
     stub = alias_stub("/posts/", _site())
     assert stub == (
         '<!DOCTYPE html>\n'
         '<html lang="en-us">\n'
         '\t<head>\n'
-        '\t\t<title>https://example.com/posts/</title>\n'
+        '\t\t<title>Redirecting to /posts/</title>\n'
         '\t\t<link rel="canonical" href="https://example.com/posts/">\n'
         '\t\t<meta charset="utf-8">\n'
-        '\t\t<meta http-equiv="refresh" content="0; url=https://example.com/posts/">\n'
+        '\t\t<meta http-equiv="refresh" content="0; url=/posts/">\n'
         '\t</head>\n'
         '</html>\n'
     )
