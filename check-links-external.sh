@@ -20,10 +20,10 @@ OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
 
 echo "Building into $OUT"
-if hugo --destination "$OUT" >"$OUT/build.log" 2>&1; then
-  printf '  ok    hugo build exits 0\n'
+if python3 -m generator build --out "$OUT" >"$OUT/build.log" 2>&1; then
+  printf '  ok    generator build exits 0\n'
 else
-  printf '  FAIL  hugo build exits 0\n'
+  printf '  FAIL  generator build exits 0\n'
   grep '^ERROR' "$OUT/build.log" | head -5
   echo
   echo "Build failed; cannot check links."

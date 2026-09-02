@@ -94,8 +94,8 @@ def load_page(path: Path) -> tuple[dict, str]:
     `pages.consulting_page` renders it exactly like a post's own body).
     `content/cv.md`'s own body is just the `{{< cv >}}` shortcode call,
     of no use to a renderer (see `pages.cv_page`, which reads
-    `layouts/shortcodes/cv.html` directly instead) -- callers that only
-    need the front matter use `load_front_matter` above."""
+    `content/cv.html` directly instead) -- callers that only need the
+    front matter use `load_front_matter` above."""
     try:
         meta, body = _parse_front_matter(path.read_text())
     except ValueError as e:

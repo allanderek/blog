@@ -1,5 +1,12 @@
 """Diff Hugo's output tree against the generator's, by category.
 
+RETAINED FOR HISTORICAL REFERENCE ONLY. Task 12 (see
+docs/superpowers/plans/2026-09-01-replace-hugo.md) removed Hugo from this
+repo entirely -- there is no more Hugo build to diff the generator against,
+so this module can no longer do its job. It is kept, unused, as a record of
+how the migration was verified; nothing in the generator imports or runs it.
+Allan can decide later whether to delete it.
+
 The allow-list below is the single written record of what we deliberately let
 differ. Anything not on it must be zero. Report by category, never as a wall of
 lines: the categorised report is what makes this usable day to day.

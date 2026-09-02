@@ -55,7 +55,7 @@ def _make_fence_rule(renderer):
 
     Chroma wraps a highlighted block in `<div class="highlight">...</div>`,
     with the div sitting *outside* the `<pre>` (`div.highlight` is styled in
-    assets/css/common/main.css and referenced by chroma-mod.css and
+    css/common/main.css and referenced by chroma-mod.css and
     scroll-bar.css). markdown-it-py's built-in fence rule only skips its own
     `<pre><code>` wrapping when highlight() returns a string starting with
     the literal "<pre" — a div-first result can never satisfy that, so we

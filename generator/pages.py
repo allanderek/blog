@@ -277,8 +277,7 @@ def _head_home(site: SiteContext, permalink: str, description_attr: str,
     and its og:description are two genuinely different values (site-wide
     description vs. a summary of content/_index.md), each escaped once by
     its caller rather than picked between here."""
-    return f"""\t<meta name="generator" content="{site.hugo_generator}">
-{_META_TOP}
+    return f"""{_META_TOP}
 
 {_feed_and_analytics(site)}
 <title>{html.esc(site.title)}</title>
@@ -628,12 +627,7 @@ def _header(site: SiteContext, permalink: str | None = None) -> str:
 def _footer(site: SiteContext) -> str:
     year = datetime.now(timezone.utc).year
     return f"""<footer class="footer">
-        <span>&copy; {year} <a href="{site.base_url}/">{html.esc(site.title)}</a></span> ·
-
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a>
-    </span>
+        <span>&copy; {year} <a href="{site.base_url}/">{html.esc(site.title)}</a></span>
 </footer>
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
@@ -1466,8 +1460,8 @@ def consulting_page(site: SiteContext, front_matter: dict, body: str) -> str:
 
 def cv_page(site: SiteContext, front_matter: dict, cv_html: str) -> str:
     """content/cv.md: its entire body is one shortcode call, `{{< cv >}}`
-    (see `layouts/shortcodes/cv.html`, an opaque artifact authored outside
-    this repo -- inserted verbatim, never parsed/templated), which Hugo
+    (see `content/cv.html`, an opaque artifact authored outside this repo
+    -- inserted verbatim, never parsed/templated), which Hugo
     substitutes in as raw HTML with NO markdown reprocessing at all --
     confirmed against a real build matching this generator's own
     `markdown.plain`/`word_count`/`extract_summary`, applied to

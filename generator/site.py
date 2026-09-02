@@ -14,8 +14,8 @@ from .pages import (alias_stub, archives_page, categories_index, cv_page,
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONTENT_ROOT = REPO_ROOT / "content"
 STATIC_ROOT = REPO_ROOT / "static"
-CSS_ROOT = REPO_ROOT / "assets" / "css"
-PORTRAIT_SRC = REPO_ROOT / "assets" / "images" / "portrait.png"
+CSS_ROOT = REPO_ROOT / "css"
+PORTRAIT_SRC = REPO_ROOT / "images" / "portrait.png"
 
 # consulting-signature.html: `resources.Get("images/portrait.png").Resize
 # ("112x png")` -- the source is square, so this is both the resized
@@ -50,14 +50,6 @@ class SiteContext:
     stylesheet_href: str = ""
     stylesheet_integrity: str = ""
     avatar_href: str = ""
-    # TEMPORARY: like the two above, this is what the installed Hugo
-    # version actually injects into the home page (`disableHugoGeneratorInject`
-    # is unset in hugo.toml) -- Hugo's own doing, not a template call, and
-    # only the home page gets it (confirmed absent from every other page
-    # kind). `pkgs.hugo` in devenv.nix isn't pinned, so nixpkgs bumping it
-    # would move this string; nothing downstream should assume it's
-    # permanent, same as the two fields above.
-    hugo_generator: str = "Hugo 0.165.0"
 
 def _default_site(posts: list[Post], home_intro: str = "") -> SiteContext:
     return SiteContext(
@@ -177,7 +169,7 @@ def build(out: Path) -> None:
     # own docstring, which `feeds._load_root_extras` already relies on
     # for the same two files).
     cv_meta = load_front_matter(CONTENT_ROOT / "cv.md")
-    cv_html = (REPO_ROOT / "layouts" / "shortcodes" / "cv.html").read_text()
+    cv_html = (CONTENT_ROOT / "cv.html").read_text()
     cv_dir = out / "cv"
     cv_dir.mkdir(parents=True, exist_ok=True)
     (cv_dir / "index.html").write_text(cv_page(site, cv_meta, cv_html))

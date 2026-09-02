@@ -49,9 +49,9 @@ from .pages import strip_style_comments, tag_title
 if TYPE_CHECKING:
     from .site import SiteContext
 
-_CV_SHORTCODE = Path(__file__).resolve().parent.parent / "layouts" / "shortcodes" / "cv.html"
-
 _CONTENT_ROOT = Path(__file__).resolve().parent.parent / "content"
+
+_CV_SHORTCODE = _CONTENT_ROOT / "cv.html"
 
 # Hugo's default RSS/Atom date layouts (`time.Time.Format`, Go reference
 # time). Posts are always UTC in this Post model (content.py normalises

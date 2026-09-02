@@ -1,5 +1,6 @@
-# Sample workflow for building and deploying a Hugo site to GitHub Pages
-name: Deploy Hugo site to Pages
+# Builds and deploys the site (built with the Python generator in
+# generator/) to GitHub Pages.
+name: Deploy site to Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -31,38 +32,30 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
-    env:
-      # Keep in step with the hugo in devenv.nix: building production on a much
-      # older Hugo than the one used locally hides breaking changes until a
-      # local upgrade suddenly fails a build that CI was still passing.
-      HUGO_VERSION: 0.165.0
     steps:
-      - name: Install Hugo CLI
-        run: |
-          wget -O ${{ runner.temp }}/hugo.deb https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb \
-          && sudo dpkg -i ${{ runner.temp }}/hugo.deb
-      - name: Install Dart Sass
-        run: sudo snap install dart-sass
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          submodules: recursive
           fetch-depth: 0
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v6
-      - name: Install Node.js dependencies
-        run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
-      - name: Build with Hugo
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        # Keep in step with the Python packages pinned in devenv.nix: a
+        # local devenv shell and CI running different versions of these
+        # hides breaking changes until a local upgrade suddenly fails a
+        # build that CI was still passing.
+        run: |
+          pip install markdown-it-py mdit-py-plugins linkify-it-py pygments pillow
+      - name: Build with the generator
         env:
-          HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
-          HUGO_ENVIRONMENT: production
           TZ: America/Los_Angeles
         run: |
-          hugo \
-            --gc \
-            --minify \
-            --baseURL "${{ steps.pages.outputs.base_url }}/"
+          python3 -m generator build --out ./public
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

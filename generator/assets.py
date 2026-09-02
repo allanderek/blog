@@ -100,7 +100,7 @@ def build_stylesheet(src: Path, out: Path) -> tuple[str, str]:
     `out/assets/css/stylesheet.<hex-sha256>.css` and returns `(href,
     integrity)` -- `SiteContext.stylesheet_href`/`stylesheet_integrity`,
     which every page's <head> embeds verbatim. `src` is the repo's
-    `assets/css` directory (read-only for this task)."""
+    `css` directory."""
     bundle = _bundle_text(src).encode("utf-8")
     digest = hashlib.sha256(bundle).digest()
     hex_digest = digest.hex()
@@ -112,10 +112,9 @@ def build_stylesheet(src: Path, out: Path) -> tuple[str, str]:
 
 
 # Hugo's own resize-cache filename for this site's one signature avatar
-# (`assets/images/portrait.png`, resized "112x png" by
-# consulting-signature.html) -- confirmed against a real Hugo build of this
-# repo. See this module's docstring for why this is a fixed constant rather
-# than a computed one.
+# (`images/portrait.png`, resized "112x png" by consulting-signature.html)
+# -- confirmed against a real Hugo build of this repo. See this module's
+# docstring for why this is a fixed constant rather than a computed one.
 _PORTRAIT_FINGERPRINT = "portrait_hu_6510263e774a9def.png"
 
 

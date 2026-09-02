@@ -82,10 +82,10 @@ archive_lists_newest() {
 }
 
 echo "Building (production) into $OUT"
-if hugo --destination "$OUT" >"$OUT/build.log" 2>&1; then
-  pass "hugo build exits 0"
+if python3 -m generator build --out "$OUT" >"$OUT/build.log" 2>&1; then
+  pass "generator build exits 0"
 else
-  fail "hugo build exits 0"
+  fail "generator build exits 0"
   grep '^ERROR' "$OUT/build.log" | head -5
   echo
   echo "Build failed; skipping remaining checks."

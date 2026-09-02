@@ -271,12 +271,12 @@ def test_cv_page_inserts_the_shortcode_verbatim():
     # attribute survives verbatim only if nothing along the way ran it
     # through html.esc() (which would turn '"' into "&#34;" and '<a'
     # into "&lt;a").
-    cv_html = Path("layouts/shortcodes/cv.html").read_text()
+    cv_html = Path("content/cv.html").read_text()
     page = cv_page(_site(), _cv_front_matter(), cv_html)
     assert '<a href="https://github.com/allanderek" class="profile-link">GitHub</a>' in page
 
 def test_cv_page_has_a_signature_block():
-    cv_html = Path("layouts/shortcodes/cv.html").read_text()
+    cv_html = Path("content/cv.html").read_text()
     page = cv_page(_site(), _cv_front_matter(), cv_html)
     assert '<aside class="signature"' in page
 

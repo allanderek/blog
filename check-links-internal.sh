@@ -12,10 +12,10 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$OUT" "$WORK"' EXIT
 
 echo "Building into $OUT"
-if hugo --destination "$OUT" >"$WORK/build.log" 2>&1; then
-  printf '  ok    hugo build exits 0\n'
+if python3 -m generator build --out "$OUT" >"$WORK/build.log" 2>&1; then
+  printf '  ok    generator build exits 0\n'
 else
-  printf '  FAIL  hugo build exits 0\n'
+  printf '  FAIL  generator build exits 0\n'
   grep '^ERROR' "$WORK/build.log" | head -5
   echo
   echo "Build failed; cannot check links."
