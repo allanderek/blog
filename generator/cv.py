@@ -56,6 +56,7 @@ class Section:
 @dataclass
 class Cv:
     name: str
+    page_title: str
     address: list[str]
     pdf: str
     headlines: list[str]
@@ -86,6 +87,9 @@ def load(path: Path) -> Cv:
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     return Cv(
         name=str(raw["name"]),
+        # Defaults to the person's name, which is the right title for a CV
+        # when none is given explicitly.
+        page_title=str(raw.get("page_title") or raw["name"]),
         address=[str(a) for a in raw.get("address", [])],
         pdf=str(raw["pdf"]),
         headlines=[str(h) for h in raw.get("headlines", [])],

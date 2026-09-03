@@ -185,3 +185,18 @@ kind  = "expandable"
 """)
     html = cv.render(data)
     assert "<summary>An <em>emphasised</em> summary.</summary>" in html
+
+
+def test_page_title_defaults_to_the_name(tmp_path):
+    # A CV without an explicit page_title is still valid; the person's name is
+    # the right title for one.
+    p = tmp_path / "cv.toml"
+    p.write_text('name = "Ada Lovelace"\npdf = "/cv.pdf"\n', encoding="utf-8")
+    assert cv.load(p).page_title == "Ada Lovelace"
+
+
+def test_explicit_page_title_wins(tmp_path):
+    p = tmp_path / "cv.toml"
+    p.write_text('name = "Ada Lovelace"\npage_title = "Ada Lovelace CV"\n'
+                 'pdf = "/cv.pdf"\n', encoding="utf-8")
+    assert cv.load(p).page_title == "Ada Lovelace CV"

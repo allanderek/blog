@@ -1462,7 +1462,7 @@ def cv_page(site: SiteContext, front_matter: dict, cv_data: cv.Cv) -> str:
     `not_found_page`'s own hardcoded "404 Page not found", this is
     computed from the page's real content rather than read from front
     matter."""
-    title = "Allan Clark Curriculum Vitae"
+    title = cv_data.page_title
     permalink = f"{site.base_url}/cv/"
     content_html = cv.render(cv_data)
     summary_html = markdown.extract_summary(content_html)

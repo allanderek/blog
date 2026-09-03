@@ -1,4 +1,6 @@
 name    = "DR. ALLAN D. CLARK, PHD BSC"
+# Shown in the browser tab, the <h1> and the breadcrumb.
+page_title = "Allan Clark Curriculum Vitae"
 address = ["31/1 OSWALD RD,", "Edinburgh EH9 2HT,", "United Kingdom"]
 pdf     = "/cv.pdf"
 
