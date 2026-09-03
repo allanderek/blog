@@ -15,7 +15,10 @@
       ps.pygments
       ps.pillow
       ps.pytest
+      ps.pypdf          # ./make-cv-pdf.sh's check that the PDF really
+                        # contains the expandable sections
     ]))
+    pkgs.chromium       # headless, prints /cv/ to static/cv.pdf
   ];
 
   # See full reference at https://devenv.sh/reference/options/

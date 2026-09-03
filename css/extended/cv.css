@@ -167,13 +167,16 @@
 
 /* --- Print ------------------------------------------------------------
    The original CV *claimed* every <details> printed open (its own comment
-   said so) but never actually forced it -- CSS alone can't override the
-   `open` attribute's effect on a <summary>'s siblings, so a browser's
-   "Print to PDF" of that page only ever showed the closed summaries,
-   never the detail underneath. This makes it explicit: every direct,
-   non-summary child of a <details> is forced visible regardless of the
-   `open` attribute, and the disclosure triangle is hidden since there is
-   nothing left to disclose. Site chrome (nav, footer, the "back to top"
+   said so) but never actually forced it, so a browser's "Print to PDF" of
+   that page only ever showed the closed summaries, never the detail
+   underneath. Forcing it open takes two rules, because browsers have hidden
+   that content two different ways: older engines apply `display: none` to a
+   closed <details>'s non-summary children, while current ones (Chromium 131+,
+   which is what ./make-cv-pdf.sh drives) put the content in a
+   ::details-content pseudo-element and hide it with `content-visibility`,
+   which no rule on the children can override. Both are overridden below --
+   dropping either one silently halves the PDF. The disclosure triangle is
+   hidden since there is nothing left to disclose. Site chrome (nav, footer, the "back to top"
    link, the consulting signature) is hidden; the CV itself keeps
    readable, fixed light-mode colours regardless of which theme is active
    on screen. */
@@ -183,10 +186,12 @@
         size: A4;
     }
 
+    /* Site chrome, and the link offering the PDF -- pointless inside the PDF. */
     .header,
     .footer,
     .top-link,
-    .signature {
+    .signature,
+    .cv-pdf-note {
         display: none !important;
     }
 
@@ -214,7 +219,14 @@
         display: none;
     }
 
+    /* For engines that hide the children directly. */
     details > :not(summary) {
+        display: block !important;
+    }
+
+    /* For engines that hide the generated content wrapper instead. */
+    details::details-content {
+        content-visibility: visible !important;
         display: block !important;
     }
 
