@@ -59,7 +59,7 @@ jobs:
           python3 -m generator build --out ./public
       - name: Run tests
         run: |
-          pytest -q
+          ./run-tests.sh -q
       - name: Check site
         run: |
           ./check-site.sh
