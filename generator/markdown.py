@@ -253,6 +253,15 @@ def _apply_heading_ids(html: str, entity_form: bool = False) -> str:
 def render(text: str) -> str:
     return _apply_heading_ids(_MD.render(text))
 
+def render_inline(text: str) -> str:
+    """Inline-only rendering: links, emphasis, raw HTML, etc. survive, but
+    the text is never wrapped in a block-level element (`<p>`, `<ul>`, ...).
+    Used for markdown that has to sit inside an element that only accepts
+    phrasing content -- a `<summary>` or a `<li>` built by `cv.py` -- where
+    `render()`'s own `<p>` wrapper would be either invalid or just add
+    unwanted margin."""
+    return _MD.renderInline(text)
+
 def _smartquotes_module():
     # `markdown_it.rules_core.smartquotes` as an attribute is the rule
     # FUNCTION, re-exported over its own module; reach the module itself.

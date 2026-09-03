@@ -1,0 +1,243 @@
+/* The CV page (generator/cv.py's own rendered markup; see layouts... no,
+   this generator has no layouts of its own for it -- see pages.cv_page).
+   Ported from content/cv.html's three inline <style> blocks, rewritten
+   against the site's own theme tokens (css/core/theme-vars.css) so the
+   page follows the site's light/dark toggle instead of carrying fixed
+   colours of its own. Visual shape (the blue name banner, the pale
+   headline chips, the underlined section headings, the solid sub-heading
+   bars) is kept as close to the original as the token palette allows;
+   only the two colours no site token covers -- the banner/accent blue and
+   the headline-chip blue -- get their own custom properties, defined once
+   here and adjusted for dark mode the same way theme-vars.css adjusts the
+   rest (a ".dark" class, not a media query -- this site's toggle sets that
+   class on <html> rather than following prefers-color-scheme). */
+
+:root {
+    --cv-accent: #407fcb;
+    --cv-name-bg: var(--cv-accent);
+    --cv-name-fg: #ffffff;
+    --cv-chip-bg: #f8f9ff;
+    --cv-chip-fg: #3145aa;
+    --cv-chip-border: #e0e6ff;
+    --cv-subheading-bg: #aacbe0;
+    --cv-subheading-fg: #1e4963;
+}
+
+.dark {
+    /* A brighter accent and a dark-tinted chip background keep both the
+       banner and the headline chips readable against the theme's dark
+       panels, rather than the light-mode colours going muddy on them. */
+    --cv-accent: #6ea8e0;
+    --cv-name-bg: #2c4a68;
+    --cv-name-fg: #eaf2fb;
+    --cv-chip-bg: #26344a;
+    --cv-chip-fg: #b7c9f2;
+    --cv-chip-border: #3a4a68;
+    --cv-subheading-bg: #2c4a5e;
+    --cv-subheading-fg: #cfe4f2;
+}
+
+.cv {
+    color: var(--content);
+}
+
+.cv-header {
+    overflow: hidden;
+}
+
+.cv-name {
+    background-color: var(--cv-name-bg);
+    color: var(--cv-name-fg);
+    font-size: 1.4rem;
+    font-weight: bold;
+    padding: 1.25rem 1.5rem;
+    margin: 0 0 1.5rem 0;
+    text-align: center;
+    border-radius: var(--radius);
+}
+
+.cv-address {
+    float: right;
+    clear: right;
+    width: 45%;
+    font-size: 0.85rem;
+    color: var(--secondary);
+    margin-bottom: 1rem;
+    text-align: right;
+}
+
+.cv-profiles {
+    float: right;
+    clear: right;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+    width: 45%;
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+.cv-profiles li {
+    display: inline;
+    margin-left: 0.75rem;
+}
+
+.cv-profile-link {
+    color: var(--cv-accent);
+}
+
+.cv-headlines {
+    clear: both;
+    list-style: none;
+    padding: 0;
+    margin: 2rem 0;
+    overflow: hidden;
+}
+
+.cv-headlines li {
+    display: inline-block;
+    background-color: var(--cv-chip-bg);
+    color: var(--cv-chip-fg);
+    padding: 0.5rem 1rem;
+    margin: 0.25rem 0.5rem 0.25rem 0;
+    border: 1px solid var(--cv-chip-border);
+    border-radius: var(--radius);
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.cv-pdf-note {
+    clear: both;
+}
+
+.cv-section {
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.cv-heading {
+    color: var(--primary);
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 2rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--cv-accent);
+}
+
+.cv-sub-heading {
+    background-color: var(--cv-subheading-bg);
+    color: var(--cv-subheading-fg);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0 0.5rem 0;
+    border-radius: var(--radius);
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.cv-list,
+.cv-expandable {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.cv-list li,
+.cv-expandable > li {
+    margin-bottom: 0.4rem;
+}
+
+.cv-details summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.cv-details p,
+.cv-details ul {
+    margin: 0.5rem 0;
+}
+
+.cv-details ul {
+    padding-left: 1.5rem;
+}
+
+/* The two floated blocks (address, profiles) in .cv-header need clearing
+   before .cv-headlines, which already does it with `clear: both`, but a
+   narrow viewport (where floats would otherwise overlap the name banner
+   less gracefully) still reads fine stacked, so no separate breakpoint is
+   needed here the way signature.css needs one for its panel margins. */
+
+/* --- Print ------------------------------------------------------------
+   The original CV *claimed* every <details> printed open (its own comment
+   said so) but never actually forced it -- CSS alone can't override the
+   `open` attribute's effect on a <summary>'s siblings, so a browser's
+   "Print to PDF" of that page only ever showed the closed summaries,
+   never the detail underneath. This makes it explicit: every direct,
+   non-summary child of a <details> is forced visible regardless of the
+   `open` attribute, and the disclosure triangle is hidden since there is
+   nothing left to disclose. Site chrome (nav, footer, the "back to top"
+   link, the consulting signature) is hidden; the CV itself keeps
+   readable, fixed light-mode colours regardless of which theme is active
+   on screen. */
+@media print {
+    @page {
+        margin: 15mm;
+        size: A4;
+    }
+
+    .header,
+    .footer,
+    .top-link,
+    .signature {
+        display: none !important;
+    }
+
+    .cv-section {
+        page-break-inside: avoid;
+    }
+
+    .cv-sub-heading {
+        page-break-after: avoid;
+    }
+
+    details {
+        display: block;
+    }
+
+    details > summary {
+        list-style: none;
+    }
+
+    details > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    details > summary::marker {
+        display: none;
+    }
+
+    details > :not(summary) {
+        display: block !important;
+    }
+
+    .cv,
+    .cv-heading,
+    .cv-address,
+    .cv-profile-link {
+        color: #1a1a1a;
+    }
+
+    .cv-name {
+        background-color: #407fcb;
+        color: #ffffff;
+    }
+
+    .cv-headlines li {
+        background-color: #f8f9ff;
+        color: #3145aa;
+        border-color: #e0e6ff;
+    }
+
+    .cv-sub-heading {
+        background-color: #aacbe0;
+        color: #1e4963;
+    }
+}

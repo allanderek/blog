@@ -92,10 +92,10 @@ def load_page(path: Path) -> tuple[dict, str]:
     """Front matter AND body, for a page with no `date:` whose own body
     needs rendering too -- `content/consulting.md` (real markdown prose;
     `pages.consulting_page` renders it exactly like a post's own body).
-    `content/cv.md`'s own body is just the `{{< cv >}}` shortcode call,
-    of no use to a renderer (see `pages.cv_page`, which reads
-    `content/cv.html` directly instead) -- callers that only need the
-    front matter use `load_front_matter` above."""
+    `content/cv.md`'s own body is empty -- the CV's actual content lives in
+    `content/cv.toml`, parsed by `cv.load` (see `pages.cv_page`) -- so only
+    its front matter is ever needed; callers that only need that use
+    `load_front_matter` above."""
     try:
         meta, body = _parse_front_matter(path.read_text(encoding="utf-8"))
     except ValueError as e:

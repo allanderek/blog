@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 from pathlib import Path
+from generator import cv
 from generator.content import Post, load_page
 from generator.pages import (alias_stub, archives_page, categories_index,
                               consulting_page, cv_page, group_posts_by_tag,
                               home_page, list_page, not_found_page, post_page,
-                              strip_style_comments, tag_title, term_page,
-                              terms_index)
+                              tag_title, term_page, terms_index)
 from generator.site import SiteContext
 
 # A title an author could plausibly type, deliberately containing every
@@ -296,69 +296,33 @@ def test_canonical_og_url_hreflang_and_jsonld_stay_absolute():
     assert '"logo": {\n      "@type": "ImageObject",\n      "url": "https://example.com/favicons/favicon.ico"' in page
 
 
-# --- strip_style_comments ---------------------------------------------------
-#
-# Reproduces one, narrow Hugo behaviour found while building the CV page:
-# every CSS comment inside a <style>...</style> block becomes a single
-# space in Hugo's own rendered .Content -- confirmed against a real build
-# (see pages.py's own docstring for that function). These pin down the
-# regex's actual, deliberately narrow behaviour at its edges, since a CSS
-# comment stripper is easy to get subtly wrong.
-
-def test_strip_style_comments_removes_a_comment_that_looks_like_a_css_rule():
-    # The comment's own text could itself be mistaken for a real
-    # declaration by a careless implementation (e.g. one that just looked
-    # for "{...}" pairs) -- it must vanish as a unit, and the real rules
-    # either side must survive untouched.
-    html = '<style>a{color:red}/* .b{color:blue} */c{color:green}</style>'
-    result = strip_style_comments(html)
-    assert ".b" not in result
-    assert "color:blue" not in result
-    # Replaced with exactly one space -- never simply deleted (deleting
-    # instead of spacing risks joining the tokens either side into one).
-    assert result == '<style>a{color:red} c{color:green}</style>'
-
-def test_strip_style_comments_leaves_an_unterminated_comment_untouched():
-    # No closing "*/" anywhere in the block, so nothing here looks like a
-    # complete comment to the regex -- the literal "/*" and everything
-    # after it survive untouched, same as any other <style> byte that
-    # isn't part of a real, closed comment.
-    html = '<style>a { color: red; } /* never closes c { color: green; }</style>'
-    assert strip_style_comments(html) == html
-
-def test_strip_style_comments_is_not_css_string_aware():
-    # A known, narrow limitation, pinned down rather than left implicit: a
-    # "/* ... */"-shaped run INSIDE a CSS string literal still reads as a
-    # real comment to this transform, since it has no notion of CSS
-    # string context -- this matches the one, specific behaviour observed
-    # in a real Hugo build, not a general-purpose CSS parser.
-    html = '<style>content: "/* not a comment */"; color: red;</style>'
-    assert strip_style_comments(html) == '<style>content: " "; color: red;</style>'
-
-def test_strip_style_comments_only_touches_style_blocks():
-    html = '<p>Some prose with /* not css */ in it.</p>'
-    assert strip_style_comments(html) == html
-
 # --- cv_page / consulting_page / not_found_page / categories_index --------
 
 def _cv_front_matter() -> dict:
     return {"title": "", "linktitle": "CV", "menu": "main",
             "hidePageTitle": True, "weight": 10}
 
-def test_cv_page_inserts_the_shortcode_verbatim():
-    # The CV is an opaque artifact authored outside this repo -- it must
-    # land in the page unescaped and unreformatted. A raw double-quoted
-    # attribute survives verbatim only if nothing along the way ran it
-    # through html.esc() (which would turn '"' into "&#34;" and '<a'
-    # into "&lt;a").
-    cv_html = Path("content/cv.html").read_text()
-    page = cv_page(_site(), _cv_front_matter(), cv_html)
-    assert '<a href="https://github.com/allanderek" class="profile-link">GitHub</a>' in page
+def test_cv_page_renders_a_real_link_from_the_toml_content():
+    # content/cv.toml's own GitHub profile entry, rendered through cv.render
+    # -- must land as a real <a>, not escaped markup.
+    cv_data = cv.load(Path("content/cv.toml"))
+    page = cv_page(_site(), _cv_front_matter(), cv_data)
+    assert '<a href="https://github.com/allanderek" class="cv-profile-link">GitHub</a>' in page
 
 def test_cv_page_has_a_signature_block():
-    cv_html = Path("content/cv.html").read_text()
-    page = cv_page(_site(), _cv_front_matter(), cv_html)
+    cv_data = cv.load(Path("content/cv.toml"))
+    page = cv_page(_site(), _cv_front_matter(), cv_data)
     assert '<aside class="signature"' in page
+
+def test_cv_page_has_no_nested_document():
+    # The bug this whole redesign fixes: content/cv.html used to be a full
+    # HTML document (its own <!DOCTYPE>/<html>/<head>) inserted verbatim,
+    # so the built page carried two of each. cv.render's own output has
+    # none of those tags, so the page should carry exactly one.
+    cv_data = cv.load(Path("content/cv.toml"))
+    page = cv_page(_site(), _cv_front_matter(), cv_data)
+    assert page.count("<!DOCTYPE") == 1
+    assert page.count("<html") == 1
 
 def test_consulting_page_renders_its_markdown_body():
     front_matter, body = load_page(Path("content/consulting.md"))

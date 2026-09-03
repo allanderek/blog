@@ -6,4 +6,3 @@ hidePageTitle: true
 weight: 10
 ---
 
-{{< cv >}}

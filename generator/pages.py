@@ -14,7 +14,7 @@ import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from . import html, markdown
+from . import cv, html, markdown
 from .content import Post
 
 if TYPE_CHECKING:
@@ -1288,37 +1288,6 @@ def archives_page(posts: list[Post], site: SiteContext) -> str:
 # `<article class="post-single">` body instead of archives.html's
 # year/month listing.
 
-_STYLE_BLOCK_RE = re.compile(r"(<style[^>]*>)(.*?)(</style>)", re.S)
-_CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
-
-def strip_style_comments(raw_html: str) -> str:
-    """The one, narrow transform Hugo applies to a shortcode's raw HTML
-    before it reaches `.Content`: every CSS comment inside a
-    `<style>...</style>` block becomes a single space (never simply
-    deleted -- deleting instead of spacing risks joining two tokens either
-    side of the comment into one). Confirmed against a real build of
-    cv.md's rendered page: cv.html's own thirteen `/* ... */` comments
-    (all inside its one <style> block) each become one space; every byte
-    outside that block, and every byte of the block that ISN'T a comment,
-    survives untouched. Public (unlike this module's other rendering
-    helpers) because `feeds.py`'s root RSS item for `/cv/` needs it too --
-    that item's own `<description>` keeps `.Summary`'s raw HTML tags
-    intact (`.Summary | html`, not this page's own tag-STRIPPED `<meta
-    name="description">`), so the comment text would otherwise survive
-    into that one feed, unlike everywhere else this generator reads
-    `.Summary`, `.Plain` or `.WordCount` from `.Content` -- all three
-    strip `<style>` content wholesale regardless of what's inside it, so
-    this transform happens to be invisible to them (confirmed applying it
-    before or after `markdown.extract_summary`/`plain`/`word_count`
-    reaches the exact same result for those three). `cv_page` therefore
-    applies this once, up front, rather than at each call site. Nothing
-    else in this generator has found a comparable transform anywhere else
-    in a real Hugo build, so it is applied nowhere but here."""
-    def repl(m: re.Match) -> str:
-        opening, block, closing = m.group(1), m.group(2), m.group(3)
-        return opening + _CSS_COMMENT_RE.sub(" ", block) + closing
-    return _STYLE_BLOCK_RE.sub(repl, raw_html)
-
 def _content_page_meta(site: SiteContext) -> str:
     """post_meta.html's own output when `.Date.IsZero` -- true for both
     cv.md and consulting.md, neither of which sets a `date:` front-matter
@@ -1477,21 +1446,25 @@ def consulting_page(site: SiteContext, front_matter: dict, body: str) -> str:
                           desc_attr, og_desc_attr, jsonld_description,
                           article_body, word_count, with_signature=False)
 
-def cv_page(site: SiteContext, front_matter: dict, cv_html: str) -> str:
-    """content/cv.md: its entire body is one shortcode call, `{{< cv >}}`
-    (see `content/cv.html`, an opaque artifact authored outside this repo
-    -- inserted verbatim, never parsed/templated), which Hugo
-    substitutes in as raw HTML with NO markdown reprocessing at all --
-    confirmed against a real build matching this generator's own
-    `markdown.plain`/`word_count`/`extract_summary`, applied to
-    `strip_style_comments(cv_html)` (Hugo's own `.Content` for this page;
-    see that function's docstring), byte-for-byte. `front_matter` is
-    `content.load_front_matter`'s own dict (`title: ""`, `weight: 10`, no
-    `date:`/`summary:`, so `.Summary` is Hugo's real auto-extraction, not
-    an override -- contrast `consulting_page`)."""
-    title = str(front_matter.get("title", ""))
+def cv_page(site: SiteContext, front_matter: dict, cv_data: cv.Cv) -> str:
+    """content/cv.md + content/cv.toml: the CV as a normal site page,
+    rendered from structured data (`cv.load`/`cv.render`) instead of the
+    single opaque `content/cv.html` document this used to insert verbatim
+    (that file nested a whole second `<!DOCTYPE html>` document inside this
+    one, and carried its own colours, so it never picked up the site's
+    theme -- see the CV redesign's own task report for the history).
+
+    `front_matter` is still `content.load_front_matter`'s dict for
+    `content/cv.md` (`title: ""`, `linktitle: "CV"`, `weight: 10`, no
+    `date:`) -- kept for the fields other than `title` (feeds.py/site.py
+    still read it directly for those). The page's own title is NOT
+    `front_matter['title']` (empty, and always has been): like
+    `not_found_page`'s own hardcoded "404 Page not found", this is
+    computed from the page's real content rather than read from front
+    matter."""
+    title = "Allan Clark Curriculum Vitae"
     permalink = f"{site.base_url}/cv/"
-    content_html = strip_style_comments(cv_html)
+    content_html = cv.render(cv_data)
     summary_html = markdown.extract_summary(content_html)
     desc_attr, og_desc_attr, jsonld_description = _summary_attrs(summary_html)
 

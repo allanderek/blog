@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import assets, feeds
+from . import assets, cv, feeds
 from .content import Post, load_front_matter, load_page, load_posts, load_index_body
 from .pages import (alias_stub, archives_page, categories_index, cv_page,
                      consulting_page, group_posts_by_tag, home_page,
@@ -171,12 +171,13 @@ def build(out: Path) -> None:
     # docstrings. Read straight from disk rather than threaded through
     # `posts` (they are not `Post`s -- see content.load_front_matter's
     # own docstring, which `feeds._load_root_extras` already relies on
-    # for the same two files).
+    # for the same two files). cv.md's own body is empty -- the CV's
+    # actual content lives in content/cv.toml, parsed by cv.load.
     cv_meta = load_front_matter(CONTENT_ROOT / "cv.md")
-    cv_html = (CONTENT_ROOT / "cv.html").read_text(encoding="utf-8")
+    cv_data = cv.load(CONTENT_ROOT / "cv.toml")
     cv_dir = out / "cv"
     cv_dir.mkdir(parents=True, exist_ok=True)
-    (cv_dir / "index.html").write_text(cv_page(site, cv_meta, cv_html), encoding="utf-8")
+    (cv_dir / "index.html").write_text(cv_page(site, cv_meta, cv_data), encoding="utf-8")
 
     consulting_meta, consulting_body = load_page(CONTENT_ROOT / "consulting.md")
     consulting_url = str(consulting_meta.get("url", "/consulting/")).strip("/")

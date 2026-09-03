@@ -31,9 +31,9 @@ from `content/cv.md`/`content/consulting.md`'s own front matter -- reading
 front matter, not rendering either page in full -- and `rss()` merges them
 into `posts` for the root feed only, ordered by Hugo's actual default page
 sort. See `_load_root_extras` for how the CV item's own `<description>`
-(which needs `.Summary` of `{{< cv >}}`'s rendered content, not just front
-matter) is built once `pages.cv_page` exists to share that same summary
-logic with, and the task-10 report for how all of this was found.
+(which needs `.Summary` of the CV's rendered content, not just front
+matter) shares its summary logic with `pages.cv_page`, and the task-10
+report for how all of this was found.
 """
 from __future__ import annotations
 import re
@@ -42,16 +42,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from . import html, markdown
+from . import cv as cv_module, html, markdown
 from .content import Post, load_front_matter
-from .pages import strip_style_comments, tag_title
+from .pages import tag_title
 
 if TYPE_CHECKING:
     from .site import SiteContext
 
 _CONTENT_ROOT = Path(__file__).resolve().parent.parent / "content"
 
-_CV_SHORTCODE = _CONTENT_ROOT / "cv.html"
+_CV_TOML = _CONTENT_ROOT / "cv.toml"
 
 # Hugo's default RSS/Atom date layouts (`time.Time.Format`, Go reference
 # time). Posts are always UTC in this Post model (content.py normalises
@@ -145,22 +145,17 @@ def _load_root_extras(site: SiteContext) -> list[_RssEntry]:
     `weight: 10` is what actually puts it first overall; see
     `_hugo_page_order`.
 
-    The CV item's own `<description>` is `.Summary` of `{{< cv >}}`'s
-    FULLY RENDERED page (confirmed against real output: the escaped text
-    starts `&lt;!DOCTYPE html&gt;...`, the CV page's own literal markup,
-    not prose) -- `markdown.extract_summary` applied to
-    `pages.strip_style_comments(cv.html)` (Hugo's own `.Content` for this
-    page -- see that function's docstring for why the raw shortcode text
-    alone isn't quite right), the same computation `pages.cv_page` does
-    for its own `<meta name="description">`, then absolutized and escaped
-    exactly like a real post's own RSS summary (`_rss_item_description`'s
-    `.Summary | html` pipeline) since it is still raw, tag-intact HTML at
-    this point, not the tag-stripped form `<meta name="description">`
-    needs.
+    The CV item's own `<description>` is `.Summary` of the CV page's own
+    rendered content (`cv.render(cv.load(content/cv.toml))`) -- the same
+    computation `pages.cv_page` does for its own `<meta name="description">`
+    -- then absolutized and escaped exactly like a real post's own RSS
+    summary (`_rss_item_description`'s `.Summary | html` pipeline) since it
+    is still raw, tag-intact HTML at this point, not the tag-stripped form
+    `<meta name="description">` needs.
     """
     cv_meta = load_front_matter(_CONTENT_ROOT / "cv.md")
     consulting_meta = load_front_matter(_CONTENT_ROOT / "consulting.md")
-    cv_content = strip_style_comments(_CV_SHORTCODE.read_text(encoding="utf-8"))
+    cv_content = cv_module.render(cv_module.load(_CV_TOML))
     cv_summary = markdown.extract_summary(cv_content)
     cv = _RssEntry(
         title=html.esc(cv_meta.get("title", "")),

@@ -155,6 +155,16 @@ check "home signature is inline"       "grep -q '<aside class=\"signature signat
 check "signature precedes Start here"  "before '<aside class=\"signature' 'id=\"start-here\"'"
 check "signature on a post"            "grep -q '<aside class=\"signature\"' \$(ls -d $OUT/posts/*/index.html | head -1)"
 check "signature on the CV page"       "grep -q '<aside class=\"signature\"' $OUT/cv/index.html"
+
+# The CV used to be an opaque HTML document (its own <!DOCTYPE>/<html>/
+# <head>) inserted verbatim into the site page, so the built page carried
+# two of each -- see generator/cv.py's own docstring. It is now rendered
+# from content/cv.toml as ordinary content, so exactly one of each, plus
+# the site's own nav/footer chrome and all seven <details> bodies.
+check "CV page has exactly one DOCTYPE" "test \$(grep -c '<!DOCTYPE' $OUT/cv/index.html) -eq 1"
+check "CV page has the site nav"       "grep -q '<header class=\"header\"' $OUT/cv/index.html"
+check "CV page has the site footer"    "grep -q '<footer class=\"footer\"' $OUT/cv/index.html"
+check "CV page has all 7 detail bodies" "test \$(grep -o '<details' $OUT/cv/index.html | wc -l) -eq 7"
 check "signature on the archive"       "grep -q '<aside class=\"signature\"' $OUT/archives/index.html"
 check "no signature on consulting"     "! grep -q '<aside class=\"signature' $OUT/consulting/index.html"
 # The window has to clear the avatar and the .signature-body wrapper, which
