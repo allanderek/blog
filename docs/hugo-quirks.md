@@ -933,6 +933,6 @@ titled with a bare URL by any crawler that ignored the canonical. Low stakes —
 the page redirects in zero seconds — but there was no reason to keep it once
 byte-compatibility with Hugo stopped being the goal.
 
-Pinned by `tests/test_pages.py::test_alias_stub_matches_hugos_pagination_alias_format`,
+Pinned by `tests/test_pages.py::test_alias_stub_refresh_is_relative_canonical_is_absolute`,
 whose name is now slightly wrong: it no longer matches Hugo's format, it pins
 this deliberate divergence from it.

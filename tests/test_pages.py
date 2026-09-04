@@ -421,12 +421,18 @@ def test_not_found_page_renders_the_404_marker():
     assert '<div class="not-found">404</div>' in page
     assert "<title>404 Page not found" in page
 
-def test_alias_stub_matches_hugos_pagination_alias_format():
-    # Was byte-exact against Hugo's own alias template. The refresh target is
-    # now root-relative -- a deliberate divergence, so a dev server does not
-    # bounce the reader to production. <title> and canonical stay absolute:
-    # canonical must be. The <title> was Hugo's bare target URL and now says
-    # what the page is doing, since it shows in a tab before the redirect.
+def test_alias_stub_refresh_is_relative_canonical_is_absolute():
+    # The name used to say this matched Hugo's own alias template. It no
+    # longer does, deliberately, in two of its three URLs -- so the name
+    # asserted the opposite of the test. See docs/hugo-quirks.md's
+    # "/page/1/ alias stubs" deviation.
+    #
+    # refresh is root-relative, so landing on /posts/page/1/ on the dev
+    # server no longer bounces the reader to production -- that was the
+    # last route out of the dev site. canonical stays absolute because a
+    # relative canonical is meaningless to a crawler. <title> was Hugo's
+    # bare target URL and now says what the page is doing, since it shows
+    # in a tab before the redirect fires.
     stub = alias_stub("/posts/", _site())
     assert stub == (
         '<!DOCTYPE html>\n'

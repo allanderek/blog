@@ -45,12 +45,20 @@ else
 fi
 echo
 
-# --scheme http/https limits lychee to external links: root-relative ones have
-# no scheme and are skipped. A browser user agent and accepting 403/429 cut
-# out most of the false positives from bot-blocking and rate limiting; a real
-# dead link almost always answers 404 or fails to connect.
+# --scheme http/https limits lychee to external links. That alone used to be
+# enough, on the assumption that a link with no scheme is simply skipped --
+# but once same-origin links became root-relative, lychee started failing to
+# RESOLVE them before any scheme filtering could drop them ("Cannot resolve
+# root-relative link '/cv/'"), and reported 5440 errors on a site with no
+# broken links at all. --root-dir lets it resolve them against the build, at
+# which point they are file:// links and the scheme filter does drop them.
+#
+# A browser user agent and accepting 403/429 cut out most of the false
+# positives from bot-blocking and rate limiting; a real dead link almost
+# always answers 404 or fails to connect.
 lychee \
   --scheme http --scheme https \
+  --root-dir "$OUT" \
   --exclude-all-private \
   --accept '200..=299,403,429' \
   --user-agent 'Mozilla/5.0 (compatible; link-check for blog.poleprediction.com)' \
