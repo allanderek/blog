@@ -3,8 +3,8 @@ title: Poker puzzle
 date: 2017-03-04T13:58:36Z
 tags: ["poker analysis odds"]
 ---
-[Bill the lizard](http://www.billthelizard.com/) has an 
-[excellent post](http://www.billthelizard.com/2017/02/best-poker-hand.html) describing an interesting puzzle as to the most desirable full house in a game of poker. The rest of this post depends upon you having read that puzzle so you may wish to do that now, or skip this post.
+[Bill the lizard](dead:http://www.billthelizard.com/) has an 
+[excellent post](dead:http://www.billthelizard.com/2017/02/best-poker-hand.html) describing an interesting puzzle as to the most desirable full house in a game of poker. The rest of this post depends upon you having read that puzzle so you may wish to do that now, or skip this post.
 
 I think this represents an instance where the mathematically correct answer is not correct for other concerns. To be clear, I think the given answer is the mathematically correct answer, and the blog post linked above never suggested to answer anything other than that. In addition, there isn't really any action you can take regardless of which full house you think is better to have, the difference in the odds is small enough not to have any real-world applicability.
 

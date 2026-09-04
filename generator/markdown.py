@@ -32,6 +32,37 @@ def _render_strikethrough_open(tokens, idx, options, env) -> str:
 def _render_strikethrough_close(tokens, idx, options, env) -> str:
     return "</del>"
 
+DEAD_LINK_SCHEME = "dead:"
+
+def _make_link_open_rule(renderer):
+    """Build the `link_open` render rule bound to this MarkdownIt's renderer.
+
+    `[text](dead:https://gone.example/page)` renders as an <a> with NO href,
+    marking prose that used to be a link whose target is gone. Every other
+    link falls straight through to the default renderer.
+
+    An href-less <a> is the right element rather than an invented one: the
+    HTML spec says it "represents a placeholder for where a link might
+    otherwise have been placed", so assistive technology does not announce a
+    link the reader cannot follow, and the words stay ordinary prose -- which
+    matters, since a dead link's text is usually still part of the sentence.
+
+    Keeping the original URL in the source as a real URL, rather than buried
+    in an attribute, is the point of the scheme: it stays greppable, and a
+    later script can re-check whether the Wayback Machine has since acquired
+    a snapshot. A reader sees it only as the title tooltip.
+    """
+    def render_link_open(tokens, idx, options, env) -> str:
+        token = tokens[idx]
+        href = token.attrGet("href") or ""
+        if href.startswith(DEAD_LINK_SCHEME):
+            target = href[len(DEAD_LINK_SCHEME):]
+            token.attrs = {}
+            token.attrSet("class", "dead-link")
+            token.attrSet("title", f"Link no longer available: {target}")
+        return renderer.renderToken(tokens, idx, options, env)
+    return render_link_open
+
 def _make_image_rule(renderer):
     """Build the `image` render rule bound to this MarkdownIt's renderer.
 
@@ -210,6 +241,7 @@ def _make_parser(entities: bool = False) -> MarkdownIt:
     _widen_email_fuzzy_boundary(md)
     md.renderer.rules["s_open"] = _render_strikethrough_open
     md.renderer.rules["s_close"] = _render_strikethrough_close
+    md.renderer.rules["link_open"] = _make_link_open_rule(md.renderer)
     md.renderer.rules["image"] = _make_image_rule(md.renderer)
     md.renderer.rules["fence"] = _make_fence_rule(md.renderer)
     if entities:

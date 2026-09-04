@@ -1,0 +1,20 @@
+/* --- Dead links ---------------------------------------------------------
+   Prose that used to be a link whose target no longer exists, written in
+   markdown as `[text](dead:https://gone.example/page)` and rendered by
+   generator/markdown.py as an <a> with no href.
+
+   Styled as prose with a hint, not as a broken link: the words are still
+   part of the sentence and should read as such. The dotted underline says
+   something was here; the tooltip says what. Deliberately NOT
+   strikethrough, which means retracted content -- the text was never
+   retracted, only its target lost. */
+.dead-link {
+    color: var(--secondary);
+    border-bottom: 1px dotted var(--secondary);
+    cursor: help;
+}
+
+/* A tooltip is hover-only, so a touch reader gets the muted styling and no
+   explanation. That is an acceptable floor -- the sentence still reads --
+   but it is why the styling has to stand on its own rather than relying on
+   the title attribute to carry the meaning. */

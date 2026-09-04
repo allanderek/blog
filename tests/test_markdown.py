@@ -95,6 +95,28 @@ def test_plain_does_not_give_up_partway_through_the_document():
     assert text.rstrip().endswith(
         "This just redirects all incoming http traffic to https.")
 
+# A `dead:` link marks prose whose target no longer exists. The rendered
+# element is an <a> with NO href -- the HTML spec's "placeholder for where a
+# link might otherwise have been placed" -- so a reader is never offered a
+# link they cannot follow, and assistive technology does not announce one.
+def test_dead_link_renders_without_an_href():
+    out = render("an [excellent post](dead:http://gone.example/p) here")
+    assert '<a class="dead-link"' in out
+    assert "href" not in out
+    assert "excellent post</a>" in out
+
+def test_dead_link_keeps_the_original_url_in_the_tooltip():
+    out = render("[x](dead:http://gone.example/a/b?c=1)")
+    assert 'title="Link no longer available: http://gone.example/a/b?c=1"' in out
+
+def test_a_normal_link_is_untouched_by_the_dead_link_rule():
+    assert render("a [live](https://example.com/p) post") == (
+        '<p>a <a href="https://example.com/p">live</a> post</p>\n')
+
+def test_an_autolink_is_untouched_by_the_dead_link_rule():
+    out = render("see https://example.com/x for more")
+    assert '<a href="https://example.com/x">https://example.com/x</a>' in out
+
 def test_strikethrough_uses_del_not_s():
     # Goldmark emits <del>; markdown-it-py's default is <s>
     out = render("~~gone~~")

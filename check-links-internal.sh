@@ -63,6 +63,14 @@ awk -v out="$OUT" -v host="$BASEURL_HOST" '
 
   if (url == "" || url ~ /^#/) next
   if (url ~ /^(mailto|data|javascript|tel):/) next
+  # dead:<url> marks prose that used to be a link -- see the link_open rule
+  # in generator/markdown.py. It strips the href entirely, so a correctly
+  # built site has no dead: href for this to match. This is the safety net
+  # for when it does not: a leaked one would otherwise be reported as an
+  # unknown scheme, the way the Pelican-era link:// ones were, which is a
+  # confusing way to learn the render rule has stopped firing.
+  # (No apostrophes in here: this sits inside a single-quoted awk program.)
+  if (url ~ /^dead:/) next
   if (url ~ /^\/\//) next                      # protocol-relative: external
 
   if (url ~ ("^https?://" host)) {
