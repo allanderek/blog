@@ -47,7 +47,7 @@ def test_write_section_paginates_a_tag_listing_too(tmp_path: Path):
     assert (tmp_path / "tags" / "elm" / "page" / "1" / "index.html").exists()
     page1 = (tmp_path / "tags" / "elm" / "index.html").read_text()
     assert 'class="post-entry tag-entry"' in page1
-    assert "application/ld+json" not in page1
+    assert "application/ld+json" in page1
 
 def test_page_1_alias_stub_is_written_even_for_a_single_page_listing(tmp_path: Path):
     # Nothing in check-site.sh asserts this stub exists; only compare.py

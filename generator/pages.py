@@ -351,15 +351,21 @@ def _head_taxonomy(site: SiteContext, permalink: str, title: str, base_path: str
     fallback guard, or opengraph.html's/twitter_cards.html's equivalents,
     so <meta name="description">, og:description AND twitter:description
     all fall straight through to the site-wide description -- never the
-    "Title - site.Title" fallback `_head_section` computes for /posts/ --
-    and schema_json.html's own `(or .IsPage .IsSection)` guard for its
-    BreadcrumbList/BlogPosting pair is false too, so this Kind gets no
-    JSON-LD at all. Confirmed against `/tmp/t9-hugo/tags/elm/index.html`
-    and `/tmp/t9-hugo/tags/index.html` (identical `og:type` "website" as a
+    "Title - site.Title" fallback `_head_section` computes for /posts/.
+    Confirmed against `/tmp/t9-hugo/tags/elm/index.html` and
+    `/tmp/t9-hugo/tags/index.html` (identical `og:type` "website" as a
     section, though -- that part of opengraph.html only branches on
-    `.IsPage`, which is false for both Kinds)."""
+    `.IsPage`, which is false for both Kinds).
+
+    These pages get a BreadcrumbList. Hugo gave them no JSON-LD at all,
+    because schema_json.html's `(or .IsPage .IsSection)` guard is false for
+    both Kinds -- an oversight rather than a decision, since a section
+    listing gets one and nothing makes a tag listing less deserving. See
+    docs/hugo-quirks.md quirk 13."""
     desc_attr = html.esc(site.description)
-    return _head_list_common(site, permalink, title, base_path, desc_attr, desc_attr, schema_json="")
+    return _head_list_common(
+        site, permalink, title, base_path, desc_attr, desc_attr,
+        schema_json=_schema_json_taxonomy(site, title, permalink, base_path))
 
 def _head_archives(site: SiteContext, permalink: str) -> str:
     """<head> for content/archives.md (Kind "page", not a listing at all --
@@ -544,6 +550,28 @@ def _schema_json_section(name: str, permalink: str) -> str:
     direct child of Home) is always a single self-referencing entry --
     confirmed against `/tmp/t8-hugo/posts/index.html`'s own JSON-LD."""
     return _breadcrumb_list([(_json_str(name), permalink)])
+
+def _schema_json_taxonomy(site: SiteContext, title: str, permalink: str,
+                          base_path: str) -> str:
+    """The BreadcrumbList for /tags/ and for one tag's own page.
+
+    A terms index (/tags/, /categories/) is a direct child of Home, so
+    like a section it gets a single self-referencing entry. A term page
+    (/tags/elm/) sits one level below its own index and gets the real
+    two-step trail -- which is what a BreadcrumbList is for, and matches
+    how a post page already names its section before itself.
+
+    The root is taken from `base_path` rather than assumed to be "tags":
+    /categories/ comes through here too, and hardcoding the label gave it
+    a breadcrumb reading "Tags -> Categories". `base_path` stays the
+    term's own path on a /page/N/ listing, so pagination does not turn an
+    index into a term."""
+    segments = [seg for seg in base_path.split("/") if seg]
+    root = segments[0]
+    trail = [(_json_str(tag_title(root)), f"{site.base_url}/{root}/")]
+    if len(segments) > 1:
+        trail.append((_json_str(title), permalink))
+    return _breadcrumb_list(trail)
 
 def _theme_init_script() -> str:
     return """<script>

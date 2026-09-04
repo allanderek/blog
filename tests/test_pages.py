@@ -175,6 +175,37 @@ def test_tag_title_capitalises_after_space_and_hyphen_but_leaves_rest():
     assert tag_title("language-design") == "Language-Design"
     assert tag_title("dead code") == "Dead Code"
 
+# docs/hugo-quirks.md quirk 13. Hugo emitted no JSON-LD at all on term and
+# taxonomy pages -- its schema_json.html guard is `(or .IsPage .IsSection)`,
+# and neither Kind satisfies it. A section listing got a BreadcrumbList, so
+# this was an oversight rather than a decision.
+def _breadcrumbs(page: str) -> list[tuple[int, str, str]]:
+    import json, re
+    out = []
+    for b in re.findall(
+            r'<script type="application/ld\+json">(.*?)</script>', page, re.S):
+        doc = json.loads(b)
+        if doc.get("@type") == "BreadcrumbList":
+            out += [(i["position"], i["name"], i["item"])
+                    for i in doc["itemListElement"]]
+    return out
+
+def test_term_page_has_a_two_step_breadcrumb():
+    trail = _breadcrumbs(term_page("Elm", [_post()], 1, 1, _site()))
+    assert trail == [(1, "Tags", "https://example.com/tags/"),
+                     (2, "Elm", "https://example.com/tags/elm/")]
+
+def test_terms_index_is_a_direct_child_of_home():
+    assert _breadcrumbs(terms_index({"elm": 1}, _site())) == [
+        (1, "Tags", "https://example.com/tags/")]
+
+# /categories/ comes through the same code path. Deriving the root label
+# from the page's own base_path rather than assuming "tags" is what stops
+# this reading "Tags -> Categories".
+def test_categories_index_is_not_labelled_tags():
+    assert _breadcrumbs(categories_index(_site())) == [
+        (1, "Categories", "https://example.com/categories/")]
+
 def test_term_page_title_uses_real_spelling_and_marks_entries_tag_entry():
     # A tag's own term page auto-titles itself via `tag_title`'s
     # capitalise-after-boundary rule applied to the real front-matter
@@ -193,12 +224,12 @@ def test_term_page_title_capitalises_after_hyphen_not_derived_from_slug():
     assert "\n    Language-Design\n" in page
     assert "https://example.com/tags/language-design/" in page
 
-def test_term_page_has_no_json_ld():
-    # Kind "term" satisfies neither schema_json.html's `.IsPage` nor
-    # `.IsSection` guard -- confirmed zero `application/ld+json` scripts
-    # on Hugo's own /tags/<tag>/index.html.
+def test_term_page_has_exactly_one_json_ld_block():
+    # A BreadcrumbList and nothing else: a term listing is not an article,
+    # so it gets no BlogPosting the way a real page does.
     page = term_page("Elm", [], 1, 1, _site())
-    assert "application/ld+json" not in page
+    assert page.count("application/ld+json") == 1
+    assert "BlogPosting" not in page
 
 def test_term_page_description_is_site_wide_not_title_suffixed():
     # Unlike a section (e.g. /posts/, whose description is "Posts -
@@ -219,9 +250,10 @@ def test_terms_index_shows_raw_spelling_verbatim():
     assert ">language-design <sup>" in page
     assert "Language-Design" not in page
 
-def test_terms_index_has_no_json_ld():
+def test_terms_index_has_exactly_one_json_ld_block():
     page = terms_index([], _site())
-    assert "application/ld+json" not in page
+    assert page.count("application/ld+json") == 1
+    assert "BlogPosting" not in page
 
 def test_group_posts_by_tag_sorts_by_slug_and_preserves_newest_first_order():
     newer = Post(slug="newer", title="Newer", tags=["Elm", "SQLite"],

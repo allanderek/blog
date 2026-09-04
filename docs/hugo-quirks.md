@@ -551,7 +551,7 @@ than defaulting to what Hugo happened to include.
 
 ---
 
-## 13. Taxonomy (term) pages emit no JSON-LD at all
+## 13. FIXED — Taxonomy (term) pages emit no JSON-LD at all
 
 **What Hugo does.** `/tags/<slug>/` (a tag's own term page) and `/tags/` (the
 terms index) get **zero** `<script type="application/ld+json">` blocks —
@@ -579,6 +579,27 @@ trusted the real Hugo output over that paraphrase.
 pages already get) to tag/taxonomy pages — there's a clear SEO/consistency
 benefit and no reason to preserve what looks like an unintentional gap in
 Hugo's own templates.
+
+**Status. Done (2026-09-04).** `generator/pages.py`: `_schema_json_taxonomy()`
+gives these pages a `BreadcrumbList`, wired in through `_head_taxonomy`. A
+terms index (`/tags/`, `/categories/`) is a direct child of Home and gets a
+single self-referencing entry, exactly as a section does; a term page
+(`/tags/elm/`) sits a level below and gets the real two-step trail, which is
+what a `BreadcrumbList` is actually for and matches how a post page already
+names its section before itself. No `BlogPosting`: a term listing is not an
+article. 71 new blocks under `/tags/`, 73 built files changed, and all 435
+JSON-LD blocks in the build still parse.
+
+The root label is derived from the page's own `base_path`, not assumed to be
+"tags". `/categories/` comes through the same code path, and the first version
+of this hardcoded the label, giving that page a breadcrumb reading
+"Tags -> Categories". Pinned by `test_categories_index_is_not_labelled_tags`,
+which is the only test that catches it.
+
+Three tests asserted the absence of JSON-LD on these pages and are updated:
+`test_term_page_has_exactly_one_json_ld_block`,
+`test_terms_index_has_exactly_one_json_ld_block`, and one incidental
+assertion in `test_site.py`'s pagination test.
 
 ---
 
