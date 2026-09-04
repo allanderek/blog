@@ -53,7 +53,11 @@ def test_featured_defaults(tmp_path):
 
 def test_real_corpus_loads(tmp_path):
     posts = load_posts(Path("content/posts"))
-    assert len(posts) == 176
+    # A floor, not an inventory. What this guards is load_posts silently
+    # returning nothing or dropping most of the corpus; an exact count
+    # would instead fail every time a post is written, which trains you to
+    # ignore a red suite. The real assertions are the two below.
+    assert len(posts) >= 150
     assert all(p.title for p in posts)
     assert posts == sorted(posts, key=lambda p: p.date, reverse=True)
 
@@ -81,8 +85,11 @@ def test_real_corpus_quoted_tag_style(tmp_path):
     post = parse_post(tmp_path / "p.md")
     assert post.tags == ["compilation", "language-design"]
 
-def test_corpus_tag_totals_stable():
+def test_corpus_tags_are_never_comma_split():
     posts = load_posts(Path("content/posts"))
     all_tags = [t for p in posts for t in p.tags]
-    assert len(all_tags) == 357
+    # Again a floor rather than a total -- see test_real_corpus_loads. The
+    # assertion that matters is the second: a tag written as "a, b" in
+    # front matter must survive as one tag, not split into two.
+    assert len(all_tags) >= 300
     assert all("," not in t for t in all_tags)
