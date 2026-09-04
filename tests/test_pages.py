@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from generator import cv
 from generator.content import Post, load_page
-from generator.pages import (alias_stub, archives_page, categories_index,
+from generator.pages import (alias_stub, archives_page,
                               consulting_page, cv_page, group_posts_by_tag,
                               home_page, list_page, not_found_page, post_page,
                               tag_title, term_page, terms_index)
@@ -199,13 +199,6 @@ def test_terms_index_is_a_direct_child_of_home():
     assert _breadcrumbs(terms_index({"elm": 1}, _site())) == [
         (1, "Tags", "https://example.com/tags/")]
 
-# /categories/ comes through the same code path. Deriving the root label
-# from the page's own base_path rather than assuming "tags" is what stops
-# this reading "Tags -> Categories".
-def test_categories_index_is_not_labelled_tags():
-    assert _breadcrumbs(categories_index(_site())) == [
-        (1, "Categories", "https://example.com/categories/")]
-
 def test_term_page_title_uses_real_spelling_and_marks_entries_tag_entry():
     # A tag's own term page auto-titles itself via `tag_title`'s
     # capitalise-after-boundary rule applied to the real front-matter
@@ -380,7 +373,7 @@ def test_canonical_og_url_hreflang_and_jsonld_stay_absolute():
     assert '"logo": {\n      "@type": "ImageObject",\n      "url": "https://example.com/favicons/favicon.ico"' in page
 
 
-# --- cv_page / consulting_page / not_found_page / categories_index --------
+# --- cv_page / consulting_page / not_found_page --------------------------
 
 def _cv_front_matter() -> dict:
     return {"title": "", "linktitle": "CV", "menu": "main",
@@ -427,15 +420,6 @@ def test_not_found_page_renders_the_404_marker():
     page = not_found_page(_site())
     assert '<div class="not-found">404</div>' in page
     assert "<title>404 Page not found" in page
-
-def test_categories_index_has_no_terms():
-    # The `categories` taxonomy is unused site-wide -- no post ever sets
-    # `categories:` -- so Hugo still emits this page, just with a bare
-    # <ul> and no <li> entries at all.
-    page = categories_index(_site())
-    assert "<h1>Categories</h1>" in page
-    terms_list = page[page.index('<ul class="terms-tags">'):page.index("</ul>")]
-    assert "<li>" not in terms_list
 
 def test_alias_stub_matches_hugos_pagination_alias_format():
     # Was byte-exact against Hugo's own alias template. The refresh target is

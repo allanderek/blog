@@ -507,7 +507,6 @@ def sitemap(posts: list[Post], tags: list[tuple[str, str, list[Post]]],
     archives_meta = load_front_matter(_CONTENT_ROOT / "archives.md")
     entries.append((int(archives_meta.get("weight", 0)), _ZERO_DATE,
                      _link_title(archives_meta), f"{site.base_url}/archives/"))
-    entries.append((0, _ZERO_DATE, tag_title("categories"), f"{site.base_url}/categories/"))
     consulting_meta = load_front_matter(_CONTENT_ROOT / "consulting.md")
     entries.append((int(consulting_meta.get("weight", 0)), _ZERO_DATE,
                      _link_title(consulting_meta),

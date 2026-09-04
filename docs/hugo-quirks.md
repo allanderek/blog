@@ -631,7 +631,7 @@ remove a working redirect.
 
 ---
 
-## 15. `/tags/index.xml` and `/categories/index.xml` are feeds of *terms*, not posts
+## 15. PARTLY FIXED — `/tags/index.xml` and `/categories/index.xml` are feeds of *terms*, not posts
 
 **What Hugo does.** `/tags/index.xml` looks like a normal RSS feed but its
 `<item>`s are one per **tag** (title/link/pubDate/guid), not one per post —
@@ -656,6 +656,26 @@ entirely** — the category taxonomy has zero posts using it; it's pure dead
 weight kept alive only because Hugo emits it unconditionally. **Keep
 `/tags/index.xml`** — low value, but it's a real catalog of the site's tags
 and cheap to keep serving.
+
+**Status. Done (2026-09-04).** `/categories/` is gone: `generator/site.py` no
+longer writes `index.html` or `index.xml` for it, `generator/feeds.py` no
+longer lists it in the sitemap, and `pages.categories_index()` is deleted. The
+build drops from 416 files to 414 and the sitemap from 254 entries to 253.
+
+Nothing linked to it but itself -- the only `href`s to `/categories/` anywhere
+in the previous build were on the two categories pages, so no internal link
+breaks. External links to those two URLs will now 404; they were an empty
+listing and an itemless feed, so there was nothing there to lose.
+
+`/tags/index.xml` is kept as recommended, terms-shaped `<item>`s and all, so
+the "feed of terms, not posts" half of this entry still stands -- hence PARTLY
+FIXED rather than FIXED.
+
+Two tests went with the page (`test_categories_index_has_no_terms`, and quirk
+13's `test_categories_index_is_not_labelled_tags`). The root-label derivation
+that second test protected is deliberately kept: tags is now the only
+taxonomy, so `base_path` always says "tags", but hardcoding it is exactly what
+mislabelled /categories/ while it existed.
 
 ---
 

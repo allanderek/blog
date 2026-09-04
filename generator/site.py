@@ -6,7 +6,7 @@ from pathlib import Path
 
 from . import assets, cv, feeds
 from .content import Post, load_front_matter, load_page, load_posts, load_index_body
-from .pages import (alias_stub, archives_page, categories_index, cv_page,
+from .pages import (alias_stub, archives_page, cv_page,
                      consulting_page, group_posts_by_tag, home_page,
                      list_page, not_found_page, post_page, tag_title,
                      terms_index)
@@ -149,19 +149,6 @@ def build(out: Path) -> None:
     (tags_dir / "index.xml").write_text(
         feeds.terms_rss(tags, site, "/tags/", tag_title("tags")),
         encoding="utf-8")
-    # /categories/: an unused taxonomy (no post ever sets `categories:`),
-    # so its own terms page (`categories_index`) always renders the
-    # zero-terms case -- Hugo still emits both an (empty) HTML page and an
-    # (empty but real) feed regardless. `terms_rss` with an empty `tags`
-    # list already matches Hugo's real, itemless feed output; see its own
-    # docstring.
-    categories_dir = out / "categories"
-    categories_dir.mkdir(parents=True, exist_ok=True)
-    (categories_dir / "index.html").write_text(categories_index(site), encoding="utf-8")
-    (categories_dir / "index.xml").write_text(
-        feeds.terms_rss([], site, "/categories/", tag_title("categories")),
-        encoding="utf-8")
-
     archives_dir = out / "archives"
     archives_dir.mkdir(parents=True, exist_ok=True)
     (archives_dir / "index.html").write_text(archives_page(posts, site), encoding="utf-8")

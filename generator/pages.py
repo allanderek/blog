@@ -555,15 +555,17 @@ def _schema_json_taxonomy(site: SiteContext, title: str, permalink: str,
                           base_path: str) -> str:
     """The BreadcrumbList for /tags/ and for one tag's own page.
 
-    A terms index (/tags/, /categories/) is a direct child of Home, so
-    like a section it gets a single self-referencing entry. A term page
-    (/tags/elm/) sits one level below its own index and gets the real
-    two-step trail -- which is what a BreadcrumbList is for, and matches
-    how a post page already names its section before itself.
+    A terms index (/tags/) is a direct child of Home, so like a section it
+    gets a single self-referencing entry. A term page (/tags/elm/) sits one
+    level below its own index and gets the real two-step trail -- which is
+    what a BreadcrumbList is for, and matches how a post page already names
+    its section before itself.
 
-    The root is taken from `base_path` rather than assumed to be "tags":
-    /categories/ comes through here too, and hardcoding the label gave it
-    a breadcrumb reading "Tags -> Categories". `base_path` stays the
+    The root label is read from `base_path` rather than hardcoded to
+    "Tags". Tags is currently the only taxonomy -- /categories/ was dropped
+    as unused (quirk 15) -- but while both existed, hardcoding it gave
+    /categories/ a breadcrumb reading "Tags -> Categories", so a second
+    taxonomy would silently mislabel itself again. `base_path` stays the
     term's own path on a /page/N/ listing, so pagination does not turn an
     index into a term."""
     segments = [seg for seg in base_path.split("/") if seg]
@@ -1115,10 +1117,7 @@ def _terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext,
     """layouts/_default/terms.html, a project override with its own
     bespoke header/list markup -- NOT list.html's generic page-header
     partial that `list_page` reuses for /posts/ and a single term's own
-    /<taxonomy>/<term>/ page. Shared by `terms_index` (/tags/, real
-    entries) and `categories_index` (/categories/, always empty -- no
-    post ever sets `categories:`, confirmed against a real build that
-    Hugo still emits this page, just with a bare `<ul>`). `tags` is
+    /<taxonomy>/<term>/ page. Used by `terms_index` (/tags/). `tags` is
     `group_posts_by_tag`'s own (display_name, slug, posts) triples,
     already in alphabetical-by-slug order; the count shown next to each
     entry is simply that term's own post count. `title`/`base_path` pick
@@ -1168,14 +1167,6 @@ def _terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext,
 def terms_index(tags: list[tuple[str, str, list[Post]]], site: SiteContext) -> str:
     """/tags/ (Kind "taxonomy"): see `_terms_index`."""
     return _terms_index(tags, site, "Tags", "/tags/")
-
-def categories_index(site: SiteContext) -> str:
-    """/categories/ (Kind "taxonomy"): the unused `categories` taxonomy's
-    own terms page -- no post in this corpus ever sets `categories:`, so
-    this is always the zero-terms case of `_terms_index`, confirmed
-    against a real Hugo build (`<ul class="terms-tags">` with no `<li>`
-    at all)."""
-    return _terms_index([], site, "Categories", "/categories/")
 
 def _render_inline_markdown_entities(text: str) -> str:
     """Like `_render_inline_markdown`, but through `markdown.render_entities`
