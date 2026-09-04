@@ -40,7 +40,7 @@ def _go_string_zone(post: Post) -> str:
     Location, whose String() has no name to print and just repeats the
     offset instead: "+0000 +0000". Confirmed against Hugo's own output
     built with this site's real deploy environment
-    (`TZ=America/Los_Angeles`, from .github/workflows/hugo.yaml) -- LA is
+    (`TZ=America/Los_Angeles`, from .github/workflows/deploy.yaml) -- LA is
     never at UTC+0 in any season, so this is deterministic, unlike
     building under this sandbox's own local zone (Europe/London), which
     intermittently resolves the same unnamed offset to "GMT" every winter."""

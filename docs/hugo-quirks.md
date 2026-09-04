@@ -273,7 +273,7 @@ UTC+0 offset — but that's an artifact of the *testing* environment, not of
 Hugo's actual logic, which depends only on how the date string itself was
 written, not on the build machine's `TZ` at all. (Separately, the real
 production build **is** pinned via `TZ=America/Los_Angeles` in
-`.github/workflows/hugo.yaml`, which was necessary to get a correct baseline
+`.github/workflows/deploy.yaml`, which was necessary to get a correct baseline
 to compare against in the first place.)
 
 **Where we reproduce it.** `generator/content.py`: `Post.date_zone_named:
