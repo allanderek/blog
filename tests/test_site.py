@@ -50,9 +50,11 @@ def test_write_section_paginates_a_tag_listing_too(tmp_path: Path):
     assert "application/ld+json" in page1
 
 def test_page_1_alias_stub_is_written_even_for_a_single_page_listing(tmp_path: Path):
-    # Nothing in check-site.sh asserts this stub exists; only compare.py
-    # against Hugo's own `disableAliases = false` output catches it if a
-    # future change starts skipping it for a listing with just one page.
+    # Nothing in check-site.sh asserts this stub exists, so this test is
+    # the only thing standing between a future change and silently
+    # dropping it for a listing with just one page. It used to be backed by
+    # compare.py against Hugo's own `disableAliases = false` output; that
+    # harness is gone with the migration, so this is now the whole guard.
     _write_section(tmp_path, "/posts/", _posts(1), _site())
     stub = tmp_path / "posts" / "page" / "1" / "index.html"
     assert stub.exists()

@@ -822,16 +822,17 @@ a visually equivalent asset.
 
 ### Accepted typographic drift: smart-quote direction, dashes, ellipsis
 
-`compare.py`'s `_TYPOGRAPHIC` allow-list (and the `‘’“”–—…` character
-normalisation next to it) treats these as equivalent between the two builds,
-never reported as a difference:
+The migration's comparison harness treated these as equivalent between the two
+builds and never reported them as a difference (`compare.py`'s `_TYPOGRAPHIC`
+allow-list, plus the `‘’“”–—…` character normalisation beside it — the harness
+was deleted once Hugo was gone, and is recoverable from git history):
 
 - `&rsquo;`/`&lsquo;` (and the literal `’`/`‘` characters) both fold to `'`
 - `&ldquo;`/`&rdquo;` (and `“`/`”`) both fold to `"`
 - `&ndash;`/`&mdash;` (and `–`/`—`) fold to `--`/`---`
 - `&hellip;` (and `…`) folds to `...`
 
-This is a deliberate spec-level decision (`compare.py`'s own comment: "Only
+This was a deliberate spec-level decision (`compare.py`'s own comment: "Only
 these entities are typographic equivalences on the accepted-drift
 allow-list... Everything else — crucially `&lt; &gt; &amp; &quot; &#39;` — is
 structural markup/escaping and must stay untouched"), not an oversight: it

@@ -69,7 +69,9 @@ def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteConte
     Hugo's `disableAliases = false` emits for every paginated listing --
     even for a single-page one, matching Hugo (see `pages.alias_stub`) --
     nothing in check-site.sh asserts that stub exists, so it is easy to
-    silently drop; `compare.py` is what catches it. `title` is threaded
+    silently drop; `tests/test_site.py`'s
+    `test_page_1_alias_stub_is_written_even_for_a_single_page_listing` is
+    what catches it. `title` is threaded
     straight through to `list_page` -- see its docstring for why a tag
     listing must pass its real front-matter spelling here rather than
     leaving it to derive one. `taxonomy` is also threaded straight
