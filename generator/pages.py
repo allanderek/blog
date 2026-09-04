@@ -32,19 +32,6 @@ _ISO_Z = "%Y-%m-%dT%H:%M:%SZ"             # JSON-LD datePublished / dateModified
 _GO_STRING = "%Y-%m-%d %H:%M:%S +0000"    # time.Time's default String() form, zone appended separately
 _HUMAN = "%B {day}, %Y"                     # PaperMod's default "January 2, 2006"
 
-def _go_string_zone(post: Post) -> str:
-    """The zone text Go's time.Time.String() appends after the numeric
-    offset. A bare front-matter date or a "Z" suffix parses to Go's named
-    "UTC" `time.Location`, which String()s as "+0000 UTC". An explicit
-    numeric offset ("+00:00") instead produces an unnamed fixed-offset
-    Location, whose String() has no name to print and just repeats the
-    offset instead: "+0000 +0000". Confirmed against Hugo's own output
-    built with this site's real deploy environment
-    (`TZ=America/Los_Angeles`, from .github/workflows/deploy.yaml) -- LA is
-    never at UTC+0 in any season, so this is deterministic, unlike
-    building under this sandbox's own local zone (Europe/London), which
-    intermittently resolves the same unnamed offset to "GMT" every winter."""
-    return "UTC" if post.date_zone_named else "+0000"
 
 _ANCHOR_RE = re.compile(r'(<h[1-6] id="([^"]+)".+)(</h[1-6]>)')
 
@@ -722,7 +709,13 @@ def _post_meta_core(post: Post, site: SiteContext) -> str:
     and a list page's `<footer class="entry-footer">` (`_list_entry`),
     which uses the identical partial but without the trailing blank-line
     partial calls only the post layout leaves room for."""
-    go_string = post.date.strftime(_GO_STRING) + " " + _go_string_zone(post)
+    # Every post date in this corpus is UTC; the label is fixed rather
+    # than derived. Hugo printed "+0000 UTC" for a bare/"Z" date but
+    # "+0000 +0000" for an explicit "+00:00" one -- the same instant
+    # labelled two ways, purely because Go prints a named and an
+    # unnamed time.Location differently. See docs/hugo-quirks.md
+    # quirk 7.
+    go_string = post.date.strftime(_GO_STRING) + " UTC"
     human = post.date.strftime(_HUMAN.format(day=post.date.day))
     return (f"<span title='{go_string}'>{human}</span>"
             f"&nbsp;·&nbsp;{html.esc(site.author)}")

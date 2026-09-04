@@ -277,7 +277,7 @@ deep link to one of those 20 posts' `h1`-level anchors for no benefit.
 
 ---
 
-## 7. Post-meta date tooltip: zone text depends on the date's own format, not the reader's or the build machine's timezone
+## 7. FIXED — Post-meta date tooltip: zone text depends on the date's own format, not the reader's or the build machine's timezone
 
 **What Hugo does (the trap, and the actual rule).** The `<span
 title="...">` tooltip on each post's date renders Go's `time.Time` zone as
@@ -315,6 +315,16 @@ baseline under `TZ=America/Los_Angeles`).
 instant in UTC; the distinction conveys no information to a reader and exists
 only because Go's `time.Time` happens to print named and unnamed zero-offset
 locations differently. Simplify to one consistent zone label for every post.
+
+**Status. Done (2026-09-04).** `generator/pages.py`: `_post_meta_core` appends
+a fixed `" UTC"`, and `_go_string_zone` is gone. 46 of 177 posts used the
+`+00:00` front-matter form and rendered `+0000 +0000`; all 177 now read
+`+0000 UTC`, changing 78 built files. `Post.date_zone_named` and
+`content.py`'s `_date_zone_named()`/`_EXPLICIT_OFFSET_RE` were removed with
+it -- the field existed only to carry this distinction, so keeping it would
+have left the parser deriving a value nothing reads. Pinned by
+`test_post_meta_date_tooltip_always_says_utc`, which asserts all three
+front-matter date forms produce the same label.
 
 ---
 
@@ -422,7 +432,7 @@ nothing about it is Hugo-specific baggage worth removing.
 
 ---
 
-## 11. The CV item's empty `<title></title>` and `pubDate` of year 0001 in the root RSS
+## 11. FIXED — The CV item's empty `<title></title>` and `pubDate` of year 0001 in the root RSS
 
 **What Hugo does.** The root RSS feed (`/index.xml`) includes not just posts
 but every `Kind: "page"` content file site-wide — `content/cv.md` and
@@ -452,6 +462,17 @@ heading, e.g. "Curriculum Vitae") and either a sensible `pubDate` (e.g. the
 site's launch date, or omit `pubDate` entirely — RSS 2.0 allows it) or drop
 `pubDate` rather than emit a nonsensical year-1 date. Purely presentational,
 no downside to changing it.
+
+**Status. Done (2026-09-04).** `generator/feeds.py`: `_pub_date_line()` omits
+`<pubDate>` entirely for an entry with no real date, so both non-post extras
+(the CV and the consulting page) now simply have no date element rather than
+Go's zero time written out in full. The CV item takes its title from
+`content/cv.toml`'s `page_title` ("Allan Clark Curriculum Vitae") -- `cv.md`'s
+own `title` is deliberately empty, since the page sets `hidePageTitle`. Real
+posts keep their `<pubDate>` untouched; two built files change. `_ZERO_PUBDATE`
+is gone with the behaviour. Pinned by
+`test_root_feed_extras_have_no_pubdate_and_a_real_title` and
+`test_a_real_post_still_has_its_pubdate`.
 
 ---
 

@@ -36,6 +36,24 @@ def _post(title: str = DANGEROUS_TITLE) -> Post:
 def _site() -> SiteContext:
     return SiteContext(title="Test Site", base_url="https://example.com")
 
+# docs/hugo-quirks.md quirk 7. Hugo labelled the same instant two ways --
+# "+0000 UTC" for a bare or "Z" date, "+0000 +0000" for an explicit
+# "+00:00" one -- because Go prints a named and an unnamed time.Location
+# differently. One label now, whatever the front matter said.
+def test_post_meta_date_tooltip_always_says_utc():
+    for raw in ("2024-01-01", "2024-01-01T09:00:00Z", "2024-01-01T09:00:00+00:00"):
+        page = post_page(_post_dated(raw), _site())
+        assert "+0000 UTC'" in page, raw
+        assert "+0000 +0000" not in page, raw
+
+def _post_dated(raw: str) -> Post:
+    import tempfile, pathlib as _pl
+    from generator.content import parse_post
+    d = _pl.Path(tempfile.mkdtemp())
+    f = d / "p.md"
+    f.write_text(f'---\ntitle: "T"\ndate: {raw}\ntags: [x]\n---\n\nBody\n')
+    return parse_post(f)
+
 def test_no_raw_tag_or_unescaped_special_chars_anywhere():
     # The blunt, whole-page check: the dangerous title's own "<script>"
     # must not survive as a real tag anywhere in the page. (The page

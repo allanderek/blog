@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from generator.content import Post, load_posts, parse_post
 
@@ -14,12 +14,10 @@ def test_parses_all_three_date_formats(tmp_path):
     assert len(posts) == 3
     assert posts["a"].date.year == 2026
     assert posts["b"].date.year == 2017
-    # Bare date and "Z" suffix both parse to Go's named "UTC" zone; an
-    # explicit numeric offset parses to an unnamed fixed-offset zone --
-    # invisible on the datetime itself, but it changes how Hugo formats it.
-    assert posts["a"].date_zone_named is True
-    assert posts["b"].date_zone_named is True
-    assert posts["c"].date_zone_named is False
+    # All three date forms -- bare, "Z"-suffixed and "+00:00" -- are the
+    # same instant, and now render one label. See docs/hugo-quirks.md
+    # quirk 7.
+    assert {p.date.tzinfo for p in posts.values()} == {timezone.utc}
 
 def test_body_excludes_front_matter(tmp_path):
     (tmp_path / "p.md").write_text(

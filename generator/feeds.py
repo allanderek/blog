@@ -96,14 +96,6 @@ def _channel_description(title: str, site: SiteContext) -> str:
     return f"Recent content in {title} on {site.title}"
 
 
-# Go's zero time.Time, formatted through Hugo's own RFC1123Z-ish layout --
-# what `content/cv.md`/`content/consulting.md` get for `<pubDate>`, since
-# neither sets a `date:` (confirmed against real output). Not computed via
-# `.strftime`: Python's "%Y" doesn't zero-pad year 1 to four digits the way
-# Go's "2006" does ("Mon, 01 Jan 1 00:00:00 +0000" vs. Hugo's real
-# "Mon, 01 Jan 0001 00:00:00 +0000"), so this is the one literal exception
-# to computing every other date in this module.
-_ZERO_PUBDATE = "Mon, 01 Jan 0001 00:00:00 +0000"
 _ZERO_DATE = datetime.min.replace(tzinfo=timezone.utc)   # Go's zero time.Time
 
 
@@ -114,14 +106,14 @@ class _RssEntry:
     `content/cv.md`/`content/consulting.md`'s own front matter
     (`_load_root_extras`), so `_rss_item` itself never has to know which.
     `weight`/`sort_date` exist only to feed `_hugo_page_order`; `pub_date`
-    is the already-formatted `<pubDate>` string (a `Post`'s real date, or
-    the literal `_ZERO_PUBDATE`), kept separate from `sort_date` because
-    Hugo's own sort key -- `.Date`, zero for both extras -- and its
-    `<pubDate>` -- `.PublishDate`, which prints as the same zero -- happen
-    to coincide here but are conceptually two different fields."""
+    is the already-formatted `<pubDate>` string, or None for an entry with
+    no real date (the two non-post extras), in which case the element is
+    omitted -- see `_pub_date_line`. It is kept separate from `sort_date`
+    because Hugo's own sort key (`.Date`) and its `<pubDate>`
+    (`.PublishDate`) are conceptually two different fields."""
     title: str
     permalink: str
-    pub_date: str
+    pub_date: str | None
     description: str          # already fully escaped, ready to insert as-is
     weight: int = 0
     sort_date: datetime = _ZERO_DATE
@@ -140,10 +132,10 @@ def _post_entry(post: Post, site: SiteContext) -> _RssEntry:
 def _load_root_extras(site: SiteContext) -> list[_RssEntry]:
     """`content/cv.md` and `content/consulting.md`: the two non-post
     `.RegularPages` Hugo's root RSS includes alongside every post (see
-    this module's docstring). Both set no `date:`, so both get
-    `_ZERO_PUBDATE` and sort last among same-weight entries -- cv.md's own
-    `weight: 10` is what actually puts it first overall; see
-    `_hugo_page_order`.
+    this module's docstring). Neither sets a `date:`, so neither gets a
+    `<pubDate>` at all (see `_pub_date_line`), and both sort last among
+    same-weight entries -- cv.md's own `weight: 10` is what actually puts
+    it first overall; see `_hugo_page_order`.
 
     The CV item's own `<description>` is `.Summary` of the CV page's own
     rendered content (`cv.render(cv.load(content/cv.toml))`) -- the same
@@ -158,9 +150,12 @@ def _load_root_extras(site: SiteContext) -> list[_RssEntry]:
     cv_content = cv_module.render(cv_module.load(_CV_TOML))
     cv_summary = markdown.extract_summary(cv_content)
     cv = _RssEntry(
-        title=html.esc(cv_meta.get("title", "")),
+        # cv.md's own `title` is deliberately empty (it sets
+        # `hidePageTitle`), which left this feed item with an empty
+        # <title>. The CV page's real title lives in content/cv.toml.
+        title=html.esc(cv_module.load(_CV_TOML).page_title),
         permalink=f"{site.base_url}/cv/",
-        pub_date=_ZERO_PUBDATE,
+        pub_date=None,
         description=html.esc_text(_absolutize(cv_summary, site)),
         weight=int(cv_meta.get("weight", 0)),
     )
@@ -168,7 +163,7 @@ def _load_root_extras(site: SiteContext) -> list[_RssEntry]:
     consulting = _RssEntry(
         title=html.esc(consulting_meta.get("title", "")),
         permalink=f"{site.base_url}{consulting_url}",
-        pub_date=_ZERO_PUBDATE,
+        pub_date=None,
         # `summary:` front matter overrides Hugo's auto-extracted
         # `.Summary` outright (a real Hugo feature) -- plain prose, one
         # escaping pass, same as any other already-`template.HTML` value
@@ -254,6 +249,19 @@ def _rss_item_description(post: Post, site: SiteContext) -> str:
     return html.esc_text(_absolutize(summary, site))
 
 
+def _pub_date_line(entry: "_RssEntry") -> str:
+    """The `<pubDate>` line, or nothing at all for an entry that has no
+    real date. Hugo emitted `Mon, 01 Jan 0001 00:00:00 +0000` for the two
+    non-post entries -- Go's zero time, formatted as if it were a date --
+    which is not a publication date so much as a missing one written out
+    in full. RSS 2.0 makes `<pubDate>` optional, so an absent date is now
+    an absent element. See docs/hugo-quirks.md quirk 11.
+    """
+    if entry.pub_date is None:
+        return ""
+    return f"      <pubDate>{entry.pub_date}</pubDate>\n"
+
+
 def _rss_item(entry: _RssEntry) -> str:
     # No <author>: site.Params.author is a plain string, not a map, so
     # rss.xml's `$authorEmail` (from `.email`) is always "" here and every
@@ -263,8 +271,7 @@ def _rss_item(entry: _RssEntry) -> str:
     return f"""    <item>
       <title>{entry.title}</title>
       <link>{entry.permalink}</link>
-      <pubDate>{entry.pub_date}</pubDate>
-      <guid>{entry.permalink}</guid>
+{_pub_date_line(entry)}      <guid>{entry.permalink}</guid>
       <description>{entry.description}</description>
     </item>"""
 

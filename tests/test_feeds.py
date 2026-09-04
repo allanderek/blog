@@ -55,6 +55,23 @@ def test_rss_item_has_no_author_tag():
     assert "<author>" not in out
 
 
+# docs/hugo-quirks.md quirk 11. The two non-post entries in the root feed
+# (the CV and the consulting page) set no date, and Hugo wrote that out as
+# Go's zero time -- "Mon, 01 Jan 0001 00:00:00 +0000" -- rather than
+# omitting the optional element. The CV's item title was empty besides.
+def test_root_feed_extras_have_no_pubdate_and_a_real_title():
+    out = rss([_post("p")], _site(), include_site_pages=True)
+    assert "0001" not in out
+    assert "<title></title>" not in out
+    cv = [i for i in out.split("<item>") if "/cv/" in i][0]
+    assert "<pubDate>" not in cv
+    assert "Curriculum Vitae" in cv
+
+def test_a_real_post_still_has_its_pubdate():
+    out = rss([_post("p")], _site(), include_site_pages=True)
+    post = [i for i in out.split("<item>") if "/posts/p/" in i][0]
+    assert "<pubDate>Mon, 01 Jan 2024 00:00:00 +0000</pubDate>" in post
+
 def test_rss_item_title_and_link_are_escaped():
     out = rss([_post("dangerous", title=DANGEROUS_TITLE)], _site(),
                base_path="/posts/", title="Posts")

@@ -19,17 +19,6 @@ class Post:
     featured_blurb: str | None = None
     description: str | None = None
     draft: bool = False
-    # Did the front-matter date have an explicit numeric UTC offset
-    # ("+00:00"), or was it left implicit (a bare date, or a "Z" suffix)?
-    # Both parse to the same instant, but Hugo's Go runtime resolves them to
-    # two different `time.Location`s: bare/"Z" dates get the named "UTC"
-    # zone, while an explicit numeric offset gets an unnamed fixed-offset
-    # zone. That distinction is invisible on `date` (both end up tzinfo=UTC
-    # here) but visible in Go's default time.Time formatting -- see
-    # pages.py's `_go_string_zone`.
-    date_zone_named: bool = True
-
-_EXPLICIT_OFFSET_RE = re.compile(r"[+-]\d{2}:?\d{2}$")
 
 def _parse_date(raw: str) -> datetime:
     raw = raw.strip().strip('"').strip("'")
@@ -39,10 +28,6 @@ def _parse_date(raw: str) -> datetime:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
-
-def _date_zone_named(raw: str) -> bool:
-    raw = raw.strip().strip('"').strip("'")
-    return not _EXPLICIT_OFFSET_RE.search(raw)
 
 def _parse_list(raw: str) -> list[str]:
     """Split a flat, flow-style YAML list, respecting quoted commas."""
@@ -120,7 +105,6 @@ def parse_post(path: Path) -> Post:
         featured_blurb=meta.get("featuredBlurb"),
         description=meta.get("description"),
         draft=bool(meta.get("draft", False)),
-        date_zone_named=_date_zone_named(raw_date),
     )
 
 def load_posts(root: Path, now: datetime | None = None) -> list[Post]:
