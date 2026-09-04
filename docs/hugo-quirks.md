@@ -19,9 +19,13 @@ Hugo is no longer part of this project's toolchain, is there any reason left
 to be bug-compatible with it? "Keep" means yes (URL stability, genuine user
 value, or the cost of change exceeds the benefit); "stop" means no.
 
+Entries acted on since carry a **Status** line saying so, and the title says
+FIXED. The analysis is left standing rather than deleted: it is the record of
+why the old behaviour existed, and it is what makes the change reviewable.
+
 ---
 
-## 1. The `htmlUnescape`-before-strip content-drop bug (JSON-LD `articleBody`/`wordCount`)
+## 1. FIXED — The `htmlUnescape`-before-strip content-drop bug (JSON-LD `articleBody`)
 
 **What Hugo does.** The JSON-LD `articleBody`/`wordCount` fields come from
 Hugo's `.Content | safeJS | htmlUnescape | plainify` pipeline — it decodes
@@ -61,6 +65,21 @@ state for plain-text extraction. Once nothing needs to diff against Hugo's
 `articleBody`, extract plain text with a normal, non-lossy tag-strip (decode
 entities *after* stripping tags, not before) so `dsls` and
 `setting-up-nextcloud` get correct JSON-LD again.
+
+**Status. Done (2026-09-04).** `generator/markdown.py`: `plain()` now strips
+tags first and decodes entities afterwards, which cannot lose text. Stripping
+first is safe in a way decoding first is not -- the input is well-formed
+rendered HTML, so every `<` the stripper sees is a real tag. `articleBody`
+grew from 1377 to 3246 characters on `setting-up-nextcloud` (the `stateError`
+case, most of the article) and from 7151 to 7189 on `dsls`; 17 built files
+changed in total. `wordCount` is deliberately untouched: it never ran the
+`htmlUnescape` pass, so it never lost the words, and every post's count is
+unchanged. Pinned by `test_plain_keeps_escaped_text_that_would_decode_into_a_tag`
+and `test_plain_does_not_give_up_partway_through_the_document`.
+
+Decoded text now puts literal `<` into 25 posts' `articleBody`. That is safe:
+the JSON-LD writer emits it as `\u003c`, so no value can close the enclosing
+`<script>` element. All 361 JSON-LD blocks in a full build still parse.
 
 ---
 
@@ -299,7 +318,7 @@ locations differently. Simplify to one consistent zone label for every post.
 
 ---
 
-## 8. RSS double-escapes a front-matter `description`, but not the auto-summary fallback
+## 8. FIXED — RSS double-escapes a front-matter `description`, but not the auto-summary fallback
 
 **What Hugo does.** The RSS item description template is `{{ with
 .Description | html }}{{ . }}{{ else }}...{{ .Summary | html }}...{{ end
@@ -331,6 +350,15 @@ double-escapes a front-matter `description:`").
 value — a feed reader shows a literal `&#39;` instead of an apostrophe for any
 post using front-matter `description:`. Escape every RSS description exactly
 once.
+
+**Status. Done (2026-09-04).** `generator/feeds.py`: `_rss_item_description()`
+applies `html.esc_text` once on the `.Description` branch. One feed item
+changed (`underscore-type-param`, the only post whose front-matter
+`description:` contains an apostrophe): `Elm&amp;#39;s` is now `Elm&#39;s`.
+The `.Summary` fallback branch is untouched -- it was always escaped once, and
+the `&amp;#` sequences still in the feed come from that branch, where the
+summary is already-rendered HTML carrying goldmark's own entities. Pinned by
+`test_rss_description_escapes_a_front_matter_apostrophe_once`.
 
 ---
 

@@ -480,19 +480,26 @@ def plainify(s: str) -> str:
     return "".join(kept) if kept else out
 
 def plain(rendered_html: str) -> str:
-    """The JSON-LD `articleBody` pipeline, `.Content | safeJS | htmlUnescape
-    | plainify`: entities are decoded BEFORE tags are stripped. That order
-    is not reversible and Hugo loses text by it -- a fenced code block
-    containing a literal `<all source files>` renders as
-    `&lt;all source files&gt;`, decodes back into something Go's tag
-    stripper reads as a tag, and vanishes. Reproduced deliberately, since
-    `strip_tags` above is Go's own stripper and drops it the same way.
+    """Plain text for the JSON-LD `articleBody`: tags are stripped first,
+    then entities are decoded.
 
-    Which text the quirk swallows depends on where the syntax highlighter
-    put its `<span>` boundaries -- `&lt;html&gt;` split across two spans
-    survives, the same phrase inside one span does not -- so highlight.py
-    has to place them where Chroma does. See its `_drop_default_colour`."""
-    return plainify(_html_std.unescape(rendered_html))
+    Hugo does the reverse (`.Content | safeJS | htmlUnescape | plainify`)
+    and loses text by it, because decoding first turns escaped prose back
+    into things its tag stripper eats. A fenced code block containing a
+    literal `<all source files>` renders as `&lt;all source files&gt;`,
+    decodes into what Go reads as a tag, and vanishes; worse, a decoded
+    fragment that trips the stripper's error state (an Apache
+    `<Directory ...>` block) silently drops the whole rest of the article.
+    We reproduced that deliberately during the Hugo migration and stopped
+    once nothing needed to diff against Hugo's own `articleBody` -- see
+    docs/hugo-quirks.md quirk 1.
+
+    Stripping first is safe in a way decoding first is not: the input is
+    well-formed rendered HTML, so the only `<` the stripper sees are real
+    tags, and escaped prose survives to be decoded afterwards. This is the
+    same order the rest of the codebase already uses (`pages.py`'s
+    `_meta_description`, `extract_summary`'s plain form)."""
+    return _html_std.unescape(plainify(rendered_html))
 
 def word_count(rendered_html: str) -> int:
     """Hugo's `.WordCount`: fields of `.Plain`. NOT the `articleBody`

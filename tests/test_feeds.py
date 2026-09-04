@@ -74,13 +74,14 @@ def test_rss_description_uses_front_matter_description_when_set():
     assert "<description>A plain summary.</description>" in out
 
 
-def test_rss_description_escapes_a_front_matter_apostrophe_twice():
-    # Not a typo -- see _rss_item_description's own docstring for why
-    # `.Description` (a plain string) gets a second escaping pass that
-    # `.Summary` (already `template.HTML`) does not.
+def test_rss_description_escapes_a_front_matter_apostrophe_once():
+    # Hugo escaped this branch twice, so a feed reader showed a literal
+    # "&#39;" instead of an apostrophe -- but only for posts setting a
+    # front-matter `description:`. See docs/hugo-quirks.md quirk 8.
     out = rss([_post("p", description="Elm's type parameters.")], _site(),
                base_path="/posts/", title="Posts")
-    assert "<description>Elm&amp;#39;s type parameters.</description>" in out
+    assert "<description>Elm&#39;s type parameters.</description>" in out
+    assert "Elm&amp;#39;s" not in out
 
 
 def test_rss_item_link_local_url_within_summary_is_absolutized():

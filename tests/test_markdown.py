@@ -1,6 +1,6 @@
 from pathlib import Path
 from generator.content import parse_post
-from generator.markdown import (extract_summary, plainify, render,
+from generator.markdown import (extract_summary, plain, plainify, render,
                                 render_entities, summary, word_count)
 
 def test_headings_get_ids():
@@ -69,6 +69,29 @@ def test_word_count_matches_hugos_for_a_real_post():
     # Hugo's own .WordCount for this post is 1242.
     post = parse_post(Path("content/posts/dsls.md"))
     assert word_count(render_entities(post.body)) == 1242
+
+# docs/hugo-quirks.md quirk 1. Hugo decoded entities BEFORE stripping tags,
+# so escaped prose that decoded into something tag-shaped was eaten by its
+# tag stripper. We strip first and decode after, which cannot lose text.
+def test_plain_keeps_escaped_text_that_would_decode_into_a_tag():
+    # This post has a code block containing a literal "<all source files>",
+    # rendered as "&lt;all source files&gt;". Decoding first made Hugo read
+    # it as a tag and drop it from its own articleBody.
+    post = parse_post(Path("content/posts/dsls.md"))
+    assert "<all source files>" in plain(render_entities(post.body))
+
+def test_plain_does_not_give_up_partway_through_the_document():
+    # An Apache "<Directory ...>" block decoded into an attribute-like token
+    # that put Go's stripper into its error state, after which it emitted
+    # nothing at all -- silently truncating most of this article. The last
+    # paragraph must survive.
+    post = parse_post(Path("content/posts/setting-up-nextcloud.md"))
+    text = plain(render_entities(post.body))
+    assert "<Directory" in text
+    # The article's own closing sentence, well past the block that used to
+    # trip the stripper. Hugo's articleBody stopped at roughly 1377 chars.
+    assert text.rstrip().endswith(
+        "This just redirects all incoming http traffic to https.")
 
 def test_strikethrough_uses_del_not_s():
     # Goldmark emits <del>; markdown-it-py's default is <s>

@@ -240,19 +240,16 @@ def _rss_item_description(post: Post, site: SiteContext) -> str:
     # contextual attribute escaper -- `html.esc_text`, not `html.esc`; see
     # that function's docstring.
     if post.description:
-        # Doubly escaped, not a typo: `.Description` is a plain string (not
-        # `template.HTML`, unlike `.Summary`), and the template's
-        # `{{ with .Description | html }}{{ . }}` prints it through a
-        # SECOND, separate `{{ . }}` action -- which Go's contextual
-        # auto-escaper treats as its own bare text-node interpolation and
-        # escapes again, since only a pipeline ending in a recognised
-        # escaper (as `.Summary | html` below, printed directly with no
-        # `with`/reprint in between) is exempted. Confirmed against real
-        # output: a front-matter `description: "...Elm's..."` -- a real
-        # apostrophe, one escaping pass elsewhere on the very same page's
-        # own `<meta name="description">` -- comes out `Elm&amp;#39;s`
-        # here, not `Elm&#39;s`.
-        return html.esc_text(html.esc_text(post.description))
+        # Escaped once. Hugo escapes this branch TWICE -- its template
+        # prints `{{ with .Description | html }}{{ . }}`, and Go's
+        # contextual auto-escaper treats that inner `{{ . }}` as its own
+        # bare interpolation and escapes the already-escaped value again,
+        # while the `.Summary | html` branch below (printed directly, no
+        # `with`/reprint) is exempted. A feed reader then shows a literal
+        # `&#39;` instead of an apostrophe, but only for posts that set a
+        # front-matter `description:`. Reproduced during the Hugo
+        # migration, stopped now -- see docs/hugo-quirks.md quirk 8.
+        return html.esc_text(post.description)
     summary = markdown.extract_summary(markdown.render_entities(post.body))
     return html.esc_text(_absolutize(summary, site))
 
