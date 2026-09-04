@@ -4,7 +4,7 @@ tags: ["Elm"]
 date: 2021-01-28
 ---
 
-Jeroen Engels of elm-review and elm-radio fame has written [an excellent blog post](https://clouddev.pakk.io:4014/posts/2021-01-26-more-compile-time-laziness) regarding the safe removal of dead code in a purely functional language. The main take-away is that because there are no side-effects, **all** code dependencies are explicit. Because of this it's relatively easy to determine that code does **not** depend on other code, and therefore some code is dead (ie. unused), and can be safely removed.
+Jeroen Engels of elm-review and elm-radio fame has written [an excellent blog post](https://jfmengels.net/safe-dead-code-removal/) regarding the safe removal of dead code in a purely functional language. The main take-away is that because there are no side-effects, **all** code dependencies are explicit. Because of this it's relatively easy to determine that code does **not** depend on other code, and therefore some code is dead (ie. unused), and can be safely removed.
 
 You can extend this idea, and say the *order* that code is executed in, is only dependent on the explicit dependencies between code. Two days ago I wrote about [compile-time laziness](/posts/more-compile-time-laziness/), I showed that the following code:
 
