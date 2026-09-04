@@ -507,66 +507,47 @@ def word_count(rendered_html: str) -> int:
     loses to the quirk above are still counted."""
     return len(plainify(rendered_html).split())
 
-# --- Hugo's ExtractSummaryFromHTML ----------------------------------------
+# --- The auto-summary ------------------------------------------------------
 #
-# Verbatim transcription of resources/page/page_markup.go. The summary is a
-# PREFIX OF THE RENDERED HTML ending at a `</p>`, chosen by walking
-# paragraph by paragraph and counting whitespace-separated tokens of the
-# raw HTML -- tokens that look like a tag (`<a`, `</em>`) or an attribute
-# (`href="..."`) count as zero. That is why a paragraph of exactly 70 prose
-# words ends the summary when it is plain text but does NOT when it holds a
-# link: the link contributes `<a` (0) and `href="..."` (0) in place of the
-# words it swallowed. Note also that the inner loop's last-token case is
-# `s[wi:i]`, which drops the paragraph's final character -- kept, because
-# it decides real cases (a final one-character token counts 0, not 1).
-_HTML_TAG_TOKEN_RE = re.compile(r"^</?[A-Za-z]+>?$")
-_HTML_ATTR_TOKEN_RE = re.compile(r"^[A-Za-z]+=[\"']")
-
-def _is_probably_html_token(word: str) -> bool:
-    return (word == ">" or _HTML_TAG_TOKEN_RE.match(word) is not None
-            or _HTML_ATTR_TOKEN_RE.match(word) is not None)
-
-def _count_word(word: str) -> int:
-    word = _go_trim_space(word)
-    if not word or _is_probably_html_token(word):
-        return 0
-    return 1
+# The summary is a PREFIX OF THE RENDERED HTML ending at a `</p>`: walk the
+# document paragraph by paragraph, count the prose words in each, and cut
+# after the paragraph that reaches the limit. Cutting on `</p>` is what keeps
+# the result valid HTML and is also why a heading or a code fence never ends
+# a summary -- neither contains one, so the walk carries on to the next real
+# paragraph.
+#
+# Hugo counted whitespace-separated tokens of the RAW HTML instead, scoring
+# anything that looked like a tag (`<a`, `</em>`) or an attribute
+# (`href="..."`) as zero, dropping each paragraph's final character, and
+# advancing by len("</p") so every chunk after the first began on the
+# previous paragraph's ">". The effect was that a paragraph of exactly 70
+# prose words ended the summary when it was plain text but not when it held
+# a link, because the link's markup tokens displaced the words they wrapped.
+# It took a throwaway Hugo build and a read of the Go source to reconstruct,
+# and it produced an approximately-70-word summary either way. We count
+# prose words now. See docs/hugo-quirks.md quirk 3.
 
 def _extract_summary(content_html: str, num_words: int) -> tuple[str, bool]:
-    """The algorithm behind `extract_summary`, plus the one thing every
-    caller so far has thrown away: whether it actually cut anything short
-    (Hugo's `.Truncated`, which list.html's post-entry summaries use to
-    decide whether to append a literal "..."). The word-count walk can hit
-    `num_words` while processing the document's OWN LAST paragraph -- an
-    early `return` out of the loop that nonetheless keeps every paragraph,
-    same as falling all the way through -- so truncated is not "returned
-    mid-walk" but "something real is left over after the cut point"."""
+    """The summary prefix, and whether anything was actually cut (Hugo's
+    `.Truncated`, which list.html uses to decide whether to append a
+    literal "..."). Reaching the limit inside the document's own last
+    paragraph keeps the whole document and reports not-truncated, so
+    `truncated` means "something real is left over", not "we returned
+    early"."""
     if num_words <= 0:
         return content_html, False
     count = 0
     j = 0
-    high = len(content_html)
-    while j < high:
-        s = content_html[j:]
-        closing = s.find("</p>")
+    while j < len(content_html):
+        closing = content_html.find("</p>", j)
         if closing == -1:
             break
-        s = s[:closing]
-        wi = 0
-        last = len(s) - 1
-        for i, r in enumerate(s):
-            if _go_is_space(r) or i == last:
-                count += _count_word(s[wi:i])
-                wi = i
-                if count >= num_words:
-                    break
+        count += len(plainify(content_html[j:closing]).split())
+        cut = closing + len("</p>")
         if count >= num_words:
-            cut = j + closing + 4
-            truncated = _go_trim_space(content_html[cut:]) != ""
-            return _go_trim_space(content_html[:cut]), truncated
-        # Hugo advances by len("</p") only, so the next paragraph's chunk
-        # starts on the '>' -- which countWord then scores as zero.
-        j += closing + 3
+            rest = _go_trim_space(content_html[cut:])
+            return _go_trim_space(content_html[:cut]), rest != ""
+        j = cut
     return _go_trim_space(content_html), False
 
 def extract_summary(content_html: str, num_words: int = 70) -> str:

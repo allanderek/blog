@@ -25,25 +25,27 @@ def test_summary_ends_at_the_paragraph_that_reaches_the_limit():
     assert len(text.split()) == 70
     assert text.endswith("I still think my minor syntax tweak should be adopted.")
 
-def test_a_links_markup_is_not_counted_as_words():
+def test_a_links_words_count_like_any_others():
     # Structurally the same post as above -- a first paragraph of exactly 70
-    # prose words -- but seven of those words sit inside a link. `<a` and
-    # `href="..."` both count zero and they swallowed the word next to them,
-    # so the paragraph is worth 63 and Hugo runs on into the second one.
+    # prose words -- but seven of them sit inside a link. Hugo scored `<a`
+    # and `href="..."` as zero and let the attribute swallow the word beside
+    # it, making the paragraph worth 63 and running the summary on into the
+    # second one. A word is a word now, wherever it sits.
     post = parse_post(Path("content/posts/link-python-constant-weirdness.md"))
     text = summary(post.body)
-    assert len(text.split()) == 107
-    assert text.endswith("which is not a keyword but is dedicated syntax).")
+    assert len(text.split()) == 70
+    assert text.endswith("the differences are likely an historical anomaly.")
 
-def test_summary_counts_a_code_blocks_own_markup_and_text():
-    # The limit is reached inside a syntax-highlighted block, whose text and
-    # per-line span markup both count. Ending there is not possible -- only a
-    # `</p>` ends a summary -- so it runs on to the paragraph after it.
+def test_summary_runs_on_to_the_paragraph_after_a_code_block():
+    # The limit falls inside a code block, which cannot end a summary --
+    # only a `</p>` can -- so it runs on to the end of the next paragraph.
+    # This is the one part of the old rule that survives; what changed is
+    # that the block's own per-line <span> markup no longer counts as
+    # words, so the cut lands sooner.
     post = parse_post(Path("content/posts/minor-refactorings.md"))
     text = summary(post.body)
-    assert len(text.split()) == 89
-    assert "host_name = self.connection.getsockname()[0]" in text
-    assert text.endswith("Or even, if you prefer:")
+    assert len(text.split()) == 72
+    assert text.endswith("we can re-write the above code as:")
 
 def test_summary_can_end_inside_a_blockquote():
     # The `</p>` that ends the summary is the one nested inside a

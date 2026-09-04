@@ -83,7 +83,7 @@ the JSON-LD writer emits it as `\u003c`, so no value can close the enclosing
 
 ---
 
-## 2. JSON-LD isn't built with `encoding/json` — two different escaping strengths
+## 2. FIXED — JSON-LD isn't built with `encoding/json` — two different escaping strengths
 
 **What Hugo does.** The JSON-LD `<script type="application/ld+json">` block is
 built by interpolating Go template values into text, not via
@@ -111,9 +111,30 @@ standard JSON string escaper (e.g. `json.dumps`-equivalent quoting) for every
 JSON-LD field. There is no reason to keep two inconsistent escaping strengths
 once nothing needs to match Hugo's specific auto-escaper output byte-for-byte.
 
+**Status. Done (2026-09-04).** `generator/pages.py`: `_js_value` and
+`_js_string_inner` are replaced by a single `_json_str()` built on
+`json.dumps`. Six posts changed -- those whose titles contain an apostrophe or
+a `/`, which the `name` field alone used to escape (`python\u0027s`, `Dynamically\/Statically`).
+The parsed JSON was always equivalent; what changed is that the same string
+now produces the same bytes in every field.
+
+`<`, `>` and `&` are still escaped as `\u00XX`, which `json.dumps` does not do
+on its own. That is deliberate and load-bearing rather than cosmetic: the
+block sits in an HTML `<script>` element, whose content is scanned for
+`</script` before any JSON parser runs, and quirk 1's fix puts literal `<`
+into 25 posts' `articleBody`. Pinned by
+`test_jsonld_escapes_every_field_the_same_way` and
+`test_jsonld_survives_a_script_tag_in_the_content`.
+
+The safety test asserts that each block still *parses*, not that it contains
+no `<`. A block that genuinely breaks out is truncated by the extracting
+regex at the injected `</script>`, so it contains no angle bracket left to
+find -- the first version of that test passed for exactly that reason. A
+truncated block is invalid JSON, which is also what a browser would choke on.
+
 ---
 
-## 3. The auto-summary truncation algorithm
+## 3. FIXED — The auto-summary truncation algorithm
 
 **What Hugo does.** `.Summary`/`.Description`/JSON-LD `description` truncate at
 ~70 words (`summaryLength`, Hugo's default), but "words" are **not** prose
@@ -168,6 +189,31 @@ truncate long posts to a short auto-summary around a paragraph boundary — but
 replace the mechanism with a plain prose-word count over the extracted text.
 The exact cut point will shift slightly on some posts; that's fine once
 nothing needs to match Hugo's output.
+
+**Status. Done (2026-09-04).** `generator/markdown.py`: `_extract_summary()`
+counts the prose words in each paragraph (`plainify(chunk).split()`) and cuts
+after the paragraph that reaches the limit. The `</p>` boundary is kept -- it
+is what makes the summary a valid HTML prefix, and why a heading or a fence
+still never ends one. Hugo's three incidental details are gone with the token
+scoring: the dropped final character, the advance by `len("</p")` that started
+each chunk on the previous `>`, and the zero-scoring of tag and attribute
+tokens. `_count_word`, `_is_probably_html_token` and their two regexes were
+removed as dead.
+
+23 built files changed, and only 4 posts' `<meta name="description">` moved at
+all. Each moved for the better: `minor-refactorings` and
+`left-to-right-and-where-syntax` used to run past a paragraph into a code
+block, because the block's own per-line `<span>` markup scored as tokens.
+Summary lengths stayed comparable (mean 107.9 to 107.4 words) -- the cut lands
+sooner in prose terms but the paragraph boundary dominates. Every summary
+still ends on a block close tag, and 175 of 177 posts still report
+`.Truncated`.
+
+Two tests existed only to pin the old rule and are rewritten:
+`test_a_links_words_count_like_any_others` (was
+`..._markup_is_not_counted_as_words`) and
+`test_summary_runs_on_to_the_paragraph_after_a_code_block` (was
+`test_summary_counts_a_code_blocks_own_markup_and_text`).
 
 ---
 

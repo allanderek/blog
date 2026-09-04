@@ -10,6 +10,7 @@ no post in this corpus actually sets (cover images, ShowToc, canonicalURL,
 from __future__ import annotations
 import html as _html_std
 import itertools
+import json
 import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
@@ -49,40 +50,35 @@ def _minimal_html_escape(s: str) -> str:
     whole-description pass)."""
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-_JS_ESCAPES = {
-    "\\": "\\\\", '"': '\\"',
-    "&": "\\u0026", "<": "\\u003c", ">": "\\u003e",
-    "\n": "\\n", "\r": "\\r", "\t": "\\t",
-}
-_JS_ESCAPE_RE = re.compile("|".join(re.escape(c) for c in _JS_ESCAPES))
-
-# The JSON-LD script isn't built with encoding/json at all: Go's
-# html/template auto-detects that these `{{ }}` placeholders sit inside a
-# <script type="application/ld+json"> element and runs its own JS-context
-# escaper on them instead -- confirmed by "&rsquo;" coming out as
-# "&rsquo;" (the literal entity text's own "&" getting the SAME &
-# treatment a real JSON encoder would never apply to already-encoded text).
+# The JSON-LD <script type="application/ld+json"> block is assembled by
+# interpolating values into a template string, so every value has to arrive
+# already quoted and escaped as a JSON string literal. `_json_str` is the
+# one escaper that does it.
 #
-# Two distinct forms of that escaper are used, matching how each field is
-# written in schema_json.html:
-#   - most fields interpolate with no surrounding quotes in the template
-#     source (`"headline": {{ .Title | plainify}},`) -- Go supplies the
-#     quotes itself and, needing nothing more than valid JSON, does not
-#     bother escaping an apostrophe or a bare "/". That's `_js_value`.
-#   - exactly one field, BlogPosting's own "name", is written INSIDE
-#     literal quotes already present in the template source
-#     (`"name": "{{ .Title | plainify }}",`) -- Go's escaper for use
-#     inside an *existing* string is more conservative, additionally
-#     escaping both. Confirmed against one title containing an apostrophe
-#     ("Link: python's..." -> unescaped in "headline", "\u0027" in "name")
-#     and another containing "/" ("Dynamically/Statically..." -> unescaped
-#     in "headline", "\/" in "name"). That's `_js_string_inner`.
-def _js_string_inner(s: str) -> str:
-    escaped = _JS_ESCAPE_RE.sub(lambda m: _JS_ESCAPES[m.group(0)], s)
-    return escaped.replace("'", "\\u0027").replace("/", "\\/")
+# Hugo used two, at different strengths, and not by design: its templates
+# were never written against a real JSON serializer, so Go's html/template
+# inferred the strength from whatever quote characters happened to surround
+# each placeholder in the template source. A field written
+# `"headline": {{ . }}` got Go's quotes and minimal escaping; the one field
+# written `"name": "{{ . }}"` sat inside literal quotes and got a more
+# conservative pass that also escaped "'" and "/". The same title therefore
+# came out as `python's` in one field and `python\u0027s` in another. See
+# docs/hugo-quirks.md quirk 2.
+#
+# `<`, `>` and `&` are escaped as \u00XX even though JSON does not require
+# it. That is not decoration: this string is embedded in an HTML <script>
+# element, whose content is parsed for "</script" before any JSON parsing
+# happens, so an unescaped "<" in post content could close the block early.
+# markdown.plain() puts literal "<" into the articleBody of 25 posts (see
+# quirk 1), which makes this load-bearing rather than theoretical.
+_HTML_UNSAFE = {"<": "\\u003c", ">": "\\u003e", "&": "\\u0026"}
 
-def _js_value(s: str) -> str:
-    return '"' + _JS_ESCAPE_RE.sub(lambda m: _JS_ESCAPES[m.group(0)], s) + '"'
+def _json_str(s: str) -> str:
+    """One JSON string literal, quotes included, safe inside <script>."""
+    out = json.dumps(s, ensure_ascii=False)
+    for ch, esc in _HTML_UNSAFE.items():
+        out = out.replace(ch, esc)
+    return out
 
 _TAG_WORD_START_RE = re.compile(r"(^|[ -])([a-zA-Z])")
 
@@ -419,10 +415,7 @@ def _breadcrumb_list(items: list[tuple[str, str]]) -> str:
     (`/tmp/t8-hugo/tags/python/index.html` and `/tmp/t8-hugo/tags/index.html`
     both have zero `application/ld+json` scripts). `items` is (name, url)
     pairs in position order; `name` must already be a JSON-ready value
-    (`_js_value(...)` -- see that function's docstring for why the
-    BlogPosting's own "name" field needs `_js_string_inner` instead, a
-    distinction no breadcrumb name needs since none is ever written
-    inside pre-existing literal quotes)."""
+    (`_json_str(...)`)."""
     entries = ",\n".join(f"""    {{
       "@type": "ListItem",
       "position":  {position} ,
@@ -447,28 +440,29 @@ def _blog_posting_json(headline: str, name_inner: str, description: str, keyword
     (content/archives.md, a Kind "page" with no post body of its own but
     still `.IsPage`, so it gets the exact same block, just built from its
     own front matter/zero values instead). `headline`/`name_inner` are
-    almost always the same title; kept as two params because `name_inner`
-    goes through `_js_string_inner` (see that function's docstring) while
-    `headline` and everything else use `_js_value`."""
-    keywords_js = ", ".join(_js_value(k) for k in keywords)
+    almost always the same title. They are kept as two params because
+    Hugo escaped them at two different strengths; both now go through
+    `_json_str`, so a caller passing the same string twice gets the same
+    output twice. See docs/hugo-quirks.md quirk 2."""
+    keywords_js = ", ".join(_json_str(k) for k in keywords)
     return f"""<script type="application/ld+json">
 {{
   "@context": "https://schema.org",
   "@type": "BlogPosting",
-  "headline": {_js_value(headline)},
-  "name": "{_js_string_inner(name_inner)}",
-  "description": {_js_value(description)},
+  "headline": {_json_str(headline)},
+  "name": {_json_str(name_inner)},
+  "description": {_json_str(description)},
   "keywords": [
     {keywords_js}
   ],
-  "articleBody": {_js_value(article_body)},
+  "articleBody": {_json_str(article_body)},
   "wordCount" : "{word_count}",
   "inLanguage": "en",
   "datePublished": "{published_z}",
   "dateModified": "{modified_z}",
   "author":{{
     "@type": "Person",
-    "name": {_js_value(site.author)}
+    "name": {_json_str(site.author)}
   }},
   "mainEntityOfPage": {{
     "@type": "WebPage",
@@ -476,7 +470,7 @@ def _blog_posting_json(headline: str, name_inner: str, description: str, keyword
   }},
   "publisher": {{
     "@type": "Organization",
-    "name": {_js_value(site.title)},
+    "name": {_json_str(site.title)},
     "logo": {{
       "@type": "ImageObject",
       "url": "{site.base_url}/favicons/favicon.ico"
@@ -495,8 +489,8 @@ def _schema_json(post: Post, site: SiteContext, permalink: str, jsonld_descripti
     published_z = post.date.strftime(_ISO_Z)
 
     breadcrumbs = _breadcrumb_list([
-        (_js_value("Posts"), f"{site.base_url}/posts/"),
-        (_js_value(post.title), permalink),
+        (_json_str("Posts"), f"{site.base_url}/posts/"),
+        (_json_str(post.title), permalink),
     ])
     blog_posting = _blog_posting_json(
         post.title, post.title, jsonld_description, post.tags,
@@ -513,7 +507,7 @@ def _schema_json_archives(permalink: str, site: SiteContext) -> str:
     content (empty `articleBody`, "0" `wordCount`), and Go's zero
     `time.Time` for both dates -- this page sets no `date:` front matter
     at all. Confirmed against `/tmp/t9-hugo/archives/index.html`."""
-    breadcrumbs = _breadcrumb_list([(_js_value("Archive"), permalink)])
+    breadcrumbs = _breadcrumb_list([(_json_str("Archive"), permalink)])
     blog_posting = _blog_posting_json(
         "Archive", "Archive", "archives", [],
         "", "0", "0001-01-01T00:00:00Z", "0001-01-01T00:00:00Z", permalink, site,
@@ -523,9 +517,7 @@ def _schema_json_archives(permalink: str, site: SiteContext) -> str:
 def _schema_json_home(site: SiteContext) -> str:
     # schema_json.html's `.IsHome` branch: an Organization, not a
     # BreadcrumbList/BlogPosting pair. Every field here sits in the
-    # no-literal-quotes template position (`"name": {{ site.Title }},`), so
-    # `_js_value` -- not `_js_string_inner` -- is the right escaper for all
-    # of them; see that function's docstring for the distinction.
+    # `_json_str` escapes every field here, as everywhere else.
     #
     # site.Params.description is also piped through Hugo's `truncate 180`,
     # not reproduced here: this site's real description is 116 characters,
@@ -535,10 +527,10 @@ def _schema_json_home(site: SiteContext) -> str:
 {{
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": {_js_value(site.title)},
-  "url": {_js_value(site.base_url + "/")},
-  "description": {_js_value(site.description)},
-  "logo": {_js_value(site.base_url + "/favicons/favicon.ico")},
+  "name": {_json_str(site.title)},
+  "url": {_json_str(site.base_url + "/")},
+  "description": {_json_str(site.description)},
+  "logo": {_json_str(site.base_url + "/favicons/favicon.ico")},
   "sameAs": [
 
   ]
@@ -551,7 +543,7 @@ def _schema_json_section(name: str, permalink: str) -> str:
     the only section this generator builds yet, and its own `$bc_list` (a
     direct child of Home) is always a single self-referencing entry --
     confirmed against `/tmp/t8-hugo/posts/index.html`'s own JSON-LD."""
-    return _breadcrumb_list([(_js_value(name), permalink)])
+    return _breadcrumb_list([(_json_str(name), permalink)])
 
 def _theme_init_script() -> str:
     return """<script>
@@ -1334,7 +1326,7 @@ def _schema_json_content_page(title: str, permalink: str, jsonld_description: st
     archives.md's: a single self-referencing breadcrumb, and Go's zero
     `time.Time` for both `datePublished`/`dateModified` since neither page
     sets a `date:`."""
-    breadcrumbs = _breadcrumb_list([(_js_value(title), permalink)])
+    breadcrumbs = _breadcrumb_list([(_json_str(title), permalink)])
     blog_posting = _blog_posting_json(
         title, title, jsonld_description, [],
         article_body, str(word_count),

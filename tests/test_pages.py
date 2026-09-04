@@ -54,6 +54,40 @@ def _post_dated(raw: str) -> Post:
     f.write_text(f'---\ntitle: "T"\ndate: {raw}\ntags: [x]\n---\n\nBody\n')
     return parse_post(f)
 
+# docs/hugo-quirks.md quirk 2. Hugo escaped JSON-LD fields at two
+# different strengths depending on whether its template source happened to
+# wrap the placeholder in literal quotes, so the same title came out as
+# "python's" in one field and "python\u0027s" in another.
+def test_jsonld_escapes_every_field_the_same_way():
+    import json, re
+    page = post_page(_post(title="Link: python's / Go's \"quoting\""), _site())
+    block = [b for b in re.findall(
+        r'<script type="application/ld\+json">(.*?)</script>', page, re.S)
+        if '"@type": "BlogPosting"' in b][0]
+    doc = json.loads(block)
+    assert doc["headline"] == doc["name"]
+    assert "\\u0027" not in block and "\\/" not in block
+
+# The JSON-LD sits inside a <script> element, which the HTML parser scans
+# for "</script" before any JSON parser sees it. quirk 1's fix puts literal
+# "<" into real posts' articleBody, so this escaping is load-bearing.
+#
+# The assertion is that each block still PARSES. Asserting "no raw '<'"
+# would not work: the extracting regex stops at the first "</script>", so a
+# block that really did break out comes back truncated, and a truncated
+# block contains no angle bracket to find. Truncation instead shows up as
+# invalid JSON, which is the thing a browser would choke on too.
+def test_jsonld_survives_a_script_tag_in_the_content():
+    import json, re
+    post = _post(title="Closing </script> in a title")
+    post.body = "Code:\n\n```\n</script> and <all files>\n```\n"
+    page = post_page(post, _site())
+    blocks = re.findall(
+        r'<script type="application/ld\+json">(.*?)</script>', page, re.S)
+    assert len(blocks) == 2          # BreadcrumbList + BlogPosting
+    for block in blocks:
+        json.loads(block)            # raises if the element closed early
+
 def test_no_raw_tag_or_unescaped_special_chars_anywhere():
     # The blunt, whole-page check: the dangerous title's own "<script>"
     # must not survive as a real tag anywhere in the page. (The page
