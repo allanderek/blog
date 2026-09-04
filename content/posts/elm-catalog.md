@@ -5,7 +5,7 @@ date: 2021-01-04
 ---
 
 
-[Alex Korban](https://korban.net/) has released another version of his [Elm Catalog](https://korban.net/elm/catalog/packages). I think this is both very important work and very well done.
+[Alex Korban](https://korban.net/) has released another version of his [Elm Catalog](https://web.archive.org/web/20250321042907/https://korban.net/elm/catalog/packages). I think this is both very important work and very well done.
 
 This century it's become popular for languages to include a package/library manager. I'm not quite sure when this started to become popular but certainly in the 90s such package managers were not common. This lead to many different ways to install libraries, and mostly including a new dependency was a chore at best. So the introduction of package managers as part of a language's eco-system has been a major boon.
 

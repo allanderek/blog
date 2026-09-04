@@ -5,7 +5,7 @@ tags: ["python", "refactoring", "conditionals", "requests"]
 ---
 I have been reading through some of the [source code](https://github.com/kennethreitz/requests) from the [requests](https://docs.python-requests.org/en/master/) library. This is one of the more well-known, well-used, well-loved, and well-praised  Python libraries I know of. I came across some conditional code which I personally would refactor. A first refactor I'm pretty confident about whilst a second I'm less certain is an improvement. I'll detail them both and welcome any comments anyone has.
 
-A specific example of this kind of conditional comes in the [adapters module](https://github.com/kennethreitz/requests/blob/master/requests/adapters.py) specifically the [cert_verify method](https://github.com/kennethreitz/requests/blob/master/requests/adapters.py#L200). Here is the code in question, slightly snipped for brevity:
+A specific example of this kind of conditional comes in the [adapters module](https://web.archive.org/web/20230330093249/https://github.com/kennethreitz/requests/blob/master/requests/adapters.py) specifically the [cert_verify method](https://web.archive.org/web/20230330093249/https://github.com/kennethreitz/requests/blob/master/requests/adapters.py#L200). Here is the code in question, slightly snipped for brevity:
 
 ```python
     def cert_verify(self, conn, url, verify, cert):

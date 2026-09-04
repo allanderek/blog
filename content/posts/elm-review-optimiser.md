@@ -4,7 +4,7 @@ tags: ["programming", "Elm"]
 date: 2021-03-16
 ---
 
-I've written before about the prospect of [compile-time laziness](https://clouddev.pakk.io:4014/posts/2021-01-28-safe-dead-code-removal) and using [elm-review](https://package.elm-lang.org/packages/jfmengels/elm-review/latest/) to act as an elm-to-elm compiler pass.
+I've written before about the prospect of [compile-time laziness](/posts/safe-dead-code-removal/) and using [elm-review](https://package.elm-lang.org/packages/jfmengels/elm-review/latest/) to act as an elm-to-elm compiler pass.
 
 Obviously one way to implement compile-time laziness would be to fork the compiler. As I said previously the use of elm-review to do this instead is something of a low-risk route into this. If this works out particularly well it could be translated fairly easily into an internal compiler pass. An internal compiler pass would have the benefit that the output of the pass might not necessarily have to be valid Elm. It might also be faster because it would not involve the expensive operations of unparsing and re-parsing the Elm code. 
 

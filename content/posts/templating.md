@@ -8,7 +8,7 @@ When I first started writing web applications I was using Python, and pretty muc
 
 Anyway, even then I started attempting to generate HTML using primitives of the language. So when I encountered Elm, it seemed very natural to me and I took to it pretty much immediately. I think this represents something of a dichotomy, some programmers immediately like the way Elm generates HTML without templating others dislike it at first, or even put up with it indefinitely.
 
-I keep coming across Ocaml and ReasonML. Now I was a big fan of O'caml, the compiler I wrote for my PhD thesis was written in O'caml, so I'm generally quite open to web frameworks and other such things written in O'caml. The latest (to come across my feeds) is the [Dream web framework](https://aantron.github.io/dream/). Everytime I come across such a web framework, I get a little excited, then click through, and remember that ReasonML is a kind of quasi-templating language and my enthusiasm dips a little. Here is the example shown on the home page of the Dream web framework linked above:
+I keep coming across Ocaml and ReasonML. Now I was a big fan of O'caml, the compiler I wrote for my PhD thesis was written in O'caml, so I'm generally quite open to web frameworks and other such things written in O'caml. The latest (to come across my feeds) is the [Dream web framework](https://web.archive.org/web/20251009041212/https://aantron.github.io/dream/). Everytime I come across such a web framework, I get a little excited, then click through, and remember that ReasonML is a kind of quasi-templating language and my enthusiasm dips a little. Here is the example shown on the home page of the Dream web framework linked above:
 
 ```ocaml
 let hello who =
