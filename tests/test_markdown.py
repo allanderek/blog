@@ -117,6 +117,26 @@ def test_an_autolink_is_untouched_by_the_dead_link_rule():
     out = render("see https://example.com/x for more")
     assert '<a href="https://example.com/x">https://example.com/x</a>' in out
 
+# render/render_entities/plainify/_extract_summary are memoised on their
+# argument string (see markdown.py's "Render caching"). The property that
+# makes that safe is that changed input is a different key, so no edit can
+# ever be served a stale render. Worth pinning: if someone later re-keys
+# these on a path or a post id to stop the cache accumulating old bodies,
+# this is the test that should stop them.
+def test_editing_a_body_cannot_hit_a_stale_cache_entry():
+    first = render("# Title\n\nOriginal sentence.\n")
+    edited = render("# Title\n\nEdited sentence.\n")
+    assert "Original sentence." in first
+    assert "Edited sentence." in edited
+    assert "Original sentence." not in edited
+    # and going back gets the original again, not the edit
+    assert render("# Title\n\nOriginal sentence.\n") == first
+
+def test_memoised_render_is_still_deterministic():
+    body = "## A heading\n\nSome *prose* with a [link](https://example.com).\n"
+    assert render(body) == render(body)
+    assert render_entities(body) == render_entities(body)
+
 def test_strikethrough_uses_del_not_s():
     # Goldmark emits <del>; markdown-it-py's default is <s>
     out = render("~~gone~~")
