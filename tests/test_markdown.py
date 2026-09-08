@@ -6,56 +6,61 @@ from generator.markdown import (extract_summary, plain, plainify, render,
 def test_headings_get_ids():
     assert 'id="green-party"' in render("## Green Party")
 
-# Pins Hugo's auto-summary rule (resources/page/page_markup.go's
-# ExtractSummaryFromHTML, at the default SummaryLength of 70) against four
-# real posts of deliberately different shapes. Every expectation below was
-# read off Hugo's own `.Summary` for that post, captured with
-# `TZ=America/Los_Angeles direnv exec . hugo ...` -- the site's real deploy
-# environment. The rule is NOT "70 words of prose": it walks the rendered
-# HTML paragraph by paragraph, counting whitespace-separated tokens of the
-# MARKUP and scoring anything that looks like a tag ("<a", "</em>") or an
-# attribute (`href="..."`) as zero, then ends the summary at the first
-# `</p>` where the running count reaches 70.
+# The auto-summary rule (generator/markdown.py's `_extract_summary`): walk
+# the rendered HTML paragraph by paragraph, count the PROSE words in each,
+# and cut after the paragraph that reaches the limit. Cutting on `</p>` is
+# what keeps the result valid HTML, and why a heading or a fence never ends
+# a summary -- neither contains one.
+#
+# These build their own markdown rather than reading a real post. They used
+# to pin word counts of specific posts in content/, which was right while
+# the rule was being reverse-engineered from Hugo's behaviour on them -- but
+# it meant editing your own prose broke the build, which it duly did.
+def _words(prefix: str, n: int) -> str:
+    return " ".join(f"{prefix}{i}" for i in range(1, n + 1))
+
 def test_summary_ends_at_the_paragraph_that_reaches_the_limit():
-    # Seventy words of plain prose in the first paragraph, no markup in it
-    # at all: the count reaches exactly 70 there and the summary is that
-    # paragraph, even though a second one follows.
-    post = parse_post(Path("content/posts/elm-minor-imports-syntax-tweak.md"))
-    text = summary(post.body)
+    # Exactly 70 plain words in the first paragraph: the count reaches the
+    # limit there, so the summary is that paragraph and stops.
+    body = f"{_words('word', 70)}\n\nA second paragraph, which must not appear.\n"
+    text = summary(body)
     assert len(text.split()) == 70
-    assert text.endswith("I still think my minor syntax tweak should be adopted.")
+    assert text.endswith("word70")
+    assert "second paragraph" not in text
 
 def test_a_links_words_count_like_any_others():
-    # Structurally the same post as above -- a first paragraph of exactly 70
-    # prose words -- but seven of them sit inside a link. Hugo scored `<a`
-    # and `href="..."` as zero and let the attribute swallow the word beside
-    # it, making the paragraph worth 63 and running the summary on into the
-    # second one. A word is a word now, wherever it sits.
-    post = parse_post(Path("content/posts/link-python-constant-weirdness.md"))
-    text = summary(post.body)
+    # 63 bare words plus a seven-word link makes 70. Hugo scored `<a` and
+    # `href="..."` as zero and let the attribute swallow the word beside it,
+    # so this paragraph was worth 63 to it and the summary ran on into the
+    # next one. A word is a word now, wherever it sits.
+    link = "[one two three four five six seven](https://example.com/page)"
+    body = f"{_words('word', 63)} {link}\n\nA second paragraph, which must not appear.\n"
+    text = summary(body)
     assert len(text.split()) == 70
-    assert text.endswith("the differences are likely an historical anomaly.")
+    assert "second paragraph" not in text
 
 def test_summary_runs_on_to_the_paragraph_after_a_code_block():
-    # The limit falls inside a code block, which cannot end a summary --
-    # only a `</p>` can -- so it runs on to the end of the next paragraph.
-    # This is the one part of the old rule that survives; what changed is
-    # that the block's own per-line <span> markup no longer counts as
-    # words, so the cut lands sooner.
-    post = parse_post(Path("content/posts/minor-refactorings.md"))
-    text = summary(post.body)
-    assert len(text.split()) == 72
-    assert text.endswith("we can re-write the above code as:")
+    # The limit falls inside a fenced block, which cannot end a summary --
+    # only a `</p>` can -- so it runs on to the end of the paragraph after
+    # it, and stops there rather than taking the one beyond.
+    code = "```python\n" + "\n".join(f"x{i} = {i}" for i in range(1, 41)) + "\n```"
+    body = (f"{_words('word', 40)}\n\n{code}\n\n{_words('tail', 10)}\n\n"
+            "A third paragraph, which must not appear.\n")
+    text = summary(body)
+    assert text.endswith("tail10")
+    assert "x40 = 40" in text          # the block itself is inside the summary
+    assert "third paragraph" not in text
 
 def test_summary_can_end_inside_a_blockquote():
-    # The `</p>` that ends the summary is the one nested inside a
-    # blockquote, so Hugo's summary is not even well-formed HTML: it leaves
-    # the <blockquote> open. Reproduced rather than tidied up.
-    post = parse_post(Path("content/posts/needless-do-notation.md"))
-    body = post.body
+    # The `</p>` that ends the summary can be one nested inside a
+    # blockquote, which leaves the summary HTML with an unclosed
+    # <blockquote>. Recorded rather than tidied up: the callers all strip
+    # tags or plainify, so nothing renders the raw fragment.
+    body = (f"{_words('word', 40)}\n\n> {_words('quoted', 40)}\n\n"
+            "A paragraph after the quote.\n")
     html = extract_summary(render_entities(body))
     assert html.count("<blockquote>") - html.count("</blockquote>") == 1
-    assert summary(body).endswith("1 on average!!!. In other cases,")
+    assert summary(body).endswith("quoted40")
 
 # `.Plain` and `.WordCount` come from Hugo's tpl.StripHTML, which is not a
 # tag stripper with whitespace cleanup bolted on: a "\n" in the source
@@ -67,10 +72,15 @@ def test_plainify_makes_paragraph_ends_newlines_and_everything_else_spaces():
 def test_plainify_leaves_a_tagless_string_completely_alone():
     assert plainify("a  b\n\nc") == "a  b\n\nc"
 
-def test_word_count_matches_hugos_for_a_real_post():
-    # Hugo's own .WordCount for this post is 1242.
-    post = parse_post(Path("content/posts/dsls.md"))
-    assert word_count(render_entities(post.body)) == 1242
+def test_word_count_counts_prose_across_every_kind_of_block():
+    # .WordCount is the fields of .Plain, so it counts the text of a
+    # blockquote and a code block as well as a paragraph, and a link
+    # contributes its words but not its markup. 16 words below.
+    body = ("One two three four five.\n\n"
+            "> A quoted six seven.\n\n"
+            "```\ncode eight nine\n```\n\n"
+            "Ten [eleven twelve](https://example.com/x) thirteen.\n")
+    assert word_count(render_entities(body)) == 16
 
 # docs/hugo-quirks.md quirk 1. Hugo decoded entities BEFORE stripping tags,
 # so escaped prose that decoded into something tag-shaped was eaten by its
