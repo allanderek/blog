@@ -23,6 +23,7 @@ from markdown_it import MarkdownIt
 from markdown_it.common.utils import unescapeAll
 from markdown_it.token import Token as MdToken
 import functools
+from mdit_py_plugins.container import container_plugin
 from mdit_py_plugins.deflist import deflist_plugin
 from .slugs import Slugger
 from .highlight import go_escape_html, highlight
@@ -255,6 +256,17 @@ def _make_replacements(hellip: str, ndash: str, mdash: str):
 def _make_parser(entities: bool = False) -> MarkdownIt:
     md = MarkdownIt("gfm-like", {"typographer": True, "html": True})
     md.use(deflist_plugin)
+    # `::: update` ... `:::` wraps an editorial note added to a post after
+    # publication, rendered as <div class="update"> and styled by
+    # css/extended/update.css. The plugin's own default renderer already
+    # emits exactly that, so there is no custom render function here.
+    #
+    # A raw <div class="update"> in the markdown would work too -- html is
+    # enabled -- but it has a trap: without blank lines inside it, CommonMark
+    # treats the contents as raw HTML and "**Update:**" renders as those
+    # literal characters. This syntax has no such rule. ":::" appears nowhere
+    # in the corpus, so claiming it breaks nothing.
+    md.use(container_plugin, "update")
     md.enable(["replacements", "smartquotes", "linkify"])
     # Goldmark does not linkify bare domains like "coverage.py"; only schemes.
     # Disabling linkify wholesale also kills real "https://..." autolinks, so

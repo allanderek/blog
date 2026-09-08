@@ -137,6 +137,31 @@ def test_memoised_render_is_still_deterministic():
     assert render(body) == render(body)
     assert render_entities(body) == render_entities(body)
 
+# `::: update` wraps an editorial note added to a post after publication.
+def test_update_container_renders_a_div_with_markdown_inside():
+    out = render(":::update\n**Update:** a *note*.\n\nSecond para.\n:::\n")
+    assert out.startswith('<div class="update">')
+    assert "<strong>Update:</strong> a <em>note</em>." in out
+    assert out.count("<p>") == 2
+
+def test_update_container_accepts_a_space_after_the_colons():
+    assert render("::: update\nBody.\n:::\n").startswith('<div class="update">')
+
+# The reason for the custom syntax rather than a raw <div>: CommonMark
+# treats the contents of an HTML block as raw until a blank line, so a
+# <div> written without blank lines renders "**Update:**" as those literal
+# characters. The container has no such rule. If someone later swaps this
+# for a plain <div>, this is the difference they need to have noticed.
+def test_a_raw_div_without_blank_lines_does_not_render_its_markdown():
+    out = render('<div class="update">\n**Update:** a *note*.\n</div>\n')
+    assert "**Update:**" in out
+    assert "<strong>" not in out
+
+def test_a_colon_fence_is_not_claimed_from_ordinary_prose():
+    # ":::" only opens a container at the start of a line; a stray colon run
+    # inside a sentence must stay text.
+    assert "<div" not in render("A ratio written as a ::: b is just prose.\n")
+
 def test_strikethrough_uses_del_not_s():
     # Goldmark emits <del>; markdown-it-py's default is <s>
     out = render("~~gone~~")

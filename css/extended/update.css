@@ -1,0 +1,24 @@
+/* --- Update notes -------------------------------------------------------
+   `::: update` ... `:::` in a post, rendered as <div class="update"> -- an
+   editorial note added after publication. See generator/markdown.py.
+
+   A <div> rather than an <aside>: an aside claims the content is tangential,
+   and an update is often the opposite. In posts/poker-puzzle it carries the
+   puzzle the rest of the post depends on, the linked original having gone
+   offline.
+
+   Built from the theme's own tokens, so it follows light and dark without a
+   second rule. The "Update:" label is left to the prose rather than generated
+   here, so the wording stays the author's. */
+.update {
+    background: var(--entry);
+    border-left: 3px solid var(--tertiary);
+    border-radius: var(--radius);
+    padding: 1em 1.2em;
+    margin: var(--content-gap) 0;
+}
+
+/* Otherwise the last paragraph's own bottom margin pads the box unevenly. */
+.update > :last-child {
+    margin-bottom: 0;
+}
