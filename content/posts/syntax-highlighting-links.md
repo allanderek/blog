@@ -50,7 +50,7 @@ In this post the author is careful to make similar looking names take very diffe
 
 ## Syntax highlighting is a waste of an information channel
 
-Lastly Hillel Wayne discusses other uses for colour rather than highlighting the syntax:
+Lastly Hillel Wayne [discusses other uses for colour rather than highlighting the syntax](https://buttondown.com/hillelwayne/archive/syntax-highlighting-is-a-waste-of-an-information/):
 > Color carries a huge amount of information. Color draws our attention. Color distinguishes things. And we just use it to distinguish syntax.
 > Nothing wrong with distinguishing syntax. It's the "just" that bothers me.
 

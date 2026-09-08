@@ -13,7 +13,7 @@ someFunction param =
  let
    usefulValue = transform param
  in
- ... in which usefulValue is useed
+ ... in which usefulValue is used
 ```
 
 The issue here is that `param` is only used once to transform it into something that is more useful throughtout the rest of the scope of the function.
@@ -46,7 +46,7 @@ update message model =
     ...
 ```
 
-Now notice that `newModel` is used 4 times in the body of the `let-in`. Also note that it is the same type as `model` and hence an easy bug to make is to misuse `model` in place of `newModel`. I chose a `rollDice` example, because that likely uses `elm/random` and the new `Model` that it returns has the updated *seed* for the random number generator. It's a common bug in functional languages to forget to store the new *seed*. It's also likely a pernicious bug because basically everything works more or less as expected. You have to notice that, on certain paths, the subsequent numbers generated are not entirely 'random'. If the seed is sometimes used in some other way as well, then this can be pretty hard to spot. Anyway, this is the problem that *"ViewPattern Argument Transform"* solve. In this case, we would have to factor out the `RollDice` case into a function of its own:
+Now notice that `newModel` is used 4 times in the body of the `let-in`. Also note that it is the same type as `model` and hence an easy bug to make is to misuse `model` in place of `newModel`. I chose a `rollDice` example, because that likely uses `elm/random` and the new `Model` that it returns has the updated *seed* for the random number generator. It's a common bug in functional languages to forget to store the new *seed*. It's also likely a pernicious bug because basically everything works more or less as expected. You have to notice that, on certain paths, the subsequent numbers generated are not entirely 'random'. If the seed is sometimes used in some other way as well, then this can be pretty hard to spot. Anyway, this is the problem that *"ViewPattern Argument Transform"* solves. In this case, we would have to factor out the `RollDice` case into a function of its own:
 
 ```elm
 updateRollDice : Model -> (Model, Cmd Msg)
