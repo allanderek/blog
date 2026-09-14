@@ -30,7 +30,7 @@ There are arguments both for and against the general solution here, but the poin
 
 ### Other Capital Meanings
 
-Many languages distinguish the meaning of a word by the case of its starting letter. In Elm, modules, constructor, and type names all start with an upper case letter, whilst value names being with a lower case. In Go, if the first letter is uppercase the name is exported and not-exported otherwise. Whilst using camel-case doesn't prevent any of this (clearly since the convention in Elm is to use camel-case), it does mean you have two meanings of case in the same word. It's easy enough to get used to, but why?
+Many languages distinguish the meaning of a word by the case of its starting letter. In Elm, modules, constructor, and type names all start with an upper case letter, whilst value names begin with a lower case. In Go, if the first letter is uppercase the name is exported and not-exported otherwise. Whilst using camel-case doesn't prevent any of this (clearly since the convention in Elm is to use camel-case), it does mean you have two meanings of case in the same word. It's easy enough to get used to, but why?
 
 ### Qualifying 
 
@@ -39,4 +39,4 @@ Occassionally you want to do something like qualify a name or unqualify a name. 
 
 ## Conclusion
 
-So those are a couple of very minor points in favour of snake-case and I cannot think of any particular reason to use camel-case. Perhaps the underscore is inconvenient for some?  I guess snake-case does mean that your names are longer. Anyway in general I find I can get accustomed to pretty much any (sane) syntax, even if I find it awkward to begin with. However, if I had the choice (and that would pretty much only been when designing my own language), then I'd opt for snake-case.
+So those are a couple of very minor points in favour of snake-case and I cannot think of any particular reason to use camel-case. Perhaps the underscore is inconvenient for some?  I guess snake-case does mean that your names are longer. Anyway in general I find I can get accustomed to pretty much any (sane) syntax, even if I find it awkward to begin with. However, if I had the choice (and that would pretty much only be when designing my own language), then I'd opt for snake-case.
