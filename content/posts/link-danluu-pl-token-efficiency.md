@@ -1,5 +1,5 @@
 ---
-title: "Link: Danluu.pl: Programming language and token efficiency"
+title: "Link: Danluu: Programming language and token efficiency"
 tags: [programming, link, llm]
 date: 2026-08-10T14:00:59+00:00
 ---
