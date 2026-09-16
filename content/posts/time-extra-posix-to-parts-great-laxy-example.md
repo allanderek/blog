@@ -5,6 +5,7 @@ date: 2022-10-27
 tags: [Elm, gren, programming, laziness]
 featured: true
 featuredWeight: 50
+featuredLength: short
 featuredBlurb: "A good example of what I think laziness is good for, allowing natural structuring code"
 ---
 

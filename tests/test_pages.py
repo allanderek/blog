@@ -88,6 +88,35 @@ def test_jsonld_survives_a_script_tag_in_the_content():
     for block in blocks:
         json.loads(block)            # raises if the element closed early
 
+# The home page's two recommendation lists, split by featuredLength.
+def _featured(slug: str, length: str) -> Post:
+    return Post(slug=slug, title=slug, date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                body="Body.\n", tags=["t"], featured=True, featured_length=length)
+
+def test_home_splits_recommendations_by_featured_length():
+    site = _site()
+    site.posts = [_featured("quick-one", "short"), _featured("long-one", "long")]
+    page = home_page(site)
+    assert 'id="recommended-quick"' in page
+    assert 'id="recommended-long"' in page
+    assert page.index("recommended-quick") < page.index("recommended-long")
+    assert page.index("quick-one") < page.index("recommended-long")
+
+def test_home_omits_a_recommendation_list_with_no_posts():
+    # A bare heading over an empty list reads as breakage, not as an
+    # editorial choice, so the section is dropped entirely.
+    site = _site()
+    site.posts = [_featured("long-one", "long")]
+    page = home_page(site)
+    assert 'id="recommended-quick"' not in page
+    assert 'id="recommended-long"' in page
+
+def test_home_recent_precedes_the_recommendations():
+    site = _site()
+    site.posts = [_featured("long-one", "long")]
+    page = home_page(site)
+    assert page.index('id="recent"') < page.index('id="recommended-long"')
+
 def test_no_raw_tag_or_unescaped_special_chars_anywhere():
     # The blunt, whole-page check: the dangerous title's own "<script>"
     # must not survive as a real tag anywhere in the page. (The page

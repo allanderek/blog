@@ -4,6 +4,7 @@ tags: [programming, Elm]
 date: 2025-11-12T10:46:02+00:00
 featured: true
 featuredWeight: 60
+featuredLength: short
 featuredBlurb: "The follow-up where I explain why laziness is not a silver bullet that always works."
 ---
 

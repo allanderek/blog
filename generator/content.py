@@ -17,6 +17,12 @@ class Post:
     featured: bool = False
     featured_weight: int = 999
     featured_blurb: str | None = None
+    # "short" or "long": which of the home page's two recommendation lists
+    # a featured post belongs in. Editorial rather than measured -- it is
+    # about whether a post is a coffee-break read or a weekend one, which a
+    # word count only approximates, and a threshold would let a post change
+    # category because a paragraph was added.
+    featured_length: str = "long"
     description: str | None = None
     draft: bool = False
 
@@ -105,7 +111,28 @@ def parse_post(path: Path) -> Post:
         featured_blurb=meta.get("featuredBlurb"),
         description=meta.get("description"),
         draft=bool(meta.get("draft", False)),
+        featured_length=_featured_length(meta, path),
     )
+
+_FEATURED_LENGTHS = ("short", "long")
+
+def _featured_length(meta: dict, path: Path) -> str:
+    """`featuredLength: short` / `long`, defaulting to long.
+
+    An unrecognised value raises rather than quietly defaulting: a typo
+    would otherwise file the post under the wrong heading with nothing to
+    show for it, and a build that stops with a clear message is the same
+    treatment a malformed `date:` already gets.
+    """
+    raw = meta.get("featuredLength")
+    if raw is None:
+        return "long"
+    value = str(raw).strip().strip('"').strip("'").lower()
+    if value not in _FEATURED_LENGTHS:
+        raise ValueError(
+            f"{path}: featuredLength is {raw!r}; expected one of "
+            f"{' or '.join(_FEATURED_LENGTHS)}")
+    return value
 
 def load_posts(root: Path, now: datetime | None = None) -> list[Post]:
     now = now or datetime.now(timezone.utc)

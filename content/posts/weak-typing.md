@@ -4,6 +4,7 @@ tags: ["programming"]
 date: 2021-02-14
 featured: true
 featuredWeight: 30
+featuredLength: short
 featuredBlurb: "Probably not absolutely nothing, but I think weakly typed languages are **mostly** useless, so I try to steelman the case for one"
 ---
 

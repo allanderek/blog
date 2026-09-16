@@ -4,6 +4,7 @@ tags: [programming]
 date: 2025-09-23T13:34:58+00:00
 featured: true
 featuredWeight: 90
+featuredLength: short
 featuredBlurb: "Before proposing a feature, show standing. An under-rated analogy from Dillon Kearns."
 ---
 

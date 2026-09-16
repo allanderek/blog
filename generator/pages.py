@@ -812,6 +812,21 @@ def post_page(post: Post, site: SiteContext) -> str:
 </html>
 """
 
+def _featured_section(section_id: str, heading: str, posts: list[Post]) -> str:
+    """One of the home page's recommendation lists, or nothing at all if no
+    post is filed under it -- an empty list under a heading reads as
+    something being broken rather than as an editorial choice."""
+    if not posts:
+        return ""
+    items = "\n".join(_featured_item(p) for p in posts)
+    return f"""<section class="home-section" id="{section_id}">
+  <h2>{heading}</h2>
+  <ul class="home-featured">
+{items}
+  </ul>
+</section>
+"""
+
 def _featured_item(post: Post) -> str:
     blurb_line = (
         f'\n      <p class="home-blurb">{_render_inline_markdown(post.featured_blurb)}</p>'
@@ -844,23 +859,21 @@ def home_page(site: SiteContext) -> str:
     description_attr = html.esc(site.description)
     og_description_attr = html.esc(_og_description_text(None, site.home_intro))
 
-    # Start here: hand-picked posts, ranked by featuredWeight ascending. A
-    # post with no featuredWeight reads as 999 (content.parse_post's own
-    # default) so it sorts last. site.posts is already newest-first, and
-    # Python's sort is stable, so equal weights keep that date-descending
-    # order -- matching home.html's own two-step sort (rank $featured.ByDate.Reverse
-    # by weight) without needing to re-sort by date here.
-    featured = sorted((p for p in site.posts if p.featured), key=lambda p: p.featured_weight)
-    featured_section = ""
-    if featured:
-        items = "\n".join(_featured_item(p) for p in featured)
-        featured_section = f"""<section class="home-section" id="start-here">
-  <h2>Start here</h2>
-  <ul class="home-featured">
-{items}
-  </ul>
-</section>
-"""
+    # Two lists of hand-picked posts, split by the post's own
+    # `featuredLength:` front matter and ranked by featuredWeight
+    # ascending. A post with no featuredWeight reads as 999
+    # (content.parse_post's own default) so it sorts last. site.posts is
+    # already newest-first and Python's sort is stable, so equal weights
+    # keep that date-descending order.
+    featured = sorted((p for p in site.posts if p.featured),
+                      key=lambda p: p.featured_weight)
+    featured_section = "".join(
+        _featured_section(section_id, heading,
+                          [p for p in featured if p.featured_length == length])
+        for section_id, heading, length in (
+            ("recommended-quick", "Recommended: Quick reads", "short"),
+            ("recommended-long", "Recommended: Long reads", "long"),
+        ))
 
     # Recent: the 8 newest posts. site.posts is already newest-first.
     recent = site.posts[:8]

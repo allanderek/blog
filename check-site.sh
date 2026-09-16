@@ -142,7 +142,14 @@ check "home shows exactly 8 recent"    "test \$(grep -c 'class=\"home-recent-ite
 check "home links to all posts"        "grep -qE 'All [0-9]+ posts' $OUT/index.html"
 check "home is not the full post list" "test \$(grep -c 'post-entry' $OUT/index.html) -eq 0"
 
-check "home has a Start here section"  "grep -q 'id=\"start-here\"' $OUT/index.html"
+# Two recommendation lists, split by each post's own `featuredLength:`.
+# Both are asserted non-empty: _featured_section omits an empty list
+# rather than printing a bare heading, so a section vanishing entirely is
+# the shape a mis-set front-matter value would take.
+check "home has a Quick reads section" "grep -q 'id=\"recommended-quick\"' $OUT/index.html"
+check "home has a Long reads section"  "grep -q 'id=\"recommended-long\"' $OUT/index.html"
+check "Quick reads precedes Long reads" "before 'id=\"recommended-quick\"' 'id=\"recommended-long\"'"
+check "no Start here section left"     "! grep -q 'Start here' $OUT/index.html"
 check "11 featured posts listed"       "test \$(grep -c 'class=\"home-featured-item\"' $OUT/index.html) -eq 11"
 check "11 blurbs listed"               "test \$(grep -c 'class=\"home-blurb\"' $OUT/index.html) -eq 11"
 check "Ladybird is featured"           "grep -q 'ladybird-and-strong-static-typing' $OUT/index.html"
@@ -174,11 +181,11 @@ check "consulting page mentions Elm"   "grep -q 'Elm' $OUT/consulting/index.html
 check "nav links to consulting"        "grep -qF 'href=\"/consulting/\" title=\"Consulting\"' $OUT/index.html"
 check "one signature on home"          "test \$(grep -c '<aside class=\"signature' $OUT/index.html) -eq 1"
 check "home signature is inline"       "grep -q '<aside class=\"signature signature-inline\"' $OUT/index.html"
-check "signature precedes Start here"  "before '<aside class=\"signature' 'id=\"start-here\"'"
+check "signature precedes the picks"  "before '<aside class=\"signature' 'id=\"recommended-quick\"'"
 # Recent leads the page: the newest writing is what a returning reader came
 # for. Nothing else asserts the order of the two home sections, so without
 # this a refactor could swap them back without anything noticing.
-check "Recent precedes the picks"      "before 'id=\"recent\"' 'id=\"start-here\"'"
+check "Recent precedes the picks"      "before 'id=\"recent\"' 'id=\"recommended-quick\"'"
 check "signature on a post"            "grep -q '<aside class=\"signature\"' \$(ls -d $OUT/posts/*/index.html | head -1)"
 check "signature on the CV page"       "grep -q '<aside class=\"signature\"' $OUT/cv/index.html"
 

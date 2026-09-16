@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime, timezone
 from pathlib import Path
 from generator.content import Post, load_posts, parse_post
@@ -64,6 +65,24 @@ def test_description_is_parsed(tmp_path):
         '---\ntitle: "T"\ndate: 2020-01-01\ndescription: "A short summary"\n---\nx\n')
     post = parse_post(tmp_path / "p.md")
     assert post.description == "A short summary"
+
+def test_featured_length_defaults_to_long(tmp_path):
+    (tmp_path / "p.md").write_text(
+        '---\ntitle: "T"\ndate: 2020-01-01\nfeatured: true\n---\nx\n')
+    assert parse_post(tmp_path / "p.md").featured_length == "long"
+
+def test_featured_length_is_parsed(tmp_path):
+    (tmp_path / "p.md").write_text(
+        '---\ntitle: "T"\ndate: 2020-01-01\nfeaturedLength: short\n---\nx\n')
+    assert parse_post(tmp_path / "p.md").featured_length == "short"
+
+def test_an_unrecognised_featured_length_is_rejected(tmp_path):
+    # A typo would otherwise file the post under the wrong heading with
+    # nothing at all to show for it. Same treatment a malformed date gets.
+    (tmp_path / "p.md").write_text(
+        '---\ntitle: "T"\ndate: 2020-01-01\nfeaturedLength: shrot\n---\nx\n')
+    with pytest.raises(ValueError, match="featuredLength"):
+        parse_post(tmp_path / "p.md")
 
 def test_featured_blurb_is_parsed(tmp_path):
     (tmp_path / "p.md").write_text(
