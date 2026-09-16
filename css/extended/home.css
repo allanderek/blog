@@ -8,14 +8,24 @@
     margin-bottom: 12px;
 }
 
+/* The section headings carry the whole structure of this page: without
+   enough contrast, Recent and the two Recommended lists read as one long
+   list. They used to be 20px against 18px/600 post titles -- a 2px
+   difference against text that was very nearly as heavy -- so the heading
+   was not winning. 28px sits below a post's own h2 (32px) and well clear of
+   the titles beneath it.
+
+   The generous margin-top is doing as much work as the size: it is what
+   separates the groups, rather than just labelling them. */
 .home-section {
-    margin-top: 44px;
+    margin-top: 60px;
 }
 
 .home-section h2 {
-    font-size: 20px;
-    margin-bottom: 18px;
-    padding-bottom: 6px;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -62,6 +72,17 @@
 /* Stack the date above the title on narrow screens rather than letting
    long titles wrap into a narrow column beside it. */
 @media (max-width: 500px) {
+    /* 28px is a lot of a narrow screen's width, and the headings are long
+       ("Recommended: Quick reads"). Smaller, with the gap trimmed to match,
+       keeps the hierarchy without letting a heading wrap to three lines. */
+    .home-section {
+        margin-top: 44px;
+    }
+
+    .home-section h2 {
+        font-size: 23px;
+    }
+
     .home-recent-item {
         flex-direction: column;
         gap: 1px;
