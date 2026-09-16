@@ -1,0 +1,34 @@
+/* --- Link colour --------------------------------------------------------
+   The theme is otherwise entirely monochrome, and marks in-post links with
+   an underline rather than a colour. That works inside a paragraph, where a
+   link sits in a run of text -- but the home page's post titles had no
+   affordance at all: no colour, no underline, no hover, just font-weight
+   600. They were the only links on the site with nothing to say they were
+   links.
+
+   The accent is spent on content links only. Header, footer and the
+   consulting call-to-action stay monochrome: they are navigation furniture,
+   and colouring them would make the accent mean "here is a link" everywhere
+   and therefore nothing anywhere. */
+
+/* `a[href]`, not `a`. A dead link (docs/hugo-quirks.md's `dead:` scheme)
+   renders as an <a> with NO href precisely so that it is not offered as
+   something to follow, and it has its own muted, dotted styling. Plain
+   `.post-content a` beats `.dead-link` on specificity -- one class plus an
+   element against one class -- so it painted dead links the same blue as
+   live ones, which is the one thing that styling exists to prevent.
+   Matching on [href] means "colour the links you can actually follow". */
+.post-content a[href],
+.home-featured-item > a[href],
+.home-recent-item > a[href] {
+    color: var(--link);
+}
+
+/* The same underline in-post links get (post-single.css), now on the home
+   page's titles too, so a title reads as a link before it is hovered. */
+.home-featured-item > a[href],
+.home-recent-item > a[href] {
+    box-shadow: 0 1px 0;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}

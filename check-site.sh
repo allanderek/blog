@@ -160,6 +160,12 @@ check "Mo Gawdat is featured"          "grep -q 'mo-gawdat-diary-of-a-ceo' $OUT/
 check "Ladybird outranks Mo Gawdat"    "before ladybird-and-strong-static-typing mo-gawdat-diary-of-a-ceo"
 
 check "home styles are bundled"        "grep -rqs 'home-featured' $OUT/assets/css/"
+# The link colour must apply to a[href], not to every <a>. A dead link (the
+# `dead:` scheme) is an <a> with no href and its own muted styling, and a
+# bare `.post-content a` rule outweighs `.dead-link` on specificity -- which
+# painted dead links the same blue as live ones, defeating the feature.
+check "link colour targets a[href]"    "grep -rqs 'post-content a\[href\]' $OUT/assets/css/"
+check "dead-link styling still bundled" "grep -rqs '.dead-link' $OUT/assets/css/"
 
 check "RSS feed still generated"       "test -s $OUT/index.xml"
 check "Atom feed still generated"      "test -s $OUT/rss/index.xml"

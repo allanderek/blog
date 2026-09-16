@@ -36,6 +36,32 @@
     padding: 0;
 }
 
+/* The whole item is a click target, not just the title -- clicking the
+   blurb should take you to the post it describes.
+
+   Done with a stretched pseudo-element rather than by wrapping the <a>
+   around the title and the blurb together. Wrapping is valid HTML, but it
+   makes the link's accessible name the whole of the text inside it, so a
+   screen reader announcing links reads out each entire blurb. This way the
+   accessible name stays just the title. It is also the pattern the theme
+   already uses for listing cards -- see `.entry-link` in
+   common/post-entry.css.
+
+   The cost is that the overlay sits over the blurb, so the blurb cannot be
+   selected by dragging. There is no version of "the whole card is
+   clickable" that avoids that. */
+.home-featured-item,
+.home-recent-item {
+    position: relative;
+}
+
+.home-featured-item > a::after,
+.home-recent-item > a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+}
+
 .home-featured-item {
     margin-bottom: 22px;
 }
