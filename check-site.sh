@@ -175,6 +175,10 @@ check "nav links to consulting"        "grep -qF 'href=\"/consulting/\" title=\"
 check "one signature on home"          "test \$(grep -c '<aside class=\"signature' $OUT/index.html) -eq 1"
 check "home signature is inline"       "grep -q '<aside class=\"signature signature-inline\"' $OUT/index.html"
 check "signature precedes Start here"  "before '<aside class=\"signature' 'id=\"start-here\"'"
+# Recent leads the page: the newest writing is what a returning reader came
+# for. Nothing else asserts the order of the two home sections, so without
+# this a refactor could swap them back without anything noticing.
+check "Recent precedes the picks"      "before 'id=\"recent\"' 'id=\"start-here\"'"
 check "signature on a post"            "grep -q '<aside class=\"signature\"' \$(ls -d $OUT/posts/*/index.html | head -1)"
 check "signature on the CV page"       "grep -q '<aside class=\"signature\"' $OUT/cv/index.html"
 

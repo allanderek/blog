@@ -883,7 +883,7 @@ def home_page(site: SiteContext) -> str:
 </article>
 {_signature(site, inline=True)}
 
-{featured_section}{recent_section}"""
+{recent_section}{featured_section}"""
 
     body = f"""<body class="list" id="top">
 {_theme_init_script()}
