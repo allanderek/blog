@@ -6,8 +6,24 @@
 The title defaults to the slug, sentence-cased, and the date is now. The path
 is the only thing printed on stdout, so it composes with an editor:
 
-    $EDITOR $(./new-post.sh my-post)           # bash, and fish 3.4+
+    $EDITOR $(./new-post.sh my-post)           # bash
     e (./new-post.sh my-post)                  # fish
+
+Both of those open the editor on nothing when the command fails -- a rejected
+slug prints its complaint to stderr, the substitution comes back empty, and
+the editor starts on its welcome screen. Assign first and chain on success
+instead, which skips the editor entirely:
+
+    p=$(./new-post.sh my-post) && $EDITOR "$p"           # bash
+    set p (./new-post.sh my-post); and e $p              # fish
+
+fish propagates the inner command's exit status through `set`, so `and` sees
+the failure. Worth a function in `config.fish`:
+
+    function np
+        set -l path (./new-post.sh $argv); or return
+        e $path
+    end
 
 The slug becomes the post's permanent URL, so anything that is not lowercase
 letters, digits and single hyphens is refused rather than quietly rewritten.
