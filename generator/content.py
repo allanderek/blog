@@ -141,6 +141,44 @@ def load_posts(root: Path, now: datetime | None = None) -> list[Post]:
     posts.sort(key=lambda p: p.date, reverse=True)
     return posts
 
+# A slug becomes a permanent URL, so this is validated rather than
+# normalised: a stray capital or space is worth refusing before the post is
+# written, not silently rewriting into something the author did not choose.
+_SLUG_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+
+# The newest posts carry a full timestamp rather than a bare date, so two
+# posts written on the same day still order against each other.
+_NEW_POST_DATE = "%Y-%m-%dT%H:%M:%S+00:00"
+
+def title_from_slug(slug: str) -> str:
+    """"my-new-post" -> "My new post". Sentence case, matching the corpus;
+    a starting point to type over, not a guess to live with."""
+    words = slug.replace("-", " ")
+    return words[:1].upper() + words[1:]
+
+def new_post(root: Path, slug: str, title: str | None = None,
+             now: datetime | None = None) -> Path:
+    """Write an empty post at `root/<slug>.md` and return its path.
+
+    Refuses to touch an existing file: this is a convenience for starting
+    something, never a way to lose a draft.
+    """
+    if not _SLUG_RE.match(slug):
+        raise ValueError(
+            f"{slug!r} is not a usable slug. A slug becomes the post's URL, "
+            "so it must be lowercase letters, digits and single hyphens -- "
+            f"try {slug.strip().lower().replace(' ', '-')!r}")
+    path = Path(root) / f"{slug}.md"
+    if path.exists():
+        raise FileExistsError(f"{path} already exists")
+    stamp = (now or datetime.now(timezone.utc)).strftime(_NEW_POST_DATE)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f'---\ntitle: "{title or title_from_slug(slug)}"\n'
+        f"tags: []\ndate: {stamp}\n---\n\n",
+        encoding="utf-8")
+    return path
+
 def load_index_body(path: Path) -> str:
     """content/_index.md carries the home page's intro prose, but -- unlike
     every real post -- it has no `date:` key, so it cannot go through

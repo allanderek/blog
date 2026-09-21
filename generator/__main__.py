@@ -4,12 +4,13 @@ from __future__ import annotations
 import argparse
 import http.server
 import shutil
+import sys
 import tempfile
 import threading
 import time
 from pathlib import Path
 
-from . import site
+from . import content, site
 
 # Everything a build reads. Split in two because a change to each needs a
 # different response: content can be rebuilt in place, but the generator is
@@ -162,6 +163,22 @@ def _describe(before: dict, after: dict) -> str:
     return "changed"
 
 
+def new(slug: str, title: str | None) -> None:
+    """Create an empty post and print its path.
+
+    The path is the ONLY thing on stdout, so the command composes:
+    `$EDITOR $(./new-post.sh my-post)` in bash, `e (./new-post.sh my-post)`
+    in fish. Anything friendly goes to stderr, where a command
+    substitution will not pick it up.
+    """
+    try:
+        path = content.new_post(Path("content/posts"), slug, title)
+    except (ValueError, FileExistsError) as exc:
+        print(exc, file=sys.stderr)
+        raise SystemExit(1)
+    print(f"created {path}", file=sys.stderr)
+    print(path)
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="generator")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -174,11 +191,18 @@ def main() -> None:
     serve_parser.add_argument("--no-watch", action="store_true",
                               help="Do not rebuild when files change")
 
+    new_parser = subparsers.add_parser("new", help="Create an empty post")
+    new_parser.add_argument("slug", help="lowercase-hyphenated; becomes the URL")
+    new_parser.add_argument("title", nargs="?", default=None,
+                            help="defaults to the slug, sentence-cased")
+
     args = parser.parse_args()
     if args.command == "build":
         site.build(args.out)
     elif args.command == "serve":
         serve(args.port, watch=not args.no_watch)
+    elif args.command == "new":
+        new(args.slug, args.title)
 
 
 if __name__ == "__main__":
