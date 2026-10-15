@@ -1,4 +1,6 @@
 from pathlib import Path
+
+import pytest
 from generator.content import parse_post
 from generator.markdown import (extract_summary, plain, plainify, render,
                                 render_entities, summary, word_count)
@@ -126,6 +128,36 @@ def test_a_normal_link_is_untouched_by_the_dead_link_rule():
 def test_an_autolink_is_untouched_by_the_dead_link_rule():
     out = render("see https://example.com/x for more")
     assert '<a href="https://example.com/x">https://example.com/x</a>' in out
+
+# `[words]()` -- a link whose url was never filled in. It renders as
+# <a href="">, which in a browser is indistinguishable from ordinary text,
+# so one sat unnoticed in a post until the site was first rendered for the
+# terminal and it produced a footnote pointing at nothing. There is no
+# sensible rendering, so it stops the build rather than shipping.
+def test_an_empty_link_url_fails_the_build():
+    with pytest.raises(ValueError, match=r"has no url"):
+        render("A few weeks ago I [linked to]() an excellent post.")
+
+def test_a_whitespace_only_link_url_fails_the_build():
+    with pytest.raises(ValueError, match=r"has no url"):
+        render("see [this](   ) for more")
+
+def test_the_empty_link_error_quotes_the_words_so_they_can_be_found():
+    """An empty url gives nothing to grep for, so the message has to
+    carry the link's own words instead."""
+    with pytest.raises(ValueError, match=r"\[linked to\]\(\)"):
+        render("I [linked to]() a post.")
+
+def test_the_empty_link_error_suggests_the_dead_link_scheme():
+    """The two cases look identical in the source; one is a slip and the
+    other is deliberate, so the message names the deliberate form."""
+    with pytest.raises(ValueError, match=r"dead:"):
+        render("I [linked to]() a post.")
+
+def test_a_link_to_a_bare_fragment_is_still_allowed():
+    """`#` is a real target, however little it does -- only an absent url
+    is an error."""
+    assert '<a href="#top">' in render("back to [top](#top)")
 
 # render/render_entities/plainify/_extract_summary are memoised on their
 # argument string (see markdown.py's "Render caching"). The property that

@@ -36,6 +36,42 @@ def _render_strikethrough_close(tokens, idx, options, env) -> str:
 
 DEAD_LINK_SCHEME = "dead:"
 
+# `[words]()` -- a markdown link whose url was never filled in. It renders as
+# `<a href="">`, which in a browser is indistinguishable from ordinary text
+# (it merely re-links the current page), so one sat unnoticed in
+# content/posts/gmail-and-spam.md until the site was first rendered as text
+# and it produced a footnote pointing at nothing. There is no sensible way to
+# render it, so it stops the build.
+_EMPTY_LINK = (
+    "[{text}]() has no url.\n"
+    "  A markdown link with an empty url renders as <a href=\"\">, which looks\n"
+    "  like ordinary text in a browser, so it can sit unnoticed for years.\n"
+    "  Either give it its url, or -- if the target is gone for good and has no\n"
+    "  archived copy -- mark it [{text}](dead:THE-ORIGINAL-URL), which keeps\n"
+    "  the words as prose and records where they used to point."
+)
+
+
+def _link_text(tokens, idx: int) -> str:
+    """The words between `tokens[idx]` (a link_open) and its link_close.
+
+    Needed only to name the offending link in `_EMPTY_LINK`: an empty url
+    gives a reader nothing to grep for, so the message quotes the words
+    instead. Nested links are not legal markdown, but the depth counter
+    costs nothing and stops a malformed token stream running past its end.
+    """
+    words: list[str] = []
+    depth = 0
+    for token in tokens[idx + 1:]:
+        if token.type == "link_open":
+            depth += 1
+        elif token.type == "link_close":
+            if depth == 0:
+                break
+            depth -= 1
+        words.append(token.content or "")
+    return "".join(words).strip()
+
 # --- Render caching --------------------------------------------------------
 #
 # The build renders the same markdown many times over: a post is rendered for
@@ -64,7 +100,8 @@ def _make_link_open_rule(renderer):
 
     `[text](dead:https://gone.example/page)` renders as an <a> with NO href,
     marking prose that used to be a link whose target is gone. Every other
-    link falls straight through to the default renderer.
+    link falls straight through to the default renderer -- except an EMPTY
+    url, which fails the build; see `_EMPTY_LINK`.
 
     An href-less <a> is the right element rather than an invented one: the
     HTML spec says it "represents a placeholder for where a link might
@@ -80,6 +117,8 @@ def _make_link_open_rule(renderer):
     def render_link_open(tokens, idx, options, env) -> str:
         token = tokens[idx]
         href = token.attrGet("href") or ""
+        if not href.strip():
+            raise ValueError(_EMPTY_LINK.format(text=_link_text(tokens, idx)))
         if href.startswith(DEAD_LINK_SCHEME):
             target = href[len(DEAD_LINK_SCHEME):]
             token.attrs = {}
