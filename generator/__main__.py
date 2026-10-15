@@ -41,7 +41,7 @@ def _fingerprint(dirs: tuple[Path, ...]) -> dict[str, tuple[float, int]]:
     return out
 
 
-def _build_into_fresh_dir() -> Path:
+def _build_into_fresh_dir(base_url: str) -> Path:
     """Build into a brand-new directory and return it.
 
     Deliberately NOT a rebuild in place. `site.build` writes files but never
@@ -52,11 +52,12 @@ def _build_into_fresh_dir() -> Path:
     the same from-blank semantics as the real build.
     """
     out = Path(tempfile.mkdtemp(prefix="blog-dev-"))
-    site.build(out)
+    site.build(out, base_url)
     return out
 
 
-def serve(port: int = 8080, watch: bool = True) -> None:
+def serve(port: int = 8080, watch: bool = True,
+          base_url: str | None = None) -> None:
     """Build, then serve over HTTP, rebuilding when anything changes.
 
     A rebuild is a FULL rebuild into a fresh directory, not a patch of the
@@ -65,7 +66,17 @@ def serve(port: int = 8080, watch: bool = True) -> None:
     it is what keeps the dev server honest: no incremental-update bugs, and
     no stale page surviving a deletion.
     """
-    current = _build_into_fresh_dir()
+    # The dev server points the site at ITSELF. Every absolute url in
+    # the build -- the canonical link, og:url, the JSON-LD, and above all
+    # the text version's link footnotes -- then stays inside the local
+    # build. Without this, following a footnote from localhost would
+    # silently land on the live site, and curl-navigation (the whole
+    # point of the text version) could not be tested locally at all. A
+    # relative footnote is not an option: an OSC 8 hyperlink needs an
+    # absolute url, because a terminal has no document base.
+    if base_url is None:
+        base_url = f"http://localhost:{port}"
+    current = _build_into_fresh_dir(base_url)
 
     class Handler(http.server.SimpleHTTPRequestHandler):
         # Read the directory per request rather than binding it once, so a
@@ -102,7 +113,8 @@ def serve(port: int = 8080, watch: bool = True) -> None:
     if watch:
         print(f"watching {', '.join(str(d) for d in _CONTENT_DIRS)} "
               f"-- edit and save, then reload the page", flush=True)
-        threading.Thread(target=_watch, args=(swap,), daemon=True).start()
+        threading.Thread(target=_watch, args=(swap, base_url),
+                         daemon=True).start()
 
     try:
         httpd.serve_forever()
@@ -113,7 +125,7 @@ def serve(port: int = 8080, watch: bool = True) -> None:
         shutil.rmtree(current, ignore_errors=True)
 
 
-def _watch(swap) -> None:
+def _watch(swap, base_url: str) -> None:
     """Poll for changes; rebuild content, ask for a restart on code."""
     content_seen = _fingerprint(_CONTENT_DIRS)
     code_seen = _fingerprint(_CODE_DIRS)
@@ -139,7 +151,7 @@ def _watch(swap) -> None:
 
         started = time.time()
         try:
-            new_dir = _build_into_fresh_dir()
+            new_dir = _build_into_fresh_dir(base_url)
         except Exception as exc:
             # Keep serving the last good build. A half-typed front matter
             # block should not take the site down until the next save.
@@ -185,11 +197,16 @@ def main() -> None:
 
     build_parser = subparsers.add_parser("build", help="Build the site")
     build_parser.add_argument("--out", required=True, type=Path)
+    build_parser.add_argument("--base-url", default=site.DEFAULT_BASE_URL,
+                              help="absolute url the site is served from")
 
     serve_parser = subparsers.add_parser("serve", help="Build, then serve over HTTP")
     serve_parser.add_argument("--port", default=8080, type=int)
     serve_parser.add_argument("--no-watch", action="store_true",
                               help="Do not rebuild when files change")
+    serve_parser.add_argument("--base-url", default=None,
+                              help="absolute url to build against "
+                                   "(default: http://localhost:PORT)")
 
     new_parser = subparsers.add_parser("new", help="Create an empty post")
     new_parser.add_argument("slug", help="lowercase-hyphenated; becomes the URL")
@@ -198,9 +215,9 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.command == "build":
-        site.build(args.out)
+        site.build(args.out, args.base_url)
     elif args.command == "serve":
-        serve(args.port, watch=not args.no_watch)
+        serve(args.port, watch=not args.no_watch, base_url=args.base_url)
     elif args.command == "new":
         new(args.slug, args.title)
 

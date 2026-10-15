@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import assets, cv, feeds
+from . import assets, cv, feeds, text
 from .content import Post, load_front_matter, load_page, load_posts, load_index_body
 from .pages import (alias_stub, archives_page, cv_page,
                      consulting_page, group_posts_by_tag, home_page,
@@ -25,6 +25,16 @@ PORTRAIT_WIDTH = 112
 # hugo.toml [pagination] pagerSize -- also the trigger for the 176-post
 # /posts/ listing to need a second page and a `/posts/page/2/`.
 PAGER_SIZE = 100
+
+# The production domain. Overridable per build (`--base-url`), which the
+# dev server uses to point at itself -- see `_write_page` for why that
+# matters more for the text version than for anything before it.
+#
+# Moving the domain needs this line AND two things outside the repo:
+# there is no CNAME file, so the custom domain lives in the repo's GitHub
+# Pages settings, and blog.poleprediction.com is a CNAME record at
+# Namecheap pointing at allanderek.github.io.
+DEFAULT_BASE_URL = "https://blog.poleprediction.com"
 
 @dataclass
 class SiteContext:
@@ -51,13 +61,40 @@ class SiteContext:
     stylesheet_integrity: str = ""
     avatar_href: str = ""
 
-def _default_site(posts: list[Post], home_intro: str = "") -> SiteContext:
+def _default_site(posts: list[Post], home_intro: str = "",
+                  base_url: str = DEFAULT_BASE_URL) -> SiteContext:
     return SiteContext(
         title="Allanderek's blog",
-        base_url="https://blog.poleprediction.com",
+        base_url=base_url,
         posts=posts,
         home_intro=home_intro,
     )
+
+def _write_page(out: Path, page_dir: Path, page_html: str,
+                site: SiteContext) -> None:
+    """Write a page as both `index.html` and `index.txt`.
+
+    Every page goes through here so the text version cannot be forgotten
+    for one page kind -- the two writes are the same statement.
+
+    The permalink is derived from `page_dir`, because the output path IS
+    the url path: `out/posts/foo/` is `/posts/foo/`. That keeps permalinks
+    out of pages.py's signatures, and it cannot drift from where the file
+    actually landed.
+
+    `404.html` and the `page/1/` alias stubs do NOT come through here:
+    neither is a page with content, and `text.render` rejects anything
+    with no `<main>`.
+    """
+    page_dir.mkdir(parents=True, exist_ok=True)
+    (page_dir / "index.html").write_text(page_html, encoding="utf-8")
+    relative = page_dir.relative_to(out).as_posix()
+    path = "/" if relative == "." else f"/{relative}/"
+    (page_dir / "index.txt").write_text(
+        text.render(page_html, permalink=f"{site.base_url}{path}",
+                    base_url=site.base_url),
+        encoding="utf-8")
+
 
 def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteContext,
                     title: str | None = None, taxonomy: bool = False) -> None:
@@ -85,8 +122,7 @@ def _write_section(out: Path, base_path: str, posts: list[Post], site: SiteConte
         page_html = list_page(page_posts, page_num, total_pages, base_path, site,
                                title=title, taxonomy=taxonomy)
         page_dir = section_dir if page_num == 1 else section_dir / "page" / str(page_num)
-        page_dir.mkdir(parents=True, exist_ok=True)
-        (page_dir / "index.html").write_text(page_html, encoding="utf-8")
+        _write_page(out, page_dir, page_html, site)
     stub_dir = section_dir / "page" / "1"
     stub_dir.mkdir(parents=True, exist_ok=True)
     (stub_dir / "index.html").write_text(alias_stub(base_path, site), encoding="utf-8")
@@ -116,19 +152,26 @@ def _copy_static(out: Path) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, dest)
 
-def build(out: Path) -> None:
+def build(out: Path, base_url: str = DEFAULT_BASE_URL) -> None:
     posts = load_posts(CONTENT_ROOT / "posts")
     home_intro = load_index_body(CONTENT_ROOT / "_index.md")
-    site = _default_site(posts, home_intro)
+    site = _default_site(posts, home_intro, base_url)
+    out.mkdir(parents=True, exist_ok=True)
     site.stylesheet_href, site.stylesheet_integrity = assets.build_stylesheet(CSS_ROOT, out)
     site.avatar_href = assets.resize_portrait(PORTRAIT_SRC, out, PORTRAIT_WIDTH)
     _copy_static(out)
     for post in posts:
-        page_dir = out / "posts" / post.slug
-        page_dir.mkdir(parents=True, exist_ok=True)
-        (page_dir / "index.html").write_text(post_page(post, site), encoding="utf-8")
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "index.html").write_text(home_page(site), encoding="utf-8")
+        # Name the source file. A content error (an empty link, say) is
+        # raised deep in the markdown renderer, which knows the words but
+        # not which of 187 posts they came from. `slug` is `path.stem`,
+        # so this is the real path, and it matches how `parse_post`
+        # reports a bad front matter block.
+        try:
+            page_html = post_page(post, site)
+        except ValueError as exc:
+            raise ValueError(f"content/posts/{post.slug}.md: {exc}") from exc
+        _write_page(out, out / "posts" / post.slug, page_html, site)
+    _write_page(out, out, home_page(site), site)
     # The site-wide feeds. `include_site_pages` merges in `/cv/`/
     # `/consulting/` (every other feed's `.Pages` is genuinely just its
     # own posts) -- see feeds.py's module docstring for the one field of
@@ -146,14 +189,11 @@ def build(out: Path) -> None:
         _write_section(out, f"/tags/{slug}/", tag_posts, site,
                         title=tag_title(name), taxonomy=True)
     tags_dir = out / "tags"
-    tags_dir.mkdir(parents=True, exist_ok=True)
-    (tags_dir / "index.html").write_text(terms_index(tags, site), encoding="utf-8")
+    _write_page(out, tags_dir, terms_index(tags, site), site)
     (tags_dir / "index.xml").write_text(
         feeds.terms_rss(tags, site, "/tags/", tag_title("tags")),
         encoding="utf-8")
-    archives_dir = out / "archives"
-    archives_dir.mkdir(parents=True, exist_ok=True)
-    (archives_dir / "index.html").write_text(archives_page(posts, site), encoding="utf-8")
+    _write_page(out, out / "archives", archives_page(posts, site), site)
 
     # content/cv.md and content/consulting.md: the two non-post Kind
     # "page" content files -- see pages.cv_page/consulting_page's own
@@ -164,16 +204,12 @@ def build(out: Path) -> None:
     # actual content lives in content/cv.toml, parsed by cv.load.
     cv_meta = load_front_matter(CONTENT_ROOT / "cv.md")
     cv_data = cv.load(CONTENT_ROOT / "cv.toml")
-    cv_dir = out / "cv"
-    cv_dir.mkdir(parents=True, exist_ok=True)
-    (cv_dir / "index.html").write_text(cv_page(site, cv_meta, cv_data), encoding="utf-8")
+    _write_page(out, out / "cv", cv_page(site, cv_meta, cv_data), site)
 
     consulting_meta, consulting_body = load_page(CONTENT_ROOT / "consulting.md")
     consulting_url = str(consulting_meta.get("url", "/consulting/")).strip("/")
-    consulting_dir = out / consulting_url
-    consulting_dir.mkdir(parents=True, exist_ok=True)
-    (consulting_dir / "index.html").write_text(
-        consulting_page(site, consulting_meta, consulting_body), encoding="utf-8")
+    _write_page(out, out / consulting_url,
+                consulting_page(site, consulting_meta, consulting_body), site)
 
     (out / "404.html").write_text(not_found_page(site), encoding="utf-8")
 

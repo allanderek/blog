@@ -55,6 +55,19 @@ from pygments.util import ClassNotFound
 _STYLE_NAME = "monokai"
 _FORMATTER = HtmlFormatter(style=_STYLE_NAME, noclasses=True, nowrap=True)
 _STYLE = get_style_by_name(_STYLE_NAME)
+# The theme's own defaults, published for generator/text.py.
+#
+# An UNLABELLED fence (25 in this corpus) gets Hugo's bare
+# `<pre tabindex="0"><code>` with no inline style at all, so the text
+# renderer has nothing to read a colour out of and would otherwise paint
+# those blocks as ordinary prose -- no background, terminal-default
+# foreground, indistinguishable from the paragraph above. It falls back
+# to these, so every code block looks like a code block. Taken from the
+# style object rather than written out twice, so changing `_STYLE_NAME`
+# moves the html and the text together.
+DEFAULT_COLOUR = _STYLE.styles[_Token]
+BACKGROUND_COLOUR = _STYLE.background_color
+
 _PRE_STYLE = (
     f"color:{_STYLE.styles[_Token]};background-color:{_STYLE.background_color};"
     "-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"

@@ -1,0 +1,22 @@
+/* The footer's pointer to this page's ANSI text version.
+
+   `white-space: normal` overrides `.footer span:last-child`'s nowrap in
+   common/footer.css -- that rule exists for the short copyright line,
+   and this span is now the last child, so a long `curl` command would
+   push the page sideways on a phone.
+
+   `user-select: all` makes one click select the whole command, which is
+   the only thing anyone wants to do with it. */
+.footer-text-version {
+    display: block;
+    white-space: normal;
+    overflow-wrap: break-word;
+    margin-top: 4px;
+}
+
+.footer-text-version code {
+    background: none;
+    padding: 0;
+    font-size: 11px;
+    user-select: all;
+}
