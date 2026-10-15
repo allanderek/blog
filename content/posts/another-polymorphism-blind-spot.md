@@ -94,7 +94,7 @@ formatBuffers buffers =
     List.map formatBuffer buffers
 ```
 
-Notice here that we just represent the mode with a module, because we know longer have to carry the *'mode'* information around with us. And that's the major problem. This system is not extensible. If you release the editor as a program that's perhaps expected, but if you release it as a library even then it's not possible for the library consumer to add their own mode. They would have to fork the library (or contribute back to the original one).
+Notice here that we just represent the mode with a module, because we no longer have to carry the *'mode'* information around with us. And that's the major problem. This system is not extensible. If you release the editor as a program that's perhaps expected, but if you release it as a library even then it's not possible for the library consumer to add their own mode. They would have to fork the library (or contribute back to the original one).
 
 So the blind-spot is that you cannot enclose a parcel of data that is internally self-consistent and prevent some of the type being leaked into the broader value. So more generally you cannot write the following:
 

@@ -18,6 +18,6 @@ Not only is the spam coming *into* gmail but it's originating *from* a gmail acc
 
 I'm genuinely curious about this.
 
-A few weeks ago I [linked to]() an excellent post asking
+A few weeks ago I [linked to](/posts/where-is-all-the-shovelware/) an excellent post asking
 [Where's the Shovelware? Why AI Coding Claims Don't Add Up](https://mikelovesrobots.substack.com/p/wheres-the-shovelware-why-ai-coding).
 A fix for this spam detection issue would not at all be shovelware, but is it not somewhat bearish for A.I. coding that no one at Google has been able to get Gemini to work out a fix for this? I understand that spam detection is an on-going arms race, but these flirtatious scam messages haven't changed in years.
